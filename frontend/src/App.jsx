@@ -18,6 +18,7 @@ import Audit from "./pages/Audit.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AdminLayout from "./components/AdminLayout.jsx";
+import AdminOnlyRoute from "./components/AdminOnlyRoute.jsx";
 
 import "./styles/admin.css";
 
@@ -62,19 +63,9 @@ const App = () => {
           }
         >
 
-          <Route
-            path="/"
-            element={
-              <Dashboard />
-            }
-          />
-
-          <Route
-            path="/calendar"
-            element={
-              <Calendar />
-            }
-          />
+          {/* =================================================
+              MÓDULOS DISPONIBLES PARA ADMINISTRADOR Y GESTOR
+              ================================================= */}
 
           <Route
             path="/attendance"
@@ -104,26 +95,48 @@ const App = () => {
             }
           />
 
+          {/* =================================================
+              MÓDULOS EXCLUSIVOS DEL ADMINISTRADOR GENERAL
+              ================================================= */}
+
           <Route
-            path="/admins"
+            path="/calendar"
             element={
-              <AdminUsers />
+              <Calendar />
             }
           />
 
-          <Route
-            path="/programaciones"
-            element={
-              <Programaciones />
-            }
-          />
+          <Route element={<AdminOnlyRoute />}>
 
-          <Route
-            path="/audit"
-            element={
-              <Audit />
-            }
-          />
+            <Route
+              path="/"
+              element={
+                <Dashboard />
+              }
+            />
+
+            <Route
+              path="/admins"
+              element={
+                <AdminUsers />
+              }
+            />
+
+            <Route
+              path="/programaciones"
+              element={
+                <Programaciones />
+              }
+            />
+
+            <Route
+              path="/audit"
+              element={
+                <Audit />
+              }
+            />
+
+          </Route>
 
         </Route>
       </Route>

@@ -1,15 +1,15 @@
 import api from "./api";
 
 const auditService = {
+
   async getLogs({
     page = 1,
     limit = 50,
-    search = "",
-    module = "",
-    action = "",
     circle = "",
   } = {}) {
-    const params = new URLSearchParams();
+
+    const params =
+      new URLSearchParams();
 
     params.set(
       "page",
@@ -21,31 +21,17 @@ const auditService = {
       String(limit)
     );
 
-    if (search.trim()) {
-      params.set(
-        "search",
-        search.trim()
-      );
-    }
+    const normalizedCircle =
+      String(
+        circle || ""
+      ).trim();
 
-    if (module.trim()) {
-      params.set(
-        "module",
-        module.trim()
-      );
-    }
-
-    if (action.trim()) {
-      params.set(
-        "action",
-        action.trim()
-      );
-    }
-
-    if (circle.trim()) {
+    if (
+      normalizedCircle
+    ) {
       params.set(
         "circle",
-        circle.trim()
+        normalizedCircle
       );
     }
 
@@ -53,6 +39,7 @@ const auditService = {
       `/audit?${params.toString()}`
     );
   },
+
 };
 
 export default auditService;

@@ -1,18 +1,7 @@
-/* =========================================================
-   CÍRCULOS CONNECT
-   ADMIN / HEADER / NAVIGATION
-========================================================= */
-
-/* =========================================================
-   HEADER
-========================================================= */
-
 .cc-header {
   position: sticky;
-
   top: 0;
-
-  z-index: 30;
+  z-index: 1000;
 
   width: 100%;
 
@@ -327,11 +316,7 @@
 .cc-admin-menu {
   position: absolute;
 
-  top:
-    calc(
-      100% + 10px
-    );
-
+  top: calc(100% + 10px);
   right: 0;
 
   width: 205px;
@@ -340,22 +325,15 @@
 
   background: #ffffff;
 
-  border:
-    1px solid
-    #e2e8f0;
+  border: 1px solid #e2e8f0;
 
   border-radius: 12px;
 
   box-shadow:
     0 14px 35px
-    rgba(
-      15,
-      23,
-      42,
-      0.16
-    );
+    rgba(15, 23, 42, 0.16);
 
-  z-index: 80;
+  z-index: 1100;
 }
 
 .cc-admin-menu-title {
@@ -1149,4 +1127,1259 @@
 
     min-height: 43px !important;
   }
+}
+
+/* =========================================================
+   USUARIOS ADMIN + BITÁCORA
+   ESTILO CORPORATIVO CÍRCULOS CONNECT
+========================================================= */
+
+/* =========================================================
+   CONTENEDOR GENERAL DEL MÓDULO
+========================================================= */
+
+.module-page {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 32px 40px;
+
+  color: #0f172a;
+}
+
+/* =========================================================
+   ENCABEZADO DEL MÓDULO
+========================================================= */
+
+.module-header {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 24px;
+
+  margin-bottom: 18px;
+  padding: 20px 22px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #f8fbff 60%,
+      #eef5ff 100%
+    );
+
+  border: 1px solid #d4deed;
+  border-radius: 16px;
+
+  box-shadow:
+    0 12px 30px rgba(15, 23, 42, 0.12);
+}
+
+.module-header > div {
+  min-width: 0;
+}
+
+.cc-section-kicker {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #2457c5;
+
+  font-size: 9px;
+  line-height: 1;
+
+  font-weight: 800;
+
+  letter-spacing: .10em;
+  text-transform: uppercase;
+}
+
+.module-header h1 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 22px;
+  line-height: 1.2;
+
+  font-weight: 800;
+
+  letter-spacing: -.025em;
+}
+
+.module-header p {
+  margin: 5px 0 0;
+
+  color: #64748b;
+
+  font-size: 11px;
+  line-height: 1.4;
+
+  font-weight: 500;
+}
+
+
+/* =========================================================
+   BOTONES DEL MÓDULO
+========================================================= */
+
+.module-page .primary-button,
+.module-page .secondary-button {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-height: 38px;
+
+  padding: 0 14px;
+
+  border-radius: 9px;
+
+  font-family: "Inter", sans-serif;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    transform .15s ease,
+    box-shadow .15s ease,
+    background .15s ease,
+    border-color .15s ease;
+}
+
+.module-page .primary-button {
+  border: 1px solid #183875;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2457c5,
+      #102657
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 5px 14px rgba(36, 87, 197, .20);
+}
+
+.module-page .primary-button:hover {
+  transform: translateY(-1px);
+
+  background:
+    linear-gradient(
+      135deg,
+      #2d68e0,
+      #102657
+    );
+
+  box-shadow:
+    0 7px 18px rgba(36, 87, 197, .28);
+}
+
+.module-page .secondary-button {
+  border: 1px solid #cbd5e1;
+
+  background: #ffffff;
+
+  color: #183875;
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+}
+
+.module-page .secondary-button:hover {
+  background: #f1f5f9;
+
+  border-color: #b7c5d8;
+
+  color: #102657;
+
+  transform: translateY(-1px);
+}
+
+.module-page button:disabled {
+  opacity: .55;
+
+  cursor: not-allowed;
+
+  transform: none !important;
+
+  box-shadow: none !important;
+}
+
+
+/* =========================================================
+   MENSAJES
+========================================================= */
+
+.module-error,
+.module-success {
+  width: 100%;
+
+  margin-bottom: 14px;
+
+  padding: 11px 14px;
+
+  border-radius: 10px;
+
+  font-size: 11px;
+  line-height: 1.4;
+
+  font-weight: 700;
+}
+
+.module-error {
+  background: #fff1f2;
+
+  border: 1px solid #fecdd3;
+
+  color: #be123c;
+}
+
+.module-success {
+  background: #ecfdf5;
+
+  border: 1px solid #86efac;
+
+  color: #047857;
+}
+
+
+/* =========================================================
+   TARJETA PRINCIPAL DE ADMINISTRACIÓN
+========================================================= */
+
+.admin-management-card {
+  width: 100%;
+
+  overflow: hidden;
+
+  background: #ffffff;
+
+  border: 1px solid #d4deed;
+
+  border-radius: 16px;
+
+  box-shadow:
+    0 12px 34px rgba(0, 0, 0, .14);
+}
+
+.admin-table-wrapper {
+  width: 100%;
+
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+
+/* =========================================================
+   TABLA
+========================================================= */
+
+.admin-management-table {
+  width: 100%;
+
+  min-width: 950px;
+
+  border-collapse: collapse;
+
+  background: #ffffff;
+
+  color: #334155;
+
+  font-size: 11px;
+}
+
+.admin-management-table thead {
+  background:
+    linear-gradient(
+      180deg,
+      #f8fafc,
+      #eef3f9
+    );
+}
+
+.admin-management-table th {
+  padding: 12px 13px;
+
+  border-bottom: 1px solid #dbe4ef;
+
+  color: #334155;
+
+  font-size: 9px;
+
+  line-height: 1.2;
+
+  font-weight: 800;
+
+  text-align: left;
+
+  text-transform: uppercase;
+
+  letter-spacing: .045em;
+
+  white-space: nowrap;
+}
+
+.admin-management-table td {
+  padding: 12px 13px;
+
+  border-bottom: 1px solid #edf1f6;
+
+  color: #475569;
+
+  font-size: 11px;
+
+  line-height: 1.35;
+
+  vertical-align: middle;
+}
+
+.admin-management-table tbody tr {
+  transition:
+    background .15s ease;
+}
+
+.admin-management-table tbody tr:hover {
+  background: #f5f9ff;
+}
+
+.admin-management-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-management-table td strong {
+  color: #0f172a;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   ESTADO
+========================================================= */
+
+.status-badge {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-height: 25px;
+
+  padding: 4px 9px;
+
+  border-radius: 999px;
+
+  font-size: 9px;
+
+  line-height: 1;
+
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background: #ecfdf5;
+
+  border: 1px solid #86efac;
+
+  color: #047857;
+}
+
+.status-badge.inactive {
+  background: #fff1f2;
+
+  border: 1px solid #fecdd3;
+
+  color: #be123c;
+}
+
+
+/* =========================================================
+   ACCIONES DE FILA
+========================================================= */
+
+.admin-row-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  flex-wrap: nowrap;
+}
+
+.admin-row-actions .secondary-button {
+  min-height: 32px;
+
+  padding: 0 9px;
+
+  font-size: 10px;
+}
+
+
+/* =========================================================
+   ESTADO VACÍO / CARGANDO
+========================================================= */
+
+.table-empty {
+  min-height: 180px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  background: #ffffff;
+
+  border: 1px solid #d4deed;
+
+  border-radius: 16px;
+
+  box-shadow:
+    0 12px 34px rgba(0, 0, 0, .12);
+
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+.table-empty span {
+  font-size: 24px;
+}
+
+.table-empty strong {
+  color: #334155;
+
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   CELDA VACÍA DE BITÁCORA
+========================================================= */
+
+.audit-empty-cell {
+  padding: 42px 20px !important;
+
+  color: #94a3b8 !important;
+
+  font-size: 11px !important;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   FILTROS DE BITÁCORA
+========================================================= */
+
+.audit-filters {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(180px, 1.5fr)
+    minmax(130px, 1fr)
+    minmax(130px, 1fr)
+    minmax(130px, 1fr)
+    auto
+    auto;
+
+  align-items: center;
+
+  gap: 8px;
+
+  margin-bottom: 14px;
+
+  padding: 14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #f8fbff
+    );
+
+  border: 1px solid #d4deed;
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, .09);
+}
+
+.audit-filters input {
+  width: 100%;
+
+  height: 36px;
+
+  padding: 0 10px;
+
+  border: 1px solid #cbd5e1;
+
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #334155;
+
+  font-family: "Inter", sans-serif;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  transition:
+    border-color .15s ease,
+    box-shadow .15s ease;
+}
+
+.audit-filters input::placeholder {
+  color: #94a3b8;
+
+  font-weight: 500;
+}
+
+.audit-filters input:focus {
+  border-color: #3f6fcb;
+
+  box-shadow:
+    0 0 0 3px rgba(36, 87, 197, .12);
+}
+
+.audit-filters .primary-button,
+.audit-filters .secondary-button {
+  height: 36px;
+
+  min-height: 36px;
+}
+
+
+/* =========================================================
+   PAGINACIÓN DE BITÁCORA
+========================================================= */
+
+.audit-pagination {
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-top: 14px;
+
+  padding: 11px 14px;
+
+  background: rgba(255, 255, 255, .96);
+
+  border: 1px solid #d4deed;
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 7px 20px rgba(15, 23, 42, .08);
+}
+
+.audit-pagination > span {
+  color: #64748b;
+
+  font-size: 10px;
+
+  font-weight: 600;
+}
+
+.audit-pagination > span strong {
+  color: #183875;
+
+  font-weight: 800;
+}
+
+.audit-pagination .secondary-button {
+  min-height: 34px;
+
+  padding: 0 11px;
+
+  font-size: 10px;
+}
+
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.modal-backdrop {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 5000;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background:
+    rgba(5, 8, 18, .68);
+
+  backdrop-filter: blur(5px);
+
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.modal-card {
+  width: 100%;
+
+  max-width: 720px;
+
+  max-height: calc(100vh - 48px);
+
+  overflow-y: auto;
+
+  background: #ffffff;
+
+  border: 1px solid #d4deed;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, .30);
+
+  color: #0f172a;
+}
+
+.admin-user-modal {
+  max-width: 720px;
+}
+
+
+/* =========================================================
+   HEADER DEL MODAL
+========================================================= */
+
+.modal-header {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 17px 20px;
+
+  border-bottom: 1px solid #e2e8f0;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #f8fbff
+    );
+}
+
+.modal-header h2 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 17px;
+
+  line-height: 1.25;
+
+  font-weight: 800;
+}
+
+.modal-close {
+  width: 32px;
+
+  height: 32px;
+
+  min-width: 32px;
+
+  padding: 0;
+
+  border: 1px solid #dbe3ef;
+
+  border-radius: 8px;
+
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  background: #ffffff;
+
+  color: #64748b;
+
+  font-size: 20px;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background .15s ease,
+    color .15s ease,
+    border-color .15s ease;
+}
+
+.modal-close:hover {
+  background: #f1f5f9;
+
+  border-color: #cbd5e1;
+
+  color: #0f172a;
+}
+
+
+/* =========================================================
+   FORMULARIO DE ADMINISTRADOR
+========================================================= */
+
+.admin-user-form {
+  padding: 20px;
+}
+
+.form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 14px;
+}
+
+.form-grid label {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 6px;
+
+  color: #334155;
+
+  font-size: 10px;
+
+  line-height: 1.2;
+
+  font-weight: 800;
+}
+
+.form-grid input,
+.form-grid select {
+  width: 100%;
+
+  height: 38px;
+
+  padding: 0 10px;
+
+  border: 1px solid #cbd5e1;
+
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #334155;
+
+  font-family: "Inter", sans-serif;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  transition:
+    border-color .15s ease,
+    box-shadow .15s ease;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+  border-color: #3f6fcb;
+
+  box-shadow:
+    0 0 0 3px rgba(36, 87, 197, .12);
+}
+
+.form-grid input::placeholder {
+  color: #94a3b8;
+}
+
+
+/* =========================================================
+   CÍRCULOS PERMITIDOS
+========================================================= */
+
+.admin-circle-scope {
+  margin-top: 18px;
+
+  padding: 14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f8fbff,
+      #eef5ff
+    );
+
+  border: 1px solid #d4e1f1;
+
+  border-radius: 12px;
+}
+
+.admin-circle-scope h3 {
+  margin: 0 0 11px;
+
+  color: #183875;
+
+  font-size: 11px;
+
+  line-height: 1.2;
+
+  font-weight: 800;
+}
+
+.admin-circle-options {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(150px, 1fr)
+    );
+
+  gap: 8px;
+}
+
+.admin-circle-option {
+  min-height: 38px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 8px 10px;
+
+  border: 1px solid #dbe5f0;
+
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  color: #334155;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background .15s ease,
+    border-color .15s ease,
+    transform .15s ease;
+}
+
+.admin-circle-option:hover {
+  background: #f1f6ff;
+
+  border-color: #b9cce5;
+
+  transform: translateY(-1px);
+}
+
+.admin-circle-option input {
+  width: 15px;
+
+  height: 15px;
+
+  margin: 0;
+
+  accent-color: #2457c5;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   ACCIONES DEL MODAL
+========================================================= */
+
+.modal-actions {
+  display: flex;
+
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 8px;
+
+  margin-top: 20px;
+
+  padding-top: 16px;
+
+  border-top: 1px solid #e2e8f0;
+}
+
+.modal-actions .primary-button,
+.modal-actions .secondary-button {
+  min-height: 38px;
+}
+
+
+/* =========================================================
+   BITÁCORA — TABLA MÁS COMPACTA
+========================================================= */
+
+.audit-filters + .admin-management-card
+  .admin-management-table {
+  min-width: 1050px;
+}
+
+.audit-filters + .admin-management-card
+  .admin-management-table th,
+.audit-filters + .admin-management-card
+  .admin-management-table td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.audit-filters + .admin-management-card
+  .admin-management-table td:first-child {
+  white-space: nowrap;
+}
+
+.audit-filters + .admin-management-card
+  .admin-management-table td:nth-child(2) {
+  min-width: 150px;
+}
+
+.audit-filters + .admin-management-card
+  .admin-management-table td:nth-child(5) {
+  min-width: 260px;
+
+  white-space: normal;
+
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  .module-page {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .audit-filters {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .audit-filters .primary-button,
+  .audit-filters .secondary-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+
+  .module-page {
+    padding:
+      18px 14px 28px;
+  }
+
+  .module-header {
+    flex-direction: column;
+
+    align-items: stretch;
+
+    padding: 16px;
+  }
+
+  .module-header .primary-button,
+  .module-header .secondary-button {
+    width: 100%;
+  }
+
+  .audit-filters {
+    grid-template-columns: 1fr;
+
+    padding: 12px;
+  }
+
+  .audit-filters .primary-button,
+  .audit-filters .secondary-button {
+    width: 100%;
+  }
+
+  .audit-pagination {
+    flex-direction: column;
+
+    align-items: stretch;
+
+    text-align: center;
+  }
+
+  .audit-pagination .secondary-button {
+    width: 100%;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-circle-options {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .modal-card {
+    max-height: calc(100vh - 24px);
+
+    border-radius: 14px;
+  }
+
+  .admin-user-form {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .module-header h1 {
+    font-size: 19px;
+  }
+
+  .module-header p {
+    font-size: 10px;
+  }
+
+  .admin-management-table {
+    min-width: 900px;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+
+    align-items: stretch;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   BITÁCORA — FILTRO ÚNICO POR CÍRCULO
+========================================================= */
+
+.audit-filters-circle-only {
+  display: flex;
+
+  align-items: flex-end;
+
+  gap: 10px;
+
+  padding: 14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #f8fbff
+    );
+
+  border: 1px solid #d4deed;
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, .09);
+}
+
+.audit-circle-field {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+
+  width: 280px;
+}
+
+.audit-circle-field label {
+  color: #334155;
+
+  font-size: 10px;
+
+  line-height: 1.2;
+
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  letter-spacing: .04em;
+}
+
+.audit-circle-field select {
+  width: 100%;
+
+  height: 38px;
+
+  padding: 0 34px 0 11px;
+
+  border: 1px solid #cbd5e1;
+
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #334155;
+
+  font-family: "Inter", sans-serif;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    border-color .15s ease,
+    box-shadow .15s ease;
+}
+
+.audit-circle-field select:hover {
+  border-color: #b7c7db;
+}
+
+.audit-circle-field select:focus {
+  border-color: #3f6fcb;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(36, 87, 197, .12);
+}
+
+
+/* =========================================================
+   BADGE DE CÍRCULO EN BITÁCORA
+========================================================= */
+
+.audit-circle-badge {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-height: 25px;
+
+  padding: 4px 9px;
+
+  border-radius: 999px;
+
+  background: #eef4ff;
+
+  border: 1px solid #c7d7f3;
+
+  color: #2457c5;
+
+  font-size: 9px;
+
+  line-height: 1;
+
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   TABLA DE BITÁCORA
+========================================================= */
+
+.audit-table {
+  min-width: 760px;
+}
+
+.audit-table th:nth-child(1) {
+  width: 19%;
+}
+
+.audit-table th:nth-child(2) {
+  width: 22%;
+}
+
+.audit-table th:nth-child(3) {
+  width: 43%;
+}
+
+.audit-table th:nth-child(4) {
+  width: 16%;
+}
+
+.audit-table td:nth-child(3) {
+  white-space: normal;
+
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 760px) {
+
+  .audit-filters-circle-only {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .audit-circle-field {
+    width: 100%;
+  }
+
+  .audit-filters-circle-only button {
+    width: 100%;
+  }
+
 }

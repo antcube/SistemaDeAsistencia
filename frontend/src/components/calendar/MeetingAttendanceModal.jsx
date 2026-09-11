@@ -60,6 +60,9 @@ const MeetingAttendanceModal = ({
   const [qrTick, setQrTick] = useState(Date.now());
 
   const isModerator = String(admin?.role || "").trim() === "Moderador";
+  const isMainAdmin = String(admin?.adminId || "").trim() === "ADM-001";
+  const isCircleManager = String(admin?.role || "").trim() === "Gestor de Círculo";
+  const canManageAttendance = isMainAdmin || isCircleManager;
 
   const loadAttendance = async () => {
     if (!meeting?._id) return;
@@ -142,7 +145,7 @@ const MeetingAttendanceModal = ({
   };
 
   const saveStatus = async () => {
-    if (!editingRow || !meeting?._id || isModerator) return;
+    if (!editingRow || !meeting?._id || !canManageAttendance) return;
     const member = getMember(editingRow);
     const userId = member?._id || member?.id;
     if (!userId) {
@@ -175,7 +178,7 @@ const MeetingAttendanceModal = ({
   };
 
   const activateQr = async () => {
-    if (!meeting?._id || isModerator) return;
+    if (!meeting?._id || !canManageAttendance) return;
     try {
       setQrLoading(true);
       setError("");
@@ -194,7 +197,7 @@ const MeetingAttendanceModal = ({
   };
 
   const deactivateQr = async () => {
-    if (!meeting?._id || isModerator) return;
+    if (!meeting?._id || !canManageAttendance) return;
     try {
       setQrLoading(true);
       await meetingService.deactivateQr(meeting._id);
@@ -246,7 +249,7 @@ const MeetingAttendanceModal = ({
               >
                 🔄 Actualizar
               </button>
-              {!isModerator && (
+              {isMainAdmin && (
                 <button
                   type="button"
                   onClick={() => meetingService.deleteMeeting(meeting._id).then(() => { onClose?.(); onRefresh?.(); }).catch((err) => setError(err?.message || "No se pudo eliminar la sesión."))}
@@ -266,7 +269,7 @@ const MeetingAttendanceModal = ({
             <div><span className="block text-[11px] font-semibold uppercase text-amber-600">Justificados</span><span className="text-base font-bold text-amber-600">{stats.justified}</span></div>
           </div>
 
-          {!isModerator && (
+          {canManageAttendance && (
             <div className={`mx-6 mt-4 rounded-xl border p-3 ${qrIsActive ? "border-emerald-200 bg-emerald-50/90" : "border-indigo-100 bg-indigo-50"}`}>
               {qrIsActive ? (
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -322,7 +325,7 @@ const MeetingAttendanceModal = ({
                       <td className="p-3"><div className="font-bold text-slate-900">{member?.name || "Sin nombre"}</div><div className="font-mono text-[11px] text-slate-400">DNI: {member?.doc || "S/D"} · Rango: {member?.job || "Miembro"}</div></td>
                       <td className="p-3"><span className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold ${statusBadge(row.status)}`}><span>{statusIcon(row.status)}</span>{normalizeStatus(row.status)}</span>{row.attendanceMode === "QR" && <div className="mt-1 text-[10px] font-bold text-emerald-600">QR</div>}</td>
                       <td className="p-3 text-xs text-slate-500">{row.justificationReason || row.note || "-"}</td>
-                      <td className="p-3 text-right">{isModerator ? <span className="text-xs text-slate-400">Lectura</span> : <button type="button" onClick={() => openStatusEditor(row)} className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200">✏️ Cambiar Estado</button>}</td>
+                      <td className="p-3 text-right">{!canManageAttendance ? <span className="text-xs text-slate-400">Lectura</span> : <button type="button" onClick={() => openStatusEditor(row)} className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200">✏️ Cambiar Estado</button>}</td>
                     </tr>
                   );
                 })}

@@ -3,9 +3,13 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const Header = () => {
-  const { admin, logout } = useAuth();
+  const {
+    admin,
+    logout,
+  } = useAuth();
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] =
+    useState(false);
 
   const adminName =
     admin?.name ||
@@ -21,42 +25,67 @@ const Header = () => {
       .split(" ")
       .filter(Boolean)
       .slice(0, 2)
-      .map((item) => item[0])
+      .map(
+        (item) =>
+          item[0]
+      )
       .join("")
-      .toUpperCase() || "AP";
+      .toUpperCase() ||
+    "AP";
 
   const isMainAdmin =
-    String(admin?.adminId || "")
-      .trim() === "ADM-001";
+    String(
+      admin?.adminId || ""
+    ).trim() ===
+    "ADM-001";
+
+  const isCircleManager =
+    String(
+      admin?.role || ""
+    ).trim() ===
+    "Gestor de Círculo";
 
   return (
     <header className="cc-header">
+
       <div className="cc-header-inner">
 
         <div className="cc-header-brand">
+
           <div className="cc-logo">
-            <span>▣</span>
+            <span>
+              ▣
+            </span>
           </div>
 
           <div className="cc-brand-text">
+
             <div className="cc-brand-title">
+
               Círculos{" "}
-              <strong>Connect</strong>
+
+              <strong>
+                Connect
+              </strong>
 
               <span className="cc-brand-badge">
                 soy.embajador
               </span>
+
             </div>
 
             <div className="cc-brand-subtitle">
               Gestión de Círculos y Control de Asistencia
             </div>
+
           </div>
+
         </div>
 
         <div className="cc-header-right">
 
           <div className="cc-admin-info">
+
             <strong>
               {adminName}
             </strong>
@@ -64,78 +93,120 @@ const Header = () => {
             <span>
               {role}
             </span>
+
           </div>
 
           <div className="cc-profile-wrapper">
 
-            <button
-              type="button"
-              className="cc-avatar-button"
-              onClick={() =>
-                setOpen(
-                  (value) => !value
-                )
-              }
-              aria-label="Abrir menú de administración"
-            >
-              {initials}
-            </button>
+            {isCircleManager ? (
 
-            {open && (
-              <div className="cc-admin-menu">
+              /*
+               * El Gestor no tiene menú de administración.
+               * Sus iniciales son únicamente visuales.
+               */
 
-                <div className="cc-admin-menu-title">
-                  ADMINISTRACIÓN
-                </div>
-
-                <NavLink
-                  to="/"
-                  onClick={() =>
-                    setOpen(false)
-                  }
-                >
-                  <span>⌂</span>
-                  General
-                </NavLink>
-
-                {isMainAdmin && (
-                  <NavLink
-                    to="/admins"
-                    onClick={() =>
-                      setOpen(false)
-                    }
-                  >
-                    <span>♙</span>
-                    Usuarios Admin
-                  </NavLink>
-                )}
-
-                {isMainAdmin && (
-                  <NavLink
-                    to="/programaciones"
-                    onClick={() =>
-                      setOpen(false)
-                    }
-                  >
-                    <span>↻</span>
-                    Programaciones
-                  </NavLink>
-                )}
-
-                {isMainAdmin && (
-                  <NavLink
-                    to="/audit"
-                    onClick={() =>
-                      setOpen(false)
-                    }
-                  >
-                    <span>▤</span>
-                    Bitácora
-                  </NavLink>
-                )}
-
+              <div
+                className="cc-avatar-button"
+                aria-label="Perfil del Gestor de Círculo"
+                aria-hidden="true"
+              >
+                {initials}
               </div>
+
+            ) : (
+
+              <>
+
+                <button
+                  type="button"
+                  className="cc-avatar-button"
+                  onClick={() =>
+                    setOpen(
+                      (value) =>
+                        !value
+                    )
+                  }
+                  aria-label="Abrir menú de administración"
+                >
+                  {initials}
+                </button>
+
+                {open && (
+
+                  <div className="cc-admin-menu">
+
+                    <div className="cc-admin-menu-title">
+                      ADMINISTRACIÓN
+                    </div>
+
+                    {isMainAdmin && (
+                      <NavLink
+                        to="/"
+                        onClick={() =>
+                          setOpen(false)
+                        }
+                      >
+                        <span>
+                          ⌂
+                        </span>
+
+                        General
+                      </NavLink>
+                    )}
+
+                    {isMainAdmin && (
+                      <NavLink
+                        to="/admins"
+                        onClick={() =>
+                          setOpen(false)
+                        }
+                      >
+                        <span>
+                          ♙
+                        </span>
+
+                        Usuarios Admin
+                      </NavLink>
+                    )}
+
+                    {isMainAdmin && (
+                      <NavLink
+                        to="/programaciones"
+                        onClick={() =>
+                          setOpen(false)
+                        }
+                      >
+                        <span>
+                          ↻
+                        </span>
+
+                        Programaciones
+                      </NavLink>
+                    )}
+
+                    {isMainAdmin && (
+                      <NavLink
+                        to="/audit"
+                        onClick={() =>
+                          setOpen(false)
+                        }
+                      >
+                        <span>
+                          ▤
+                        </span>
+
+                        Bitácora
+                      </NavLink>
+                    )}
+
+                  </div>
+
+                )}
+
+              </>
+
             )}
+
           </div>
 
           <button
@@ -151,6 +222,7 @@ const Header = () => {
         </div>
 
       </div>
+
     </header>
   );
 };

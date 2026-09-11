@@ -741,18 +741,46 @@ const Members = () => {
                             {/* EDITAR:
                                 ADMIN + GESTOR */}
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openEdit(
-                                  user
-                                )
-                              }
-                              title="Editar miembro"
-                              className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-                            >
-                              ✏️
-                            </button>
+                            {/* =====================================================
+    EDITAR
+    SOLO ADMINISTRADOR PRINCIPAL
+
+    El Gestor NO puede editar miembros existentes.
+    Solamente puede:
+    - Crear nuevos miembros manualmente.
+    - Subir nuevos miembros mediante Excel.
+===================================================== */}
+
+{isMainAdmin && (
+  <button
+    type="button"
+    onClick={() =>
+      openEdit(user)
+    }
+    title="Editar miembro"
+    className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+  >
+    ✏️
+  </button>
+)}
+
+{/* =====================================================
+    ELIMINAR
+    SOLO ADMINISTRADOR PRINCIPAL
+===================================================== */}
+
+{isMainAdmin && (
+  <button
+    type="button"
+    onClick={() =>
+      handleDelete(user)
+    }
+    title="Eliminar miembro"
+    className="inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-white px-2 text-[11px] font-bold text-rose-600 transition hover:bg-rose-50"
+  >
+    🗑️
+  </button>
+)}
 
                             {/* ELIMINAR:
                                 SOLO ADMIN PRINCIPAL */}

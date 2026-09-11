@@ -7,6 +7,8 @@ import {
 } from "react";
 
 import reportService from "../services/reportService";
+import circleService from "../services/circleService";
+import { useAuth } from "../context/AuthContext";
 import "../styles/reports.css";
 
 const CATEGORY_ORDER = [
@@ -156,6 +158,11 @@ const formatSessionHeader = (
 
 const MonthlyReport = () => {
   const today = new Date();
+  const { admin } = useAuth();
+
+  const isCircleManager =
+    String(admin?.role || "").trim() ===
+    "Gestor de Círculo";
 
   const [year, setYear] =
     useState(
@@ -176,15 +183,106 @@ const MonthlyReport = () => {
   const [circle, setCircle] =
     useState("");
 
+  const [availableCircles, setAvailableCircles] =
+    useState([]);
+
   const [loading, setLoading] =
     useState(true);
 
   const [error, setError] =
     useState("");
 
+  /*
+   * Los gestores solamente deben recibir los círculos
+   * que tienen asignados. El Administrador Principal
+   * conserva la opción de consultar todos.
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCircles = async () => {
+      try {
+        const response =
+          await circleService.getCircles();
+
+        const list =
+          Array.isArray(response)
+            ? response
+            : Array.isArray(response?.circles)
+            ? response.circles
+            : Array.isArray(response?.data)
+            ? response.data
+            : [];
+
+        const names = [
+          ...new Set(
+            list
+              .map((item) =>
+                typeof item === "string"
+                  ? item
+                  : item?.name
+              )
+              .map((name) =>
+                String(name || "").trim()
+              )
+              .filter(Boolean)
+          ),
+        ];
+
+        if (cancelled) return;
+
+        setAvailableCircles(names);
+
+        if (isCircleManager) {
+          setCircle((current) => {
+            const currentName =
+              String(current || "").trim();
+
+            if (
+              currentName &&
+              names.includes(currentName)
+            ) {
+              return currentName;
+            }
+
+            return names[0] || "";
+          });
+        }
+      } catch (err) {
+        console.error(
+          "Error cargando círculos del reporte:",
+          err
+        );
+
+        if (!cancelled) {
+          setAvailableCircles([]);
+        }
+      }
+    };
+
+    loadCircles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isCircleManager]);
+
   const loadReport =
     useCallback(
       async () => {
+        /*
+         * Un Gestor de Círculo necesita un círculo
+         * seleccionado. Evitamos enviar una consulta
+         * vacía que el backend rechaza correctamente.
+         */
+        if (
+          isCircleManager &&
+          !String(circle || "").trim()
+        ) {
+          setLoading(false);
+          return;
+        }
+
         try {
           setLoading(true);
           setError("");
@@ -219,6 +317,7 @@ const MonthlyReport = () => {
         year,
         month,
         circle,
+        isCircleManager,
       ]
     );
 
@@ -293,25 +392,29 @@ const MonthlyReport = () => {
       search,
     ]);
 
-  const circles =
-    useMemo(() => {
-      return [
-        ...new Set(
-          members
-            .map(
-              (member) =>
-                member?.circle ||
-                member?.user
-                  ?.circle
-            )
-            .filter(Boolean)
-        ),
-      ].sort((a, b) =>
-        String(a).localeCompare(
-          String(b)
-        )
-      );
-    }, [members]);
+  const circles = useMemo(() => {
+    /*
+     * IMPORTANTE:
+     * No derivamos los círculos desde `members`.
+     *
+     * Cuando el gestor seleccionaba un círculo,
+     * el backend devolvía solamente sus miembros,
+     * por lo que el selector terminaba mostrando
+     * únicamente ese círculo y no permitía cambiar
+     * entre todos los círculos asignados.
+     *
+     * `circleService.getCircles()` ya devuelve el
+     * alcance correcto para cada usuario.
+     */
+    if (isCircleManager) {
+      return availableCircles;
+    }
+
+    return availableCircles;
+  }, [
+    availableCircles,
+    isCircleManager,
+  ]);
 
   const summary =
     report?.summary || {};
@@ -516,10 +619,84 @@ const MonthlyReport = () => {
       workbook.creator = "Círculos Connect";
       workbook.created = new Date();
       workbook.modified = new Date();
+      workbook.properties = {
+        title: `Reporte Mensual de ${reportTitle}`,
+        subject: "Reporte mensual de asistencia",
+        company: "Círculos Connect",
+      };
 
+      // ==========================================================
+      // PALETA EXACTA DE LA VISTA WEB
+      // ==========================================================
+      const COLORS = {
+        night: "FF0B1736",
+        night2: "FF102657",
+        blue: "FF2457C5",
+        blue2: "FF5F8FF5",
+        cyan: "FF58CFE1",
+        purple: "FF7654C6",
+        grayBlue: "FF47576C",
+        white: "FFFFFFFF",
+        surface: "FFF8FAFC",
+        tableHead: "FFF3F6FA",
+        border: "FFD4DEED",
+        borderLight: "FFE2E8F0",
+        text: "FF0F172A",
+        textSecondary: "FF334155",
+        muted: "FF64748B",
+        success: "FF10B981",
+        successDark: "FF047857",
+        successSoft: "FFEAF8EF",
+        danger: "FFE11D48",
+        dangerDark: "FFBE123C",
+        dangerSoft: "FFFFF1F1",
+        warning: "FFF59E0B",
+        warningDark: "FFB45309",
+        warningSoft: "FFFFF7E8",
+        presential: "FF37669A",
+        presentialSoft: "FFF3F8FF",
+        empty: "FFFCFCFD",
+      };
+
+      const FONT = "Inter";
+      const thinBorder = {
+        top: { style: "thin", color: { argb: COLORS.borderLight } },
+        left: { style: "thin", color: { argb: COLORS.borderLight } },
+        bottom: { style: "thin", color: { argb: COLORS.borderLight } },
+        right: { style: "thin", color: { argb: COLORS.borderLight } },
+      };
+      const whiteBorder = {
+        top: { style: "thin", color: { argb: COLORS.border } },
+        left: { style: "thin", color: { argb: COLORS.border } },
+        bottom: { style: "thin", color: { argb: COLORS.border } },
+        right: { style: "thin", color: { argb: COLORS.border } },
+      };
+
+      const categoryColors = {
+        "CIRCULO DE LIDERAZGO": COLORS.blue,
+        HEALTH: COLORS.cyan,
+        MENTORIA: COLORS.purple,
+        MASTERCLASS: "FF7A8492",
+        "ANUNCIOS CORPORATIVOS": COLORS.night,
+      };
+
+      const statusStyles = {
+        attended: [COLORS.successSoft, "FF237346"],
+        presential: [COLORS.presentialSoft, COLORS.presential],
+        "justified-valid": [COLORS.successSoft, "FF237346"],
+        "justified-extra": [COLORS.dangerSoft, COLORS.dangerDark],
+        absent: [COLORS.dangerSoft, COLORS.dangerDark],
+        pending: ["FFF6F7F9", COLORS.muted],
+      };
+
+      // ==========================================================
+      // HOJA PRINCIPAL — MISMA JERARQUÍA VISUAL QUE LA PÁGINA
+      // ==========================================================
       const worksheet = workbook.addWorksheet("Reporte Mensual", {
-        views: [{ state: "frozen", xSplit: 1, ySplit: 4 }],
+        views: [{ state: "frozen", xSplit: 1, ySplit: 8, showGridLines: false }],
+        properties: { defaultRowHeight: 20 },
       });
+
 
       const sessionColumns = [];
       visibleCategories.forEach((category) => {
@@ -538,181 +715,259 @@ const MonthlyReport = () => {
         "TELÉFONO",
       ];
 
-      const summaryHeaders = [
-        "ASIST.",
-        "FALTAS",
-        "%",
-        "BONO",
-      ];
+      const summaryHeaders = ["ASIST.", "FALTAS", "%", "BONO"];
 
       const totalExcelColumns =
-        baseHeaders.length +
-        sessionColumns.length +
-        summaryHeaders.length;
+        baseHeaders.length + sessionColumns.length + summaryHeaders.length;
 
+      // Título principal.
       worksheet.mergeCells(1, 1, 1, totalExcelColumns);
-      worksheet.getCell(1, 1).value =
-        `Reporte Mensual de ${reportTitle}`;
-      worksheet.getCell(1, 1).font = {
-        name: "Arial",
+      const titleCell = worksheet.getCell(1, 1);
+      titleCell.value = `Reporte Mensual de ${reportTitle}`;
+      titleCell.font = {
+        name: FONT,
         size: 16,
         bold: true,
-        color: { argb: "FFFFFFFF" },
+        color: { argb: COLORS.white },
       };
-      worksheet.getCell(1, 1).fill = {
+      titleCell.fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "FF0B1736" },
+        fgColor: { argb: COLORS.night },
       };
-      worksheet.getCell(1, 1).alignment = {
+      titleCell.alignment = {
         horizontal: "center",
         vertical: "middle",
       };
-      worksheet.getRow(1).height = 28;
+      worksheet.getRow(1).height = 32;
 
+      // Subtítulo / círculo actual.
       worksheet.mergeCells(2, 1, 2, totalExcelColumns);
-      worksheet.getCell(2, 1).value =
-        `Círculo: ${circle || "Todos los círculos"}`;
-      worksheet.getCell(2, 1).font = {
-        name: "Arial",
+      const subtitleCell = worksheet.getCell(2, 1);
+      subtitleCell.value = `Círculo: ${circle || "Todos los círculos"}`;
+      subtitleCell.font = {
+        name: FONT,
         size: 10,
         italic: true,
-        color: { argb: "FF64748B" },
+        color: { argb: COLORS.muted },
       };
-      worksheet.getCell(2, 1).alignment = {
+      subtitleCell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: COLORS.surface },
+      };
+      subtitleCell.alignment = {
         horizontal: "left",
         vertical: "middle",
       };
+      worksheet.getRow(2).height = 24;
 
-      let currentColumn = 1;
+      // ==========================================================
+      // TARJETAS DE RESUMEN — COMO LAS 5 TARJETAS DE LA WEB
+      // ==========================================================
+      const summaryCards = [
+        {
+          label: "Participantes",
+          value: summary.participants ?? summary.members ?? members.length,
+          color: COLORS.blue,
+          icon: "👥",
+        },
+        {
+          label: "Sesiones",
+          value: summary.sessions ?? 0,
+          color: COLORS.grayBlue,
+          icon: "🗓",
+        },
+        {
+          label: "Asistencias",
+          value: summary.attended ?? 0,
+          color: "FF0AA57D",
+          icon: "✓",
+        },
+        {
+          label: "Faltas",
+          value: summary.absent ?? 0,
+          color: "FFDF1748",
+          icon: "×",
+        },
+        {
+          label: "Bonos",
+          value: summary.bonus ?? 0,
+          color: "FFE78905",
+          icon: "🏆",
+        },
+      ];
 
-      baseHeaders.forEach((header) => {
-        const cell = worksheet.getCell(4, currentColumn);
-        cell.value = header;
-        currentColumn += 1;
-      });
+      const cardWidth = Math.max(2, Math.ceil(totalExcelColumns / 5));
+      const cardStartRow = 4;
+      const cardEndRow = 6;
 
-      const categoryStartColumns = new Map();
-      sessionColumns.forEach(({ category }) => {
-        if (!categoryStartColumns.has(category)) {
-          categoryStartColumns.set(category, currentColumn);
-        }
-        worksheet.getCell(4, currentColumn).value =
-          CATEGORY_LABELS[category] || category;
-        currentColumn += 1;
-      });
+      summaryCards.forEach((card, index) => {
+        const startCol = 1 + index * cardWidth;
+        const endCol =
+          index === summaryCards.length - 1
+            ? totalExcelColumns
+            : Math.min(totalExcelColumns, startCol + cardWidth - 1);
 
-      summaryHeaders.forEach((header) => {
-        worksheet.getCell(4, currentColumn).value = header;
-        currentColumn += 1;
-      });
-
-      const categoryColors = {
-        "CIRCULO DE LIDERAZGO": "FF2457C5",
-        HEALTH: "FF58CFE1",
-        MENTORIA: "FF7654C6",
-        MASTERCLASS: "FF7A8492",
-        "ANUNCIOS CORPORATIVOS": "FF0B1736",
-      };
-
-      // Segunda fila de encabezados para identificar cada sesión.
-      baseHeaders.forEach((_, index) => {
-        worksheet.getCell(3, index + 1).value = "DIRECTORIO";
-      });
-
-      sessionColumns.forEach(({ category, session }, index) => {
-        const col = baseHeaders.length + index + 1;
-        worksheet.getCell(3, col).value =
-          CATEGORY_LABELS[category] || category;
-        worksheet.getCell(4, col).value =
-          `${formatSessionHeader(session)}${
-            session.time ? `\n${session.time}` : ""
-          }`;
-        worksheet.getCell(4, col).alignment = {
+        worksheet.mergeCells(cardStartRow, startCol, cardEndRow, endCol);
+        const cell = worksheet.getCell(cardStartRow, startCol);
+        cell.value = `${card.icon}  ${card.label}\n${card.value}`;
+        cell.font = {
+          name: FONT,
+          size: 12,
+          bold: true,
+          color: { argb: COLORS.white },
+        };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: card.color },
+        };
+        cell.alignment = {
           horizontal: "center",
           vertical: "middle",
           wrapText: true,
         };
+        cell.border = {
+          top: { style: "medium", color: { argb: card.color } },
+          left: { style: "medium", color: { argb: card.color } },
+          bottom: { style: "medium", color: { argb: card.color } },
+          right: { style: "medium", color: { argb: card.color } },
+        };
       });
 
-      const summaryStart =
-        baseHeaders.length + sessionColumns.length + 1;
-      worksheet.mergeCells(3, summaryStart, 3, summaryStart + 3);
-      worksheet.getCell(3, summaryStart).value = "RESUMEN";
+      worksheet.getRow(4).height = 24;
+      worksheet.getRow(5).height = 24;
+      worksheet.getRow(6).height = 24;
 
-      // Reescribimos los encabezados base en la fila 4 y fusionamos sus dos filas.
+      // Separación visual antes de la tabla.
+      worksheet.mergeCells(7, 1, 7, totalExcelColumns);
+      worksheet.getCell(7, 1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: COLORS.white },
+      };
+      worksheet.getRow(7).height = 8;
+
+      // ==========================================================
+      // ENCABEZADO DE TABLA — DIRECTORIO / CATEGORÍAS / RESUMEN
+      // ==========================================================
+      const headerTopRow = 8;
+      const headerBottomRow = 9;
+
       baseHeaders.forEach((header, index) => {
-        worksheet.mergeCells(3, index + 1, 4, index + 1);
-        worksheet.getCell(3, index + 1).value = header;
+        worksheet.mergeCells(
+          headerTopRow,
+          index + 1,
+          headerBottomRow,
+          index + 1
+        );
+        const cell = worksheet.getCell(headerTopRow, index + 1);
+        cell.value = header;
       });
 
-      worksheet.getRow(3).height = 22;
-      worksheet.getRow(4).height = 34;
+      sessionColumns.forEach(({ category, session }, index) => {
+        const col = baseHeaders.length + index + 1;
+        const categoryCell = worksheet.getCell(headerTopRow, col);
+        categoryCell.value = CATEGORY_LABELS[category] || category;
 
+        const sessionCell = worksheet.getCell(headerBottomRow, col);
+        sessionCell.value = `${formatSessionHeader(session)}${
+          session.time ? `\n${session.time}` : ""
+        }`;
+      });
+
+      const summaryStart = baseHeaders.length + sessionColumns.length + 1;
+      worksheet.mergeCells(
+        headerTopRow,
+        summaryStart,
+        headerTopRow,
+        summaryStart + summaryHeaders.length - 1
+      );
+      worksheet.getCell(headerTopRow, summaryStart).value = "RESUMEN";
+
+      summaryHeaders.forEach((header, index) => {
+        worksheet.getCell(headerBottomRow, summaryStart + index).value = header;
+      });
+
+      // Estilo base de los encabezados.
       for (let col = 1; col <= totalExcelColumns; col += 1) {
-        for (let row = 3; row <= 4; row += 1) {
+        for (let row = headerTopRow; row <= headerBottomRow; row += 1) {
           const cell = worksheet.getCell(row, col);
           cell.font = {
-            name: "Arial",
+            name: FONT,
             size: 9,
             bold: true,
-            color: { argb: "FFFFFFFF" },
+            color: { argb: COLORS.white },
           };
           cell.fill = {
             type: "pattern",
             pattern: "solid",
-            fgColor: { argb: "FF0B1736" },
+            fgColor: { argb: COLORS.night },
           };
           cell.alignment = {
             horizontal: "center",
             vertical: "middle",
             wrapText: true,
           };
-          cell.border = {
-            top: { style: "thin", color: { argb: "FFD4DEED" } },
-            left: { style: "thin", color: { argb: "FFD4DEED" } },
-            bottom: { style: "thin", color: { argb: "FFD4DEED" } },
-            right: { style: "thin", color: { argb: "FFD4DEED" } },
-          };
+          cell.border = whiteBorder;
         }
       }
 
+      // Las sesiones tienen el mismo color de categoría que la web.
       sessionColumns.forEach(({ category }, index) => {
         const col = baseHeaders.length + index + 1;
-        const argb = categoryColors[category] || "FF0B1736";
-        worksheet.getCell(3, col).fill = {
+        const categoryColor = categoryColors[category] || COLORS.night;
+
+        worksheet.getCell(headerTopRow, col).fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb },
+          fgColor: { argb: categoryColor },
         };
-        worksheet.getCell(4, col).fill = {
+
+        worksheet.getCell(headerBottomRow, col).fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: "FFF3F6FA" },
+          fgColor: { argb: COLORS.tableHead },
         };
-        worksheet.getCell(4, col).font = {
-          name: "Arial",
-          size: 9,
+        worksheet.getCell(headerBottomRow, col).font = {
+          name: FONT,
+          size: 8,
           bold: true,
-          color: { argb: "FF0F172A" },
+          color: { argb: COLORS.text },
         };
       });
 
-      [
-        summaryStart,
-        summaryStart + 1,
-        summaryStart + 2,
-        summaryStart + 3,
-      ].forEach((col) => {
-        worksheet.getCell(4, col).fill = {
+      // Directorio y resumen conservan el azul nocturno de la web.
+      for (let col = 1; col <= baseHeaders.length; col += 1) {
+        worksheet.getCell(headerTopRow, col).fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: "FF0B1736" },
+          fgColor: { argb: COLORS.night },
         };
-      });
+      }
 
+      for (let col = summaryStart; col < summaryStart + 4; col += 1) {
+        worksheet.getCell(headerTopRow, col).fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: COLORS.night },
+        };
+        worksheet.getCell(headerBottomRow, col).fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: COLORS.night },
+        };
+      }
+
+      worksheet.getRow(headerTopRow).height = 24;
+      worksheet.getRow(headerBottomRow).height = 36;
+
+      // ==========================================================
+      // DATOS
+      // ==========================================================
       filteredMembers.forEach((member, rowIndex) => {
-        const row = 5 + rowIndex;
+        const row = 10 + rowIndex;
         const totals = getMemberTotals(member);
         const directory = member?.user || {};
 
@@ -727,105 +982,216 @@ const MonthlyReport = () => {
         ];
 
         values.forEach((value, index) => {
-          worksheet.getCell(row, index + 1).value = value;
+          const cell = worksheet.getCell(row, index + 1);
+          cell.value = value;
+          cell.font = {
+            name: FONT,
+            size: 9,
+            color: { argb: COLORS.textSecondary },
+          };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: COLORS.white },
+          };
+          cell.border = thinBorder;
+          cell.alignment = {
+            vertical: "middle",
+            horizontal: index === 1 ? "left" : "left",
+            wrapText: false,
+          };
         });
 
-        sessionColumns.forEach(({ category, session }, index) => {
+        sessionColumns.forEach(({ session }, index) => {
           const item = getMemberSession(member, session);
           const col = baseHeaders.length + index + 1;
           const cell = worksheet.getCell(row, col);
+
           cell.value = item ? statusLabel(item) : "·";
-          cell.alignment = { horizontal: "center", vertical: "middle" };
+          cell.font = {
+            name: FONT,
+            size: 10,
+            bold: true,
+            color: { argb: COLORS.muted },
+          };
+          cell.alignment = {
+            horizontal: "center",
+            vertical: "middle",
+          };
+          cell.border = thinBorder;
 
           if (item) {
             const cls = statusClass(item);
-            const statusStyles = {
-              attended: ["FFEAF8EF", "FF237346"],
-              presential: ["FFF3F8FF", "FF37669A"],
-              "justified-valid": ["FFEAF8EF", "FF237346"],
-              "justified-extra": ["FFFFF1F1", "FFBE123C"],
-              absent: ["FFFFF1F1", "FFBE123C"],
-              pending: ["FFF6F7F9", "FF64748B"],
-            };
             const [fill, font] =
               statusStyles[cls] || statusStyles.pending;
+
             cell.fill = {
               type: "pattern",
               pattern: "solid",
               fgColor: { argb: fill },
             };
             cell.font = {
-              name: "Arial",
+              name: FONT,
               size: 10,
               bold: true,
               color: { argb: font },
             };
+          } else {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: COLORS.empty },
+            };
           }
         });
 
-        worksheet.getCell(row, summaryStart).value = totals.attended;
-        worksheet.getCell(row, summaryStart + 1).value = totals.absent;
-        worksheet.getCell(row, summaryStart + 2).value =
-          `${totals.percentage}%`;
-        worksheet.getCell(row, summaryStart + 3).value =
-          totals.bonus ? "🏆 GANÓ" : "—";
+        const summaryValues = [
+          totals.attended,
+          totals.absent,
+          `${totals.percentage}%`,
+          totals.bonus ? "🏆 GANÓ" : "—",
+        ];
+
+        summaryValues.forEach((value, index) => {
+          const cell = worksheet.getCell(row, summaryStart + index);
+          cell.value = value;
+          cell.font = {
+            name: FONT,
+            size: 9,
+            bold: true,
+            color: { argb: COLORS.text },
+          };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: COLORS.white },
+          };
+          cell.border = thinBorder;
+          cell.alignment = {
+            horizontal: "center",
+            vertical: "middle",
+          };
+        });
 
         worksheet.getCell(row, summaryStart).font = {
+          name: FONT,
+          size: 9,
           bold: true,
-          color: { argb: "FF047857" },
+          color: { argb: COLORS.successDark },
         };
         worksheet.getCell(row, summaryStart + 1).font = {
+          name: FONT,
+          size: 9,
           bold: true,
-          color: { argb: "FFBE123C" },
+          color: { argb: COLORS.dangerDark },
         };
         worksheet.getCell(row, summaryStart + 2).font = {
+          name: FONT,
+          size: 9,
           bold: true,
           color: { argb: "FF183875" },
         };
         worksheet.getCell(row, summaryStart + 3).font = {
+          name: FONT,
+          size: 9,
           bold: true,
           color: {
-            argb: totals.bonus ? "FFB45309" : "FF94A3B8",
+            argb: totals.bonus ? COLORS.warningDark : "FF94A3B8",
           },
         };
 
-        for (let col = 1; col <= totalExcelColumns; col += 1) {
-          const cell = worksheet.getCell(row, col);
-          cell.border = {
-            top: { style: "thin", color: { argb: "FFE2E8F0" } },
-            left: { style: "thin", color: { argb: "FFE2E8F0" } },
-            bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
-            right: { style: "thin", color: { argb: "FFE2E8F0" } },
-          };
-          if (col <= 7) {
-            cell.alignment = { vertical: "middle" };
+        // Zebra muy suave para conservar la limpieza visual de la página.
+        if (rowIndex % 2 === 1) {
+          for (let col = 1; col <= baseHeaders.length; col += 1) {
+            worksheet.getCell(row, col).fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFBFDFF" },
+            };
           }
         }
       });
 
-      const widths = [12, 32, 18, 20, 18, 30, 16];
+      // ==========================================================
+      // ANCHOS / ALTURAS / FILTRO / IMPRESIÓN
+      // ==========================================================
+      const widths = [
+        12, // DNI
+        34, // NOMBRE
+        18, // USUARIO
+        20, // CÍRCULO
+        20, // RANGO / CARGO
+        30, // CORREO
+        17, // TELÉFONO
+      ];
+
       widths.forEach((width, index) => {
         worksheet.getColumn(index + 1).width = width;
       });
+
       sessionColumns.forEach((_, index) => {
         worksheet.getColumn(baseHeaders.length + index + 1).width = 12;
       });
+
       worksheet.getColumn(summaryStart).width = 10;
       worksheet.getColumn(summaryStart + 1).width = 10;
       worksheet.getColumn(summaryStart + 2).width = 10;
-      worksheet.getColumn(summaryStart + 3).width = 13;
+      worksheet.getColumn(summaryStart + 3).width = 14;
+
+      for (let row = 10; row <= Math.max(10, 9 + filteredMembers.length); row += 1) {
+        worksheet.getRow(row).height = 27;
+      }
 
       worksheet.autoFilter = {
-        from: { row: 4, column: 1 },
-        to: { row: Math.max(4, 4 + filteredMembers.length), column: totalExcelColumns },
+        from: { row: headerBottomRow, column: 1 },
+        to: {
+          row: Math.max(headerBottomRow, headerBottomRow + filteredMembers.length),
+          column: totalExcelColumns,
+        },
       };
 
+      worksheet.pageSetup = {
+        orientation: "landscape",
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+        paperSize: 9,
+        horizontalDpi: 300,
+        verticalDpi: 300,
+      };
+      worksheet.pageSetup.margins = {
+        left: 0.25,
+        right: 0.25,
+        top: 0.45,
+        bottom: 0.45,
+        header: 0.2,
+        footer: 0.2,
+      };
+      worksheet.headerFooter.oddFooter =
+        "&LReporte Mensual&C%Círculos Connect&RPágina &P de &N";
+      worksheet.printOptions = {
+        horizontalCentered: true,
+        verticalCentered: false,
+        gridLines: false,
+      };
+      worksheet.views = [
+        {
+          state: "frozen",
+          xSplit: 1,
+          ySplit: headerBottomRow,
+          showGridLines: false,
+        },
+      ];
+
+      // ==========================================================
+      // HOJA DE GANADORES — MISMO ESTILO VISUAL
+      // ==========================================================
       const winners = filteredMembers.filter(
         (member) => getMemberTotals(member).bonus
       );
 
       const winnerSheet = workbook.addWorksheet("Ganadores del Bono", {
-        views: [{ state: "frozen", ySplit: 3 }],
+        views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
       });
 
       const winnerHeaders = [
@@ -843,37 +1209,67 @@ const MonthlyReport = () => {
       ];
 
       winnerSheet.mergeCells(1, 1, 1, winnerHeaders.length);
-      winnerSheet.getCell(1, 1).value =
-        `Ganadores del Bono — ${reportTitle}`;
-      winnerSheet.getCell(1, 1).font = {
-        name: "Arial",
+      const winnerTitle = winnerSheet.getCell(1, 1);
+      winnerTitle.value = `Ganadores del Bono — ${reportTitle}`;
+      winnerTitle.font = {
+        name: FONT,
         size: 16,
         bold: true,
-        color: { argb: "FFFFFFFF" },
+        color: { argb: COLORS.white },
       };
-      winnerSheet.getCell(1, 1).fill = {
+      winnerTitle.fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "FF0B1736" },
+        fgColor: { argb: COLORS.night },
       };
-      winnerSheet.getCell(1, 1).alignment = { horizontal: "center" };
+      winnerTitle.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+      };
+      winnerSheet.getRow(1).height = 32;
+
+      winnerSheet.mergeCells(2, 1, 2, winnerHeaders.length);
+      const winnerSubtitle = winnerSheet.getCell(2, 1);
+      winnerSubtitle.value = `Círculo: ${circle || "Todos los círculos"}`;
+      winnerSubtitle.font = {
+        name: FONT,
+        size: 10,
+        italic: true,
+        color: { argb: COLORS.muted },
+      };
+      winnerSubtitle.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: COLORS.surface },
+      };
+      winnerSubtitle.alignment = {
+        horizontal: "left",
+        vertical: "middle",
+      };
+      winnerSheet.getRow(2).height = 24;
 
       winnerHeaders.forEach((header, index) => {
         const cell = winnerSheet.getCell(3, index + 1);
         cell.value = header;
         cell.font = {
-          name: "Arial",
+          name: FONT,
           size: 9,
           bold: true,
-          color: { argb: "FFFFFFFF" },
+          color: { argb: COLORS.white },
         };
         cell.fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: "FF0B1736" },
+          fgColor: { argb: COLORS.night },
         };
-        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+          wrapText: true,
+        };
+        cell.border = whiteBorder;
       });
+      winnerSheet.getRow(3).height = 28;
 
       winners.forEach((member, index) => {
         const row = 4 + index;
@@ -892,23 +1288,56 @@ const MonthlyReport = () => {
           `${totals.percentage}%`,
           "🏆 GANÓ",
         ];
+
         values.forEach((value, colIndex) => {
           const cell = winnerSheet.getCell(row, colIndex + 1);
           cell.value = value;
-          cell.border = {
-            top: { style: "thin", color: { argb: "FFE2E8F0" } },
-            left: { style: "thin", color: { argb: "FFE2E8F0" } },
-            bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
-            right: { style: "thin", color: { argb: "FFE2E8F0" } },
+          cell.font = {
+            name: FONT,
+            size: 9,
+            color: { argb: COLORS.textSecondary },
+          };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: {
+              argb: index % 2 === 0 ? COLORS.white : "FFFBFDFF",
+            },
+          };
+          cell.border = thinBorder;
+          cell.alignment = {
+            horizontal: colIndex >= 7 ? "center" : "left",
+            vertical: "middle",
           };
         });
-        winnerSheet.getCell(row, 8).font = { bold: true, color: { argb: "FF047857" } };
-        winnerSheet.getCell(row, 9).font = { bold: true, color: { argb: "FFBE123C" } };
-        winnerSheet.getCell(row, 10).font = { bold: true, color: { argb: "FF183875" } };
-        winnerSheet.getCell(row, 11).font = { bold: true, color: { argb: "FFB45309" } };
+
+        winnerSheet.getCell(row, 8).font = {
+          name: FONT,
+          size: 9,
+          bold: true,
+          color: { argb: COLORS.successDark },
+        };
+        winnerSheet.getCell(row, 9).font = {
+          name: FONT,
+          size: 9,
+          bold: true,
+          color: { argb: COLORS.dangerDark },
+        };
+        winnerSheet.getCell(row, 10).font = {
+          name: FONT,
+          size: 9,
+          bold: true,
+          color: { argb: "FF183875" },
+        };
+        winnerSheet.getCell(row, 11).font = {
+          name: FONT,
+          size: 9,
+          bold: true,
+          color: { argb: COLORS.warningDark },
+        };
       });
 
-      [12, 32, 18, 20, 18, 30, 16, 13, 10, 14, 13].forEach(
+      [12, 34, 18, 20, 20, 30, 17, 13, 10, 15, 14].forEach(
         (width, index) => {
           winnerSheet.getColumn(index + 1).width = width;
         }
@@ -920,6 +1349,29 @@ const MonthlyReport = () => {
           to: { row: 3 + winners.length, column: winnerHeaders.length },
         };
       }
+
+      winnerSheet.pageSetup = {
+        orientation: "landscape",
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+        paperSize: 9,
+      };
+      winnerSheet.pageSetup.margins = {
+        left: 0.25,
+        right: 0.25,
+        top: 0.45,
+        bottom: 0.45,
+        header: 0.2,
+        footer: 0.2,
+      };
+      winnerSheet.headerFooter.oddFooter =
+        "&LGanadores del Bono&C%Círculos Connect&RPágina &P de &N";
+      winnerSheet.printOptions = {
+        horizontalCentered: true,
+        verticalCentered: false,
+        gridLines: false,
+      };
 
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {

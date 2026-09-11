@@ -8,6 +8,7 @@ import MasterclassButton from "../components/calendar/MasterclassButton";
 import meetingService from "../services/meetingService";
 import circleService from "../services/circleService";
 import scheduleService from "../services/scheduleService";
+import { useAuth } from "../context/AuthContext";
 
 import MeetingAttendanceModal from "../components/calendar/MeetingAttendanceModal";
 
@@ -52,7 +53,14 @@ const normalizeCircles = (circles = []) => {
 };
 
 const Calendar = () => {
+  const { admin } = useAuth();
   const today = new Date();
+
+  const isMainAdmin =
+    String(admin?.adminId || "").trim() === "ADM-001";
+
+  const isCircleManager =
+    String(admin?.role || "").trim() === "Gestor de Círculo";
 
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
@@ -183,7 +191,20 @@ const Calendar = () => {
         ]
       );
 
-      setCircles(circleList);
+      const allowedScope = Array.isArray(admin?.circleScope)
+        ? admin.circleScope.map((value) => String(value || "").trim()).filter(Boolean)
+        : [];
+
+      const visibleCircles = isCircleManager
+        ? circleList.filter((circle) => {
+            const name = getCircleName(circle);
+            return allowedScope.some(
+              (allowed) => String(allowed).toLowerCase() === String(name).toLowerCase()
+            );
+          })
+        : circleList;
+
+      setCircles(visibleCircles);
 
       /*
        * ========================================================
@@ -202,7 +223,7 @@ const Calendar = () => {
 
         if (
           normalizedCurrent &&
-          circleList.some(
+          visibleCircles.some(
             (circle) =>
               getCircleName(circle) ===
               normalizedCurrent
@@ -212,7 +233,7 @@ const Calendar = () => {
         }
 
         const firstCircle =
-          circleList.find(Boolean);
+          visibleCircles.find(Boolean);
 
         return firstCircle
           ? getCircleName(firstCircle)
@@ -232,6 +253,8 @@ const Calendar = () => {
     year,
     month,
     selectedCircle,
+    admin,
+    isCircleManager,
   ]);
 
   /*
@@ -692,42 +715,34 @@ const Calendar = () => {
               )}
             </select>
 
-            {/* =================================================
-                PROGRAMAR REUNIÓN
-                ================================================= */}
-            <button
-              type="button"
-              onClick={openNewMeeting}
-              disabled={saving}
-              className="h-10 rounded-lg bg-[#173b7a] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#2457c5] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              + Programar Reunión
-            </button>
+            {/* Crear/eliminar reuniones y Masterclass es exclusivo del Administrador Principal. */}
+            {isMainAdmin && (
+              <>
+                <button
+                  type="button"
+                  onClick={openNewMeeting}
+                  disabled={saving}
+                  className="h-10 rounded-lg bg-[#173b7a] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#2457c5] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  + Programar Reunión
+                </button>
 
-            {/* =================================================
-                MASTERCLASS
-                ================================================= */}
-            <MasterclassButton
-              onClick={
-                handleCreateMonthlyMasterclasses
-              }
-              loading={saving}
-              disabled={saving}
-            />
+                <MasterclassButton
+                  onClick={handleCreateMonthlyMasterclasses}
+                  loading={saving}
+                  disabled={saving}
+                />
 
-            {/* =================================================
-                ELIMINAR MASTERCLASS
-                ================================================= */}
-            <button
-              type="button"
-              onClick={
-                handleDeleteMonthlyMasterclasses
-              }
-              disabled={saving}
-              className="h-10 rounded-lg border border-rose-200 bg-rose-50 px-4 text-xs font-bold text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              🗑️ Eliminar Masterclass
-            </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteMonthlyMasterclasses}
+                  disabled={saving}
+                  className="h-10 rounded-lg border border-rose-200 bg-rose-50 px-4 text-xs font-bold text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  🗑️ Eliminar Masterclass
+                </button>
+              </>
+            )}
 
           </div>
         </div>
@@ -754,7 +769,7 @@ const Calendar = () => {
               openMeetingAct
             }
             onCreateMeeting={
-              openNewMeeting
+              isMainAdmin ? openNewMeeting : undefined
             }
           />
         </div>
@@ -762,15 +777,17 @@ const Calendar = () => {
         {/* =====================================================
             FORMULARIO DE REUNIÓN
             ===================================================== */}
-        <MeetingForm
-          open={showMeetingForm}
-          circles={circles}
-          meeting={editingMeeting}
-          onClose={closeMeetingForm}
-          onSubmit={
-            handleMeetingSubmit
-          }
-        />
+        {isMainAdmin && (
+          <MeetingForm
+            open={showMeetingForm}
+            circles={circles}
+            meeting={editingMeeting}
+            onClose={closeMeetingForm}
+            onSubmit={
+              handleMeetingSubmit
+            }
+          />
+        )}
 
         {/* =====================================================
             ACTA DE ASISTENCIA

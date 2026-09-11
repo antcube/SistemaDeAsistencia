@@ -4,109 +4,261 @@ import {
 } from "react";
 
 import auditService from "../services/auditService";
+import circleService from "../services/circleService";
 
 const Audit = () => {
-  const [logs, setLogs] =
-    useState([]);
+  const [logs, setLogs] = useState([]);
 
-  const [page, setPage] =
-    useState(1);
+  const [circles, setCircles] = useState([]);
 
-  const [pagination, setPagination] =
-    useState({
-      page: 1,
-      limit: 50,
-      total: 0,
-      totalPages: 1,
-    });
+  const [circle, setCircle] = useState("");
 
-  const [search, setSearch] =
-    useState("");
+  const [page, setPage] = useState(1);
 
-  const [module, setModule] =
-    useState("");
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 1,
+  });
 
-  const [action, setAction] =
-    useState("");
+  const [loading, setLoading] = useState(true);
 
-  const [circle, setCircle] =
-    useState("");
+  const [error, setError] = useState("");
 
-  const [loading, setLoading] =
-    useState(true);
+  /*
+   * =========================================================
+   * CARGAR CÍRCULOS
+   * =========================================================
+   */
 
-  const [error, setError] =
-    useState("");
+  const loadCircles = async () => {
+    try {
+      const response =
+        await circleService.getCircles();
 
-  const loadLogs =
-    async (
-      requestedPage = page
-    ) => {
-      try {
-        setLoading(true);
-        setError("");
+      const circleList =
+        Array.isArray(response)
+          ? response
+          : response?.data ||
+            response?.circles ||
+            [];
 
-        const response =
-          await auditService.getLogs({
-            page: requestedPage,
-            limit: 50,
-            search,
-            module,
-            action,
-            circle,
-          });
+      const normalizedCircles =
+        circleList
+          .map((item) => {
+            if (
+              typeof item === "string"
+            ) {
+              return item.trim();
+            }
 
-        setLogs(
-          response?.data || []
-        );
+            return String(
+              item?.name || ""
+            ).trim();
+          })
+          .filter(Boolean);
 
-        setPagination(
-          response?.pagination || {
-            page: requestedPage,
-            limit: 50,
-            total: 0,
-            totalPages: 1,
-          }
-        );
-      } catch (err) {
-        console.error(err);
+      const uniqueCircles = [
+        ...new Set(
+          normalizedCircles
+        ),
+      ];
 
-        setError(
-          err?.message ||
-            "No se pudo cargar la bitácora."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+      uniqueCircles.sort(
+        (a, b) =>
+          a.localeCompare(
+            b,
+            "es",
+            {
+              numeric: true,
+              sensitivity: "base",
+            }
+          )
+      );
+
+      setCircles(
+        uniqueCircles
+      );
+    } catch (err) {
+      console.error(
+        "Error cargando círculos:",
+        err
+      );
+
+      setCircles([]);
+    }
+  };
+
+  /*
+   * =========================================================
+   * CARGAR BITÁCORA
+   * =========================================================
+   */
+
+  const loadLogs = async ({
+    requestedPage = 1,
+    selectedCircle = "",
+  } = {}) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response =
+        await auditService.getLogs({
+          page: requestedPage,
+          limit: 50,
+          circle:
+            selectedCircle,
+        });
+
+      /*
+       * IMPORTANTE:
+       * Siempre reemplazamos completamente
+       * los registros anteriores.
+       *
+       * Si LIMA 2 devuelve [], se muestran []
+       * y no los registros anteriores de LIMA 1.
+       */
+
+      setLogs(
+        Array.isArray(
+          response?.data
+        )
+          ? response.data
+          : []
+      );
+
+      setPagination(
+        response?.pagination || {
+          page: requestedPage,
+          limit: 50,
+          total: 0,
+          totalPages: 1,
+        }
+      );
+
+      setPage(
+        Number(
+          response?.pagination?.page ||
+            requestedPage
+        )
+      );
+    } catch (err) {
+      console.error(
+        "Error cargando bitácora:",
+        err
+      );
+
+      setLogs([]);
+
+      setPagination({
+        page: 1,
+        limit: 50,
+        total: 0,
+        totalPages: 1,
+      });
+
+      setError(
+        err?.message ||
+          "No se pudo cargar la bitácora."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /*
+   * =========================================================
+   * INICIO
+   * =========================================================
+   */
 
   useEffect(() => {
-    loadLogs(1);
+    loadCircles();
+
+    loadLogs({
+      requestedPage: 1,
+      selectedCircle: "",
+    });
   }, []);
 
-  const handleSearch =
-    (event) => {
-      event.preventDefault();
+  /*
+   * =========================================================
+   * CAMBIO DE CÍRCULO
+   *
+   * Al cambiar el desplegable hacemos la consulta
+   * inmediatamente.
+   *
+   * Así no dependemos de que React haya actualizado
+   * todavía el estado antes de hacer la consulta.
+   * =========================================================
+   */
 
-      setPage(1);
-      loadLogs(1);
-    };
+  const handleCircleChange = async (
+    event
+  ) => {
+    const selectedCircle =
+      event.target.value;
+
+    setCircle(
+      selectedCircle
+    );
+
+    setPage(1);
+
+    await loadLogs({
+      requestedPage: 1,
+      selectedCircle:
+        selectedCircle,
+    });
+  };
+
+  /*
+   * =========================================================
+   * BOTÓN BUSCAR
+   * =========================================================
+   */
+
+  const handleSearch = async (
+    event
+  ) => {
+    event.preventDefault();
+
+    setPage(1);
+
+    await loadLogs({
+      requestedPage: 1,
+      selectedCircle:
+        circle,
+    });
+  };
+
+  /*
+   * =========================================================
+   * LIMPIAR
+   * =========================================================
+   */
 
   const clearFilters =
-    () => {
-      setSearch("");
-      setModule("");
-      setAction("");
+    async () => {
       setCircle("");
       setPage(1);
 
-      setTimeout(() => {
-        loadLogs(1);
-      }, 0);
+      await loadLogs({
+        requestedPage: 1,
+        selectedCircle: "",
+      });
     };
 
+  /*
+   * =========================================================
+   * PAGINACIÓN
+   * =========================================================
+   */
+
   const previousPage =
-    () => {
+    async () => {
       if (page <= 1) {
         return;
       }
@@ -114,12 +266,16 @@ const Audit = () => {
       const nextPage =
         page - 1;
 
-      setPage(nextPage);
-      loadLogs(nextPage);
+      await loadLogs({
+        requestedPage:
+          nextPage,
+        selectedCircle:
+          circle,
+      });
     };
 
   const nextPage =
-    () => {
+    async () => {
       if (
         page >=
         pagination.totalPages
@@ -130,14 +286,24 @@ const Audit = () => {
       const next =
         page + 1;
 
-      setPage(next);
-      loadLogs(next);
+      await loadLogs({
+        requestedPage: next,
+        selectedCircle:
+          circle,
+      });
     };
 
   return (
     <section className="module-page">
+
+      {/* =====================================================
+          ENCABEZADO
+      ===================================================== */}
+
       <div className="module-header">
+
         <div>
+
           <span className="cc-section-kicker">
             SEGURIDAD
           </span>
@@ -147,22 +313,33 @@ const Audit = () => {
           </h1>
 
           <p>
-            Historial de acciones
-            realizadas en el sistema.
+            Historial de cambios
+            realizados en los círculos.
           </p>
+
         </div>
 
         <button
           type="button"
           className="secondary-button"
           onClick={() =>
-            loadLogs(page)
+            loadLogs({
+              requestedPage:
+                page,
+              selectedCircle:
+                circle,
+            })
           }
           disabled={loading}
         >
           🔄 Actualizar
         </button>
+
       </div>
+
+      {/* =====================================================
+          ERROR
+      ===================================================== */}
 
       {error && (
         <div className="module-error">
@@ -170,52 +347,49 @@ const Audit = () => {
         </div>
       )}
 
+      {/* =====================================================
+          FILTRO POR CÍRCULO
+      ===================================================== */}
+
       <form
-        className="audit-filters"
+        className="audit-filters audit-filters-circle-only"
         onSubmit={
           handleSearch
         }
       >
-        <input
-          type="search"
-          value={search}
-          onChange={(event) =>
-            setSearch(
-              event.target.value
-            )
-          }
-          placeholder="Buscar..."
-        />
 
-        <input
-          value={module}
-          onChange={(event) =>
-            setModule(
-              event.target.value
-            )
-          }
-          placeholder="Módulo"
-        />
+        <div className="audit-circle-field">
 
-        <input
-          value={action}
-          onChange={(event) =>
-            setAction(
-              event.target.value
-            )
-          }
-          placeholder="Acción"
-        />
+          <label htmlFor="audit-circle">
+            Círculo
+          </label>
 
-        <input
-          value={circle}
-          onChange={(event) =>
-            setCircle(
-              event.target.value
-            )
-          }
-          placeholder="Círculo"
-        />
+          <select
+            id="audit-circle"
+            value={circle}
+            onChange={
+              handleCircleChange
+            }
+          >
+
+            <option value="">
+              Todos los círculos
+            </option>
+
+            {circles.map(
+              (circleName) => (
+                <option
+                  key={circleName}
+                  value={circleName}
+                >
+                  {circleName}
+                </option>
+              )
+            )}
+
+          </select>
+
+        </div>
 
         <button
           type="submit"
@@ -233,50 +407,90 @@ const Audit = () => {
         >
           Limpiar
         </button>
+
       </form>
 
+      {/* =====================================================
+          TABLA
+      ===================================================== */}
+
       {loading ? (
+
         <div className="table-empty">
-          <span>⏳</span>
+
+          <span>
+            ⏳
+          </span>
 
           <strong>
             Cargando bitácora...
           </strong>
+
         </div>
+
       ) : (
+
         <>
+
           <div className="admin-management-card">
+
             <div className="admin-table-wrapper">
-              <table className="admin-management-table">
+
+              <table className="admin-management-table audit-table">
+
                 <thead>
+
                   <tr>
-                    <th>Fecha</th>
-                    <th>Administrador</th>
-                    <th>Módulo</th>
-                    <th>Acción</th>
-                    <th>Descripción</th>
-                    <th>Círculo</th>
+
+                    <th>
+                      Fecha
+                    </th>
+
+                    <th>
+                      Administrador
+                    </th>
+
+                    <th>
+                      Descripción
+                    </th>
+
+                    <th>
+                      Círculo
+                    </th>
+
                   </tr>
+
                 </thead>
 
                 <tbody>
+
                   {logs.length === 0 ? (
+
                     <tr>
+
                       <td
-                        colSpan="6"
+                        colSpan="4"
                         className="audit-empty-cell"
                       >
-                        No hay registros.
+                        {circle
+                          ? `No hay registros para ${circle}.`
+                          : "No hay registros en la bitácora."
+                        }
                       </td>
+
                     </tr>
+
                   ) : (
+
                     logs.map(
                       (log) => (
+
                         <tr
                           key={
                             log._id
                           }
                         >
+
                           <td>
                             {log.createdAt
                               ? new Date(
@@ -288,54 +502,63 @@ const Audit = () => {
                           </td>
 
                           <td>
+
                             <strong>
                               {
-                                log.adminName
+                                log.adminName ||
+                                "—"
                               }
                             </strong>
 
-                            <small>
-                              {
-                                log.adminId
-                              }
-                            </small>
-                          </td>
+                            {log.adminId && (
+                              <small>
+                                {
+                                  log.adminId
+                                }
+                              </small>
+                            )}
 
-                          <td>
-                            {
-                              log.module
-                            }
-                          </td>
-
-                          <td>
-                            {
-                              log.action
-                            }
                           </td>
 
                           <td>
                             {
                               log.description ||
-                                "—"
+                              "—"
                             }
                           </td>
 
                           <td>
-                            {
-                              log.circle ||
+
+                            <span className="audit-circle-badge">
+                              {
+                                log.circle ||
                                 "—"
-                            }
+                              }
+                            </span>
+
                           </td>
+
                         </tr>
+
                       )
                     )
+
                   )}
+
                 </tbody>
+
               </table>
+
             </div>
+
           </div>
 
+          {/* =================================================
+              PAGINACIÓN
+          ================================================= */}
+
           <div className="audit-pagination">
+
             <button
               type="button"
               className="secondary-button"
@@ -375,9 +598,13 @@ const Audit = () => {
             >
               Siguiente →
             </button>
+
           </div>
+
         </>
+
       )}
+
     </section>
   );
 };
