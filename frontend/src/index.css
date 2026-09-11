@@ -1,0 +1,185 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css";
+@import "tailwindcss";
+
+:root {
+  --cc-black: #050812;
+  --cc-night: #0b1736;
+  --cc-night2: #102657;
+
+  --cc-blue: #2457c5;
+  --cc-blue2: #5f8ff5;
+
+  --cc-white: #ffffff;
+  --cc-surface: #f8fafc;
+
+  --cc-border: #d4deed;
+  --cc-border-light: #e2e8f0;
+
+  --cc-text: #0f172a;
+  --cc-text-secondary: #334155;
+  --cc-text-muted: #64748b;
+
+  --cc-success: #10b981;
+  --cc-success-dark: #047857;
+
+  --cc-danger: #e11d48;
+  --cc-danger-dark: #be123c;
+
+  --cc-warning: #f59e0b;
+  --cc-warning-dark: #b45309;
+
+  --cc-cyan: #06b6d4;
+  --cc-purple: #7c3aed;
+
+  font-family: "Inter", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--cc-black);
+  overflow-x: hidden;
+}
+
+body {
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+
+  margin: 0;
+  padding: 0;
+
+  font-family: "Inter", sans-serif;
+
+  color: var(--cc-text);
+
+  overflow-x: hidden;
+
+  background:
+    radial-gradient(
+      ellipse 900px 480px at 50% -8%,
+      rgba(95, 143, 245, 0.38),
+      transparent 70%
+    ),
+    radial-gradient(
+      circle 560px at -4% 38%,
+      rgba(36, 87, 197, 0.30),
+      transparent 72%
+    ),
+    radial-gradient(
+      circle 620px at 104% 68%,
+      rgba(95, 143, 245, 0.20),
+      transparent 72%
+    ),
+    linear-gradient(
+      135deg,
+      #050812 0%,
+      #0b1736 45%,
+      #102657 70%,
+      #060a13 100%
+    );
+}
+
+body::after {
+  content: "";
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+
+  height: 2px;
+
+  z-index: 9999;
+
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      #5f8ff5,
+      #ffffff,
+      #5f8ff5,
+      transparent
+    );
+}
+
+#root {
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: "Inter", sans-serif;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+::selection {
+  background: var(--cc-blue);
+  color: white;
+}
+
+/* Scrollbar oficial */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #081126;
+}
+
+::-webkit-scrollbar-thumb {
+  background:
+    linear-gradient(
+      180deg,
+      #5f8ff5,
+      #183875
+    );
+
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7da4ff;
+}

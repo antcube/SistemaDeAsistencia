@@ -1,0 +1,117 @@
+/* =========================================================
+   CÍRCULOS CONNECT
+   ESTRUCTURA GLOBAL
+========================================================= */
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+
+  margin: 0;
+  padding: 0;
+
+  overflow-x: hidden;
+}
+
+.app-root,
+.cc-app-shell {
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   CONTENIDO PRINCIPAL
+========================================================= */
+
+.cc-main-content {
+  width: 100%;
+  min-width: 0;
+
+  min-height: calc(100vh - 123px);
+
+  overflow-x: hidden;
+
+  /*
+   * IMPORTANTE:
+   * El fondo navy pertenece a toda la página,
+   * no solamente al calendario.
+   */
+  background:
+    radial-gradient(
+      ellipse 900px 480px at 50% -8%,
+      rgba(95, 143, 245, 0.38),
+      transparent 70%
+    ),
+    radial-gradient(
+      circle 560px at -4% 38%,
+      rgba(36, 87, 197, 0.30),
+      transparent 72%
+    ),
+    radial-gradient(
+      circle 620px at 104% 68%,
+      rgba(95, 143, 245, 0.20),
+      transparent 72%
+    ),
+    linear-gradient(
+      135deg,
+      #050812 0%,
+      #0b1736 45%,
+      #102657 70%,
+      #060a13 100%
+    );
+}
+
+/*
+ * El contenido debe quedar con aproximadamente
+ * el mismo ancho visual de la segunda captura.
+ */
+.cc-page-container {
+  width: 100%;
+  max-width: 1188px;
+
+  min-width: 0;
+
+  margin: 0 auto;
+
+  padding:
+    0 0 32px;
+}
+
+/* =========================================================
+   EVITAR QUE LAS PÁGINAS ROMPAN EL ANCHO
+========================================================= */
+
+.calendar-page,
+.dashboard-page,
+.monthly-report-page,
+.zoom-page,
+.members-page,
+.attendance-page {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1219px) {
+  .cc-page-container {
+    max-width: calc(100% - 32px);
+  }
+}
+
+@media (max-width: 640px) {
+  .cc-page-container {
+    max-width: calc(100% - 24px);
+
+    padding-bottom: 20px;
+  }
+}

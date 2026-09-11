@@ -1,0 +1,1152 @@
+/* =========================================================
+   CÍRCULOS CONNECT
+   ADMIN / HEADER / NAVIGATION
+========================================================= */
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.cc-header {
+  position: sticky;
+
+  top: 0;
+
+  z-index: 30;
+
+  width: 100%;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.985
+    );
+
+  border-bottom:
+    1px solid
+    rgba(
+      16,
+      38,
+      87,
+      0.15
+    );
+
+  box-shadow:
+    0 8px 30px
+    rgba(
+      0,
+      0,
+      0,
+      0.20
+    );
+}
+
+.cc-header-inner {
+  width: 100%;
+
+  max-width: 1280px;
+
+  height: 64px;
+
+  margin: 0 auto;
+
+  padding:
+    0 32px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 24px;
+}
+
+/* =========================================================
+   MARCA
+========================================================= */
+
+.cc-header-brand {
+  min-width: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+.cc-logo {
+  width: 40px;
+
+  height: 40px;
+
+  min-width: 40px;
+
+  border-radius: 12px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background:
+    linear-gradient(
+      145deg,
+      #2d61d1,
+      #102657 52%,
+      #050812
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 7px 20px
+    rgba(
+      20,
+      55,
+      130,
+      0.30
+    );
+}
+
+.cc-logo svg {
+  width: 20px;
+
+  height: 20px;
+
+  stroke-width: 2;
+}
+
+.cc-brand-text {
+  min-width: 0;
+}
+
+.cc-brand-title {
+  display: flex;
+
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 7px;
+
+  color: #070a12;
+
+  font-size: 18px;
+
+  line-height: 1.1;
+
+  font-weight: 700;
+
+  letter-spacing:
+    -0.025em;
+}
+
+.cc-brand-title strong {
+  color: #2457c5;
+
+  font-weight: 700;
+}
+
+.cc-brand-badge {
+  display: inline-flex;
+
+  align-items: center;
+
+  min-height: 18px;
+
+  padding:
+    2px 8px;
+
+  border:
+    1px solid
+    #c7d2fe;
+
+  border-radius: 6px;
+
+  background: #eef2ff;
+
+  color: #4338ca;
+
+  font-size: 10px;
+
+  line-height: 1;
+
+  font-weight: 700;
+}
+
+.cc-brand-subtitle {
+  margin-top: 3px;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  line-height: 1.2;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   ADMINISTRADOR
+========================================================= */
+
+.cc-header-right {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  flex-shrink: 0;
+}
+
+.cc-admin-info {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-end;
+
+  justify-content: center;
+
+  min-width: 0;
+
+  padding-right: 12px;
+
+  border-right:
+    1px solid
+    #e2e8f0;
+}
+
+.cc-admin-info strong {
+  max-width: 220px;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  color: #1e293b;
+
+  font-size: 12px;
+
+  line-height: 1.25;
+
+  font-weight: 700;
+}
+
+.cc-admin-info span {
+  margin-top: 2px;
+
+  color: #183875;
+
+  font-size: 10px;
+
+  line-height: 1.2;
+
+  font-weight: 600;
+}
+
+/* =========================================================
+   PERFIL
+========================================================= */
+
+.cc-profile-wrapper {
+  position: relative;
+}
+
+.cc-avatar-button {
+  width: 40px;
+
+  height: 40px;
+
+  padding: 0;
+
+  border:
+    1px solid
+    #cbd5e1;
+
+  border-radius: 9999px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background: #e8eefb;
+
+  color: #23447d;
+
+  font-size: 13px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.cc-avatar-button:hover {
+  background: #dce6f8;
+
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    0 4px 12px
+    rgba(
+      15,
+      23,
+      42,
+      0.10
+    );
+}
+
+.cc-avatar-button:focus-visible {
+  outline:
+    2px solid
+    #2563eb;
+
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   MENÚ ADMINISTRACIÓN
+========================================================= */
+
+.cc-admin-menu {
+  position: absolute;
+
+  top:
+    calc(
+      100% + 10px
+    );
+
+  right: 0;
+
+  width: 205px;
+
+  padding: 6px;
+
+  background: #ffffff;
+
+  border:
+    1px solid
+    #e2e8f0;
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 14px 35px
+    rgba(
+      15,
+      23,
+      42,
+      0.16
+    );
+
+  z-index: 80;
+}
+
+.cc-admin-menu-title {
+  padding:
+    5px 10px 6px;
+
+  color: #94a3b8;
+
+  font-size: 9px;
+
+  line-height: 1;
+
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  letter-spacing:
+    0.06em;
+}
+
+.cc-admin-menu a {
+  width: 100%;
+
+  min-height: 44px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  padding:
+    7px 10px;
+
+  border-radius: 8px;
+
+  color: #334155;
+
+  font-size: 12px;
+
+  line-height: 1.2;
+
+  font-weight: 600;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.cc-admin-menu a:hover {
+  background: #f1f5f9;
+
+  color: #0f172a;
+}
+
+.cc-menu-icon {
+  width: 28px;
+
+  height: 28px;
+
+  min-width: 28px;
+
+  border:
+    1px solid
+    #e2e8f0;
+
+  border-radius: 7px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background: #f8fafc;
+
+  color: #475569;
+}
+
+.cc-menu-icon svg {
+  width: 14px;
+
+  height: 14px;
+}
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+.cc-logout-button {
+  width: 36px;
+
+  height: 36px;
+
+  padding: 0;
+
+  border:
+    1px solid
+    #dbe3ef;
+
+  border-radius: 8px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background: #ffffff;
+
+  color: #475569;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.cc-logout-button:hover {
+  background: #f8fafc;
+
+  color: #102657;
+
+  border-color: #cbd5e1;
+}
+
+.cc-logout-button svg {
+  width: 17px;
+
+  height: 17px;
+}
+
+/* =========================================================
+   NAVEGACIÓN PRINCIPAL
+========================================================= */
+
+.cc-navigation {
+  position: sticky;
+
+  top: 64px;
+
+  z-index: 25;
+
+  width: 100%;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.985
+    );
+
+  border-bottom:
+    1px solid
+    rgba(
+      16,
+      38,
+      87,
+      0.14
+    );
+
+  box-shadow:
+    0 5px 20px
+    rgba(
+      0,
+      0,
+      0,
+      0.12
+    );
+}
+
+.cc-navigation-inner {
+  width: 100%;
+
+  max-width: 1280px;
+
+  min-height: 59px;
+
+  margin: 0 auto;
+
+  padding:
+    10px 32px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(
+        0,
+        1fr
+      )
+    );
+
+  gap: 8px;
+
+  align-items: stretch;
+}
+
+.cc-nav-link {
+  position: relative;
+
+  min-width: 0;
+
+  min-height: 39px;
+
+  padding:
+    0 12px;
+
+  border:
+    1px solid
+    transparent;
+
+  border-radius: 8px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  color: #263b62;
+
+  font-size: 12px;
+
+  line-height: 1.2;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  transition:
+    all 0.2s ease;
+}
+
+.cc-nav-link:hover {
+  color: #102657;
+
+  background: #edf3ff;
+
+  transform:
+    translateY(-1px);
+}
+
+.cc-nav-link.active {
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2457c5,
+      #102657
+    );
+
+  border-color:
+    #2457c5;
+
+  box-shadow:
+    0 5px 16px
+    rgba(
+      36,
+      87,
+      197,
+      0.28
+    );
+}
+
+.cc-nav-link::after {
+  content: "";
+
+  position: absolute;
+
+  left: 14%;
+
+  right: 14%;
+
+  bottom: 1px;
+
+  height: 2px;
+
+  border-radius: 999px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #2457c5,
+      #5f8ff5
+    );
+
+  opacity: 0;
+
+  transform:
+    scaleX(0);
+
+  transition:
+    transform 0.28s ease,
+    opacity 0.28s ease;
+}
+
+.cc-nav-link.active::after {
+  opacity: 1;
+
+  transform:
+    scaleX(1);
+}
+
+.cc-nav-icon {
+  width: 17px;
+
+  height: 17px;
+
+  min-width: 17px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: #52637a;
+}
+
+.cc-nav-icon svg {
+  width: 16px;
+
+  height: 16px;
+
+  stroke-width: 2;
+}
+
+.cc-nav-link.active
+  .cc-nav-icon {
+  color: #ffffff;
+}
+
+/* =========================================================
+   CONTENIDO
+========================================================= */
+
+.cc-main-content {
+  width: 100% !important;
+  max-width: 100vw !important;
+
+  min-width: 0 !important;
+
+  min-height: calc(100vh - 123px) !important;
+
+  overflow-x: hidden !important;
+
+  background:
+    radial-gradient(
+      ellipse 900px 480px at 50% -8%,
+      rgba(95, 143, 245, 0.22),
+      transparent 70%
+    ),
+    linear-gradient(
+      135deg,
+      #050812 0%,
+      #0b1736 48%,
+      #102657 100%
+    ) !important;
+}
+
+.cc-page-container {
+  width: 100%;
+
+  max-width: 1280px;
+
+  min-width: 0;
+
+  margin: 0 auto;
+
+  padding:
+    0 32px 32px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .cc-header-inner {
+    padding:
+      0 16px;
+  }
+
+  .cc-brand-subtitle {
+    display: none;
+  }
+
+  .cc-admin-info {
+    display: none;
+  }
+
+  .cc-navigation-inner {
+    padding:
+      8px 12px;
+
+    overflow-x: auto;
+
+    grid-template-columns:
+      repeat(
+        4,
+        minmax(
+          170px,
+          1fr
+        )
+      );
+  }
+
+  .cc-nav-link {
+    font-size: 11px;
+  }
+
+  .cc-page-container {
+    padding:
+      0 16px 24px;
+  }
+}
+
+@media (max-width: 640px) {
+
+  .cc-header-inner {
+    height: 60px;
+  }
+
+  .cc-logo {
+    width: 36px;
+
+    height: 36px;
+
+    min-width: 36px;
+  }
+
+  .cc-brand-title {
+    font-size: 15px;
+  }
+
+  .cc-brand-badge {
+    font-size: 9px;
+  }
+
+  .cc-header-right {
+    gap: 7px;
+  }
+
+  .cc-avatar-button {
+    width: 36px;
+
+    height: 36px;
+  }
+
+  .cc-logout-button {
+    width: 34px;
+
+    height: 34px;
+  }
+
+  .cc-navigation {
+    top: 60px;
+  }
+
+  .cc-navigation-inner {
+    grid-template-columns:
+      repeat(
+        4,
+        165px
+      );
+  }
+
+  .cc-page-container {
+    padding:
+      0 12px 20px;
+  }
+}
+
+/* =========================================================
+   AJUSTE VISUAL FINAL — HEADER + NAVEGACIÓN
+   Comparado con Círculos Connect original
+========================================================= */
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.cc-header {
+  width: 100% !important;
+
+  background:
+    rgba(255, 255, 255, 0.985) !important;
+
+  border-bottom:
+    1px solid
+    rgba(16, 38, 87, 0.15) !important;
+
+  box-shadow:
+    0 8px 30px
+    rgba(0, 0, 0, 0.20) !important;
+}
+
+.cc-header-inner {
+  width: 100% !important;
+
+  max-width: 1188px !important;
+
+  height: 62px !important;
+
+  min-height: 62px !important;
+
+  margin: 0 auto !important;
+
+  padding:
+    0 !important;
+
+  box-sizing: border-box !important;
+}
+
+/* =========================================================
+   LOGO
+========================================================= */
+
+.cc-logo {
+  width: 40px !important;
+  height: 40px !important;
+
+  min-width: 40px !important;
+
+  border-radius: 12px !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #2d61d1,
+      #102657 52%,
+      #050812
+    ) !important;
+
+  box-shadow:
+    0 7px 20px
+    rgba(20, 55, 130, 0.30) !important;
+}
+
+/* =========================================================
+   MARCA
+========================================================= */
+
+.cc-brand-title {
+  color: #070a12 !important;
+
+  font-size: 18px !important;
+
+  font-weight: 700 !important;
+
+  letter-spacing:
+    -0.025em !important;
+}
+
+.cc-brand-title strong {
+  color: #2457c5 !important;
+}
+
+.cc-brand-subtitle {
+  color: #64748b !important;
+
+  font-size: 10px !important;
+}
+
+/* =========================================================
+   NAVEGACIÓN
+========================================================= */
+
+.cc-navigation {
+  position: sticky !important;
+
+  top: 62px !important;
+
+  z-index: 25 !important;
+
+  width: 100% !important;
+
+  height: 59px !important;
+
+  min-height: 59px !important;
+
+  box-sizing: border-box !important;
+
+  background:
+    rgba(255, 255, 255, 0.985) !important;
+
+  border-bottom:
+    1px solid
+    rgba(16, 38, 87, 0.14) !important;
+
+  box-shadow:
+    0 5px 20px
+    rgba(0, 0, 0, 0.12) !important;
+}
+
+.cc-navigation-inner {
+  width: 100% !important;
+
+  max-width: 1188px !important;
+
+  height: 59px !important;
+
+  min-height: 59px !important;
+
+  margin: 0 auto !important;
+
+  padding:
+    8px 0 !important;
+
+  box-sizing: border-box !important;
+
+  display: grid !important;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    ) !important;
+
+  gap: 8px !important;
+}
+
+.cc-nav-link {
+  position: relative !important;
+
+  height: 43px !important;
+
+  min-height: 43px !important;
+
+  box-sizing: border-box !important;
+
+  border-radius: 8px !important;
+
+  padding:
+    0 12px !important;
+
+  color: #263b62 !important;
+
+  font-size: 12px !important;
+
+  font-weight: 600 !important;
+
+  white-space: nowrap !important;
+}
+
+.cc-nav-link:hover {
+  color: #102657 !important;
+
+  background:
+    #edf3ff !important;
+
+  transform:
+    translateY(-1px) !important;
+}
+
+.cc-nav-link.active {
+  color: #ffffff !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2457c5,
+      #102657
+    ) !important;
+
+  border-color:
+    #2457c5 !important;
+
+  box-shadow:
+    0 5px 16px
+    rgba(36, 87, 197, 0.28) !important;
+}
+
+.cc-nav-link::after {
+  bottom: 1px !important;
+
+  left: 14% !important;
+
+  right: 14% !important;
+
+  height: 2px !important;
+
+  background:
+    linear-gradient(
+      90deg,
+      #2457c5,
+      #5f8ff5
+    ) !important;
+}
+
+/* =========================================================
+   ICONOS DE NAVEGACIÓN
+========================================================= */
+
+.cc-nav-icon {
+  width: 17px !important;
+
+  height: 17px !important;
+
+  min-width: 17px !important;
+
+  color: #52637a !important;
+}
+
+.cc-nav-icon svg {
+  width: 16px !important;
+
+  height: 16px !important;
+
+  stroke-width: 2 !important;
+}
+
+.cc-nav-link.active .cc-nav-icon {
+  color: #ffffff !important;
+}
+
+/* =========================================================
+   CONTENIDO
+========================================================= */
+
+.cc-main-content {
+  width: 100% !important;
+
+  min-width: 0 !important;
+
+  min-height:
+    calc(100vh - 121px) !important;
+
+  overflow-x: hidden !important;
+
+  background: transparent !important;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1219px) {
+  .cc-header-inner,
+  .cc-navigation-inner {
+    max-width:
+      calc(100% - 32px) !important;
+  }
+}
+
+@media (max-width: 640px) {
+
+  .cc-header-inner {
+    height: 60px !important;
+
+    min-height: 60px !important;
+  }
+
+  .cc-navigation {
+    top: 60px !important;
+
+    height: 59px !important;
+  }
+
+  .cc-navigation-inner {
+    height: 59px !important;
+
+    min-height: 59px !important;
+
+    max-width:
+      calc(100% - 24px) !important;
+
+    padding:
+      8px 0 !important;
+
+    grid-template-columns:
+      repeat(
+        4,
+        165px
+      ) !important;
+
+    overflow-x: auto !important;
+  }
+
+  .cc-nav-link {
+    height: 43px !important;
+
+    min-height: 43px !important;
+  }
+}

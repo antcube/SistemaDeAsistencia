@@ -1,0 +1,654 @@
+.monthly-report-page {
+  width: 100%;
+  padding: 20px;
+}
+
+/* ============================================================
+   CABECERA
+   ============================================================ */
+
+.monthly-report-toolbar {
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 16px 18px 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 35, 80, 0.06);
+}
+
+.monthly-report-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+}
+
+.monthly-report-month {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.navigation-arrow {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 50%;
+  background: #000;
+  color: #fff;
+  font-size: 29px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.navigation-arrow:hover {
+  background: #111;
+}
+
+.monthly-report-title {
+  min-width: 0;
+  margin: 0 2px;
+}
+
+.monthly-report-title h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 800;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.monthly-report-today {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #d7e0ed;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #183875;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.monthly-report-today:hover {
+  background: #edf3ff;
+}
+
+.monthly-report-downloads {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.monthly-report-download-btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #4ade80;
+  border-radius: 9px;
+  background: #fff;
+  color: #047857;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.monthly-report-download-btn:hover:not(:disabled) {
+  background: #f0fdf4;
+}
+
+.monthly-report-download-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* ============================================================
+   FILTROS
+   ============================================================ */
+
+.monthly-report-filters {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.monthly-report-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.monthly-report-filter-label {
+  color: #183875;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.monthly-report-search,
+.monthly-report-select {
+  height: 38px;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  outline: none;
+  background: #fff;
+  color: #344054;
+  font-size: 12px;
+}
+
+.monthly-report-search {
+  width: 215px;
+}
+
+.monthly-report-select {
+  width: 205px;
+}
+
+.monthly-report-search:focus,
+.monthly-report-select:focus {
+  border-color: #5f8ff5;
+  box-shadow: 0 0 0 3px rgba(95, 143, 245, 0.12);
+}
+
+/* ============================================================
+   TARJETAS DE RESUMEN
+   ============================================================ */
+
+.monthly-report-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 1080px;
+  margin: 0 auto 18px;
+}
+
+.report-summary-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 100px;
+  height: 100px;
+  padding: 0;
+  border: 0;
+  border-radius: 15px;
+  color: #fff;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.report-summary-card > span {
+  display: grid;
+  width: auto;
+  height: auto;
+  place-items: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.08);
+  color: #fff;
+  font-size: 32px;
+}
+
+.report-summary-card > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 12px 10px;
+}
+
+.report-summary-card small {
+  display: block;
+  margin-bottom: 3px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.report-summary-card strong {
+  color: #fff;
+  font-size: 25px;
+  line-height: 27px;
+  font-weight: 900;
+}
+
+.report-summary-card::after {
+  content: "";
+  position: absolute;
+  right: -18px;
+  bottom: -28px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.report-summary-card.blue {
+  background: #2d63d8;
+}
+
+.report-summary-card.dark {
+  background: #47576c;
+}
+
+.report-summary-card.green {
+  background: #0aa57d;
+}
+
+.report-summary-card.red {
+  background: #df1748;
+}
+
+.report-summary-card.orange {
+  background: #e78905;
+}
+
+/* ============================================================
+   TABLA
+   ============================================================ */
+
+.monthly-report-table-card {
+  width: 100%;
+  border: 1px solid #dbe4ef;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 35, 80, 0.06);
+  overflow: hidden;
+}
+
+/* Registro de asistencia + filtros en la misma fila */
+.monthly-report-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.monthly-report-table-head > div:first-child {
+  min-width: 0;
+}
+
+.monthly-report-table-head h3 {
+  margin: 0;
+  color: #07122c;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.monthly-report-table-head p {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.legend-green,
+.legend-red,
+.legend-gray {
+  display: inline-flex;
+  width: 19px;
+  height: 19px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-weight: 900;
+}
+
+.legend-green {
+  background: #eaf8ef;
+  color: #237346;
+}
+
+.legend-red {
+  background: #fff0f0;
+  color: #b33d3d;
+}
+
+.legend-gray {
+  background: #f2f4f7;
+  color: #667085;
+}
+
+.monthly-report-table-wrap {
+  width: 100%;
+  max-height: calc(100vh - 420px);
+  min-height: 300px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+.monthly-report-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.monthly-report-table th,
+.monthly-report-table td {
+  border-right: 1px solid #dbe4ef;
+  border-bottom: 1px solid #dbe4ef;
+}
+
+.monthly-report-table th:last-child,
+.monthly-report-table td:last-child {
+  border-right: 0;
+}
+
+/* Encabezados: se mantienen arriba con scroll vertical,
+   pero TODOS se desplazan horizontalmente */
+.monthly-report-table thead th {
+  padding: 8px 7px;
+  background: #f3f6fa;
+  color: #334155;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* NOMBRE también se mueve horizontalmente */
+.monthly-report-table .report-fixed-column {
+  position: sticky;
+  top: 0;
+  left: auto;
+  z-index: 5;
+  min-width: 290px;
+  background: #0b1736 !important;
+  color: #fff !important;
+  text-align: left;
+}
+
+.monthly-report-table .report-name-header {
+  min-width: 340px;
+  width: 340px;
+  text-align: left;
+}
+.report-category-header {
+  min-width: 70px;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.report-category-circulo-de-liderazgo {
+  background: #2457c5 !important;
+}
+
+.report-category-health {
+  background: #58cfe1 !important;
+  color: #0b1736 !important;
+}
+
+.report-category-mentoria {
+  background: #7654c6 !important;
+}
+
+.report-category-masterclass {
+  background: #7a8492 !important;
+}
+
+.report-category-anuncios-corporativos {
+  background: #0b1736 !important;
+}
+
+.report-category-ordinaria {
+  background: #60758f !important;
+}
+
+.report-session-header {
+  min-width: 54px;
+  background: #f3f6fa !important;
+}
+
+.report-session-header span,
+.report-session-header small {
+  display: block;
+}
+
+.report-session-header small {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.monthly-report-table tbody td {
+  height: 48px;
+  padding: 7px 8px;
+  background: #fff;
+  color: #475467;
+  font-size: 11px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.monthly-report-table tbody tr:hover td {
+  background: #fbfdff;
+}
+
+.monthly-report-table tbody .report-member-cell {
+  position: static;
+  min-width: 340px;
+  width: 340px;
+  max-width: 340px;
+  background: #fff;
+  text-align: left;
+  white-space: normal;
+  overflow: visible;
+}
+
+.report-member-cell strong,
+.report-member-cell small {
+  display: block;
+}
+
+.report-member-cell strong {
+  color: #101828;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.report-member-cell small {
+  margin-top: 3px;
+  color: #98a2b3;
+  font-size: 9px;
+}
+
+.attendance-cell {
+  width: 58px;
+  min-width: 58px;
+}
+
+.attendance-status {
+  display: inline-flex;
+  width: 27px;
+  height: 27px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.attendance-status.attended {
+  border-color: #c9e5d4;
+  background: #f3fbf6;
+  color: #2d7850;
+}
+
+.attendance-status.presential {
+  border-color: #cbdcf2;
+  background: #f3f8ff;
+  color: #37669a;
+}
+
+.attendance-status.justified-valid {
+  border-color: #bfe2cc;
+  background: #eaf8ef;
+  color: #237346;
+}
+
+.attendance-status.justified-extra,
+.attendance-status.absent {
+  border-color: #ead2d2;
+  background: #fff1f1;
+  color: #a33f3f;
+}
+
+.attendance-status.empty {
+  display: block;
+  width: 100%;
+  height: 27px;
+  border: 0;
+  background: transparent;
+  color: transparent;
+}
+
+.attendance-cell-not-applicable {
+  background: #fcfcfd !important;
+}
+
+.report-summary-group-header,
+.report-summary-header {
+  background: #0b1736 !important;
+  color: #fff !important;
+}
+
+.report-member-summary {
+  min-width: 62px;
+  font-size: 11px !important;
+  font-weight: 900;
+}
+
+.attended-total {
+  color: #047857 !important;
+}
+
+.absent-total {
+  color: #be123c !important;
+}
+
+.percentage-total {
+  color: #183875 !important;
+}
+
+.bonus-total {
+  color: #b45309 !important;
+}
+
+/* ============================================================
+   MENSAJE DE ERROR / VACÍO
+   ============================================================ */
+
+.dashboard-error {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border: 1px solid #f0cccc;
+  border-radius: 10px;
+  background: #fff5f5;
+  color: #a33f3f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.report-empty {
+  padding: 35px !important;
+  color: #98a2b3 !important;
+  text-align: center !important;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1100px) {
+  .monthly-report-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .monthly-report-top {
+    grid-template-columns: 1fr;
+  }
+
+  .monthly-report-downloads {
+    justify-content: flex-start;
+  }
+
+  .monthly-report-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .monthly-report-title h2 {
+    font-size: 17px;
+  }
+
+  .monthly-report-table-wrap {
+    max-height: calc(100vh - 500px);
+  }
+
+  .monthly-report-table-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .monthly-report-filters {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .monthly-report-filter-group {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .monthly-report-page {
+    padding: 12px;
+  }
+
+  .monthly-report-month {
+    flex-wrap: wrap;
+  }
+
+  .monthly-report-title {
+    order: 2;
+    flex: 1 1 calc(100% - 100px);
+  }
+
+  .monthly-report-today {
+    order: 3;
+  }
+
+  .monthly-report-filter-group {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .monthly-report-search,
+  .monthly-report-select {
+    width: 100%;
+  }
+
+  .monthly-report-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .monthly-report-table-wrap {
+    max-height: calc(100vh - 590px);
+  }
+}

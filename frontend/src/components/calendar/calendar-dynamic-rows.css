@@ -1,0 +1,21 @@
+
+.calendar-grid {
+  grid-auto-rows: minmax(95px, auto) !important;
+  align-items: stretch !important;
+}
+
+.calendar-day {
+  height: auto !important;
+  min-height: 95px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.calendar-day-meetings {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.meeting-card {
+  flex: 0 0 auto !important;
+}
