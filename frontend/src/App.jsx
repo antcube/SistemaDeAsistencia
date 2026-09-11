@@ -5,7 +5,6 @@ import {
 } from "react-router-dom";
 
 import Login from "./pages/Login.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
 import Calendar from "./pages/Calendar.jsx";
 import Attendance from "./pages/Attendance.jsx";
 import AttendancePortal from "./pages/AttendancePortal.jsx";
@@ -32,9 +31,7 @@ const App = () => {
 
       <Route
         path="/asistencia"
-        element={
-          <AttendancePortal />
-        }
+        element={<AttendancePortal />}
       />
 
       {/* =====================================================
@@ -43,100 +40,82 @@ const App = () => {
 
       <Route
         path="/login"
-        element={
-          <Login />
-        }
+        element={<Login />}
       />
 
       {/* =====================================================
           SISTEMA ADMINISTRATIVO
       ===================================================== */}
 
-      <Route
-        element={
-          <ProtectedRoute />
-        }
-      >
-        <Route
-          element={
-            <AdminLayout />
-          }
-        >
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AdminLayout />}>
 
           {/* =================================================
               MÓDULOS DISPONIBLES PARA ADMINISTRADOR Y GESTOR
               ================================================= */}
 
           <Route
-            path="/attendance"
-            element={
-              <Attendance />
-            }
+            path="/calendar"
+            element={<Calendar />}
           />
 
           <Route
             path="/reports"
-            element={
-              <MonthlyReport />
-            }
+            element={<MonthlyReport />}
           />
 
           <Route
             path="/zoom"
-            element={
-              <Zoom />
-            }
+            element={<Zoom />}
           />
 
           <Route
             path="/members"
-            element={
-              <Members />
-            }
+            element={<Members />}
+          />
+
+          {/*
+            Esta ruta se mantiene porque la asistencia puede abrirse
+            desde los módulos correspondientes. No se muestra como
+            opción independiente en el menú del Gestor de Círculo.
+          */}
+          <Route
+            path="/attendance"
+            element={<Attendance />}
           />
 
           {/* =================================================
-              MÓDULOS EXCLUSIVOS DEL ADMINISTRADOR GENERAL
+              MÓDULOS EXCLUSIVOS DEL ADMINISTRADOR PRINCIPAL
               ================================================= */}
-
-          <Route
-            path="/calendar"
-            element={
-              <Calendar />
-            }
-          />
 
           <Route element={<AdminOnlyRoute />}>
 
             <Route
-              path="/"
-              element={
-                <Dashboard />
-              }
-            />
-
-            <Route
               path="/admins"
-              element={
-                <AdminUsers />
-              }
+              element={<AdminUsers />}
             />
 
             <Route
               path="/programaciones"
-              element={
-                <Programaciones />
-              }
+              element={<Programaciones />}
             />
 
             <Route
               path="/audit"
-              element={
-                <Audit />
-              }
+              element={<Audit />}
             />
 
           </Route>
+
+          {/*
+            Ya NO existe Dashboard como pantalla de inicio.
+            Al entrar a / se lleva directamente al Calendario,
+            que es el primer módulo real del sistema.
+          */}
+          <Route
+            path="/"
+            element={<Navigate to="/calendar" replace />}
+          />
 
         </Route>
       </Route>
@@ -147,12 +126,7 @@ const App = () => {
 
       <Route
         path="*"
-        element={
-          <Navigate
-            to="/asistencia"
-            replace
-          />
-        }
+        element={<Navigate to="/calendar" replace />}
       />
 
     </Routes>

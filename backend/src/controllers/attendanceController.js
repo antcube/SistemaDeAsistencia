@@ -344,27 +344,19 @@ const setAttendance = async (req, res) => {
       const month =
         meetingDate.getMonth() + 1;
 
-      const existingCount =
-        await countMonthlyJustificationsInternal({
-          userId: user._id,
-          type: meeting.type,
-          year,
-          month,
-          excludeAttendanceId:
-            attendance?._id || null,
-        });
-
-      const limit =
-        getJustificationLimit(
-          meeting.type
-        );
-
-      if (existingCount >= limit) {
-        return res.status(400).json({
-          message:
-            `El miembro ya alcanzó el límite de ${limit} justificación(es) para ${meeting.type}.`,
-        });
-      }
+      /*
+       * IMPORTANTE:
+       * Aquí NO se bloquea la nueva justificación.
+       *
+       * El límite de 1 para Círculo de Liderazgo y de 3
+       * para el grupo general se utiliza únicamente en
+       * reportService.js para decidir cuáles J son válidas
+       * (verdes) y cuáles son extras (rojas).
+       *
+       * Por eso un miembro puede seguir teniendo J después
+       * de alcanzar el límite: la J adicional se guarda
+       * normalmente y luego se presenta como extra/roja.
+       */
     }
 
     /**

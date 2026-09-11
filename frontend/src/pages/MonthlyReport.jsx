@@ -537,18 +537,13 @@ const MonthlyReport = () => {
     );
   };
 
+  const REPORT_MONTH_NAMES = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+  ];
+
   const reportTitle =
-    new Date(
-      year,
-      month - 1,
-      1
-    ).toLocaleDateString(
-      "es-PE",
-      {
-        month: "long",
-        year: "numeric",
-      }
-    );
+    `${REPORT_MONTH_NAMES[Math.min(12, Math.max(1, Number(month))) - 1]} ${year}`;
 
   const getMemberTotals = (member) => {
     const totals = member?.totals || {};
@@ -697,6 +692,7 @@ const MonthlyReport = () => {
         properties: { defaultRowHeight: 20 },
       });
 
+      worksheet.sheetView.showGridLines = false;
 
       const sessionColumns = [];
       visibleCategories.forEach((category) => {
@@ -1193,6 +1189,7 @@ const MonthlyReport = () => {
       const winnerSheet = workbook.addWorksheet("Ganadores del Bono", {
         views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
       });
+      winnerSheet.sheetView.showGridLines = false;
 
       const winnerHeaders = [
         "DNI",

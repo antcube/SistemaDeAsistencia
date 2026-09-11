@@ -48,36 +48,26 @@
 ========================================================= */
 
 .month-selector {
-  display: flex;
-
+  display: grid;
+  grid-template-columns: 42px 240px 42px 48px;
   align-items: center;
-
-  gap: 14px;
-
-  flex-shrink: 0;
+  column-gap: 8px;
+  width: 396px;
+  min-width: 396px;
+  flex: 0 0 396px;
 }
 
 .calendar-month-title {
-  width: 190px;
-
-  min-width: 190px;
-
+  width: 240px;
+  min-width: 0;
   margin: 0;
-
   color: #172033;
-
   text-align: center;
-
   font-family: Inter, sans-serif;
-
   font-size: 18px;
-
   font-weight: 800;
-
   line-height: 1.1;
-
   text-transform: capitalize;
-
   white-space: nowrap;
 }
 
@@ -87,42 +77,23 @@
 
 .calendar-nav-button {
   width: 42px;
-
-  height: 42px;
-
   min-width: 42px;
-
+  height: 42px;
   min-height: 42px;
-
   padding: 0;
-
   border: none;
-
   border-radius: 9999px;
-
   display: inline-flex;
-
   align-items: center;
-
   justify-content: center;
-
   background: #000000;
-
   color: #ffffff;
-
   font-family: Arial, sans-serif;
-
   font-size: 30px;
-
   font-weight: 400;
-
   line-height: 1;
-
   cursor: pointer;
-
-  transition:
-    transform 0.15s ease,
-    background 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .calendar-nav-button:hover {
@@ -136,28 +107,20 @@
 ========================================================= */
 
 .calendar-today-button {
+  width: 48px;
+  min-width: 48px;
   height: 34px;
-
   min-height: 34px;
-
-  padding: 0 12px;
-
+  box-sizing: border-box;
+  padding: 0 8px;
   border: none;
-
   border-radius: 8px;
-
   background: #f1f5f9;
-
   color: #52637a;
-
   font-family: Inter, sans-serif;
-
   font-size: 10px;
-
   font-weight: 800;
-
   cursor: pointer;
-
   white-space: nowrap;
 }
 
@@ -956,4 +919,26 @@
  */
 .calendar-page .calendar-toolbar {
   background: #ffffff !important;
+}
+
+/* =========================================================
+   AJUSTE RESPONSIVE DEL SELECTOR DE MES
+   ========================================================= */
+@media (max-width: 760px) {
+  .month-selector {
+    grid-template-columns: 42px minmax(0, 1fr) 42px 48px;
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
+    column-gap: 8px;
+  }
+
+  .calendar-month-title {
+    width: 100%;
+  }
+
+  .calendar-today-button {
+    width: 48px;
+    min-width: 48px;
+  }
 }
