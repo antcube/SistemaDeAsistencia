@@ -11,13 +11,7 @@ const normalizeHeader = (value) => {
 };
 
 const normalizeValue = (value) => {
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return "";
-  }
-
+  if (value === null || value === undefined) return "";
   return String(value).trim();
 };
 
@@ -58,303 +52,224 @@ const HEADER_MAP = {
   phone: "phone",
 };
 
-const mapRow = (
-  row,
-  headers
-) => {
+const mapRow = (row, headers) => {
   const mapped = {};
 
-  for (
-    const header of headers
-  ) {
-    const normalized =
-      normalizeHeader(header);
-
-    const field =
-      HEADER_MAP[
-        normalized
-      ];
-
-    if (!field) {
-      continue;
-    }
-
-    mapped[field] =
-      normalizeValue(
-        row[header]
-      );
+  for (const header of headers) {
+    const normalized = normalizeHeader(header);
+    const field = HEADER_MAP[normalized];
+    if (!field) continue;
+    mapped[field] = normalizeValue(row[header]);
   }
 
   return mapped;
 };
 
-const importUsersFromRows =
-  async (rows, targetCircle = "", allowedCircles = null) => {
-    const errors = [];
-    const validRows = [];
+const hasAnyMemberData = (user) => {
+  return Boolean(
+    user.doc ||
+    user.name ||
+    user.username ||
+    user.circle ||
+    user.job ||
+    user.email ||
+    user.phone
+  );
+};
 
-    const cleanTargetCircle = normalizeValue(targetCircle);
+const importUsersFromRows = async (
+  rows,
+  targetCircle = "",
+  allowedCircles = null
+) => {
+  const errors = [];
+  const validRows = [];
+  const cleanTargetCircle = normalizeValue(targetCircle);
 
-    const allowedCircleSet = Array.isArray(allowedCircles)
-      ? new Set(allowedCircles.map((circle) => String(circle).trim().toUpperCase()))
-      : null;
-
-    const seenDni =
-      new Set();
-
-    /*
-     * Obtener círculos activos
-     * una sola vez.
-     */
-    const circles =
-      await Circle.find({
-        active: true,
-      });
-
-    const validCircles =
-      new Set(
-        circles.map(
-          (circle) =>
-            circle.name
+  const allowedCircleSet = Array.isArray(allowedCircles)
+    ? new Set(
+        allowedCircles.map((circle) =>
+          String(circle).trim().toUpperCase()
         )
-      );
+      )
+    : null;
 
-    if (!rows.length) {
-      return {
-        inserted: 0,
-        skipped: 0,
-        errors: [
-          {
-            row: 0,
-            message:
-              "El archivo no contiene registros.",
-          },
-        ],
-      };
+  const circles = await Circle.find({ active: true });
+
+  if (!rows.length) {
+    return {
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      errors: [{ row: 0, message: "El archivo no contiene registros." }],
+    };
+  }
+
+  const headers = Object.keys(rows[0]);
+  const seenDni = new Set();
+
+  rows.forEach((row, index) => {
+    const excelRow = index + 2;
+    const user = mapRow(row, headers);
+
+    // Una fila completamente vacía no representa a ningún miembro.
+    if (!hasAnyMemberData(user)) {
+      errors.push({
+        row: excelRow,
+        message: "La fila está completamente vacía.",
+      });
+      return;
     }
 
-    const headers =
-      Object.keys(
-        rows[0]
-      );
-
-    /*
-     * Procesar cada fila.
-     */
-    rows.forEach(
-      (row, index) => {
-        const excelRow =
-          index + 2;
-
-        const user =
-          mapRow(
-            row,
-            headers
-          );
-
-        if (!user.doc) {
-          errors.push({
-            row: excelRow,
-            message:
-              "El DNI es obligatorio.",
-          });
-
-          return;
-        }
-
-        if (!user.name) {
-          errors.push({
-            row: excelRow,
-            message:
-              "El nombre es obligatorio.",
-          });
-
-          return;
-        }
-
-        const destinationCircle = cleanTargetCircle || user.circle;
-
-        if (!destinationCircle) {
-          errors.push({
-            row: excelRow,
-            message:
-              "El círculo destino es obligatorio.",
-          });
-
-          return;
-        }
-
-        const matchingCircle = circles.find(
-          (circle) =>
-            String(circle.name || "").trim().toUpperCase() ===
-            destinationCircle.toUpperCase()
-        );
-
-        if (!matchingCircle) {
-          errors.push({
-            row: excelRow,
-            dni: user.doc,
-            message:
-              `El círculo destino "${destinationCircle}" no existe o está inactivo.`,
-          });
-
-          return;
-        }
-
-        if (allowedCircleSet && !allowedCircleSet.has(destinationCircle.toUpperCase())) {
-          errors.push({
-            row: excelRow,
-            dni: user.doc,
-            message:
-              `No tienes permisos para importar miembros al círculo "${destinationCircle}".`,
-          });
-
-          return;
-        }
-
-        if (
-          seenDni.has(
-            user.doc
-          )
-        ) {
-          errors.push({
-            row: excelRow,
-            dni: user.doc,
-            message:
-              "El DNI está duplicado dentro del archivo.",
-          });
-
-          return;
-        }
-
-        seenDni.add(
-          user.doc
-        );
-
-        validRows.push({
-          ...user,
-          circle: matchingCircle.name,
-          excelRow,
+    // DNI y nombre pueden quedar vacíos. Solo comprobamos duplicados
+    // cuando realmente existe un DNI.
+    if (user.doc) {
+      if (seenDni.has(user.doc)) {
+        errors.push({
+          row: excelRow,
+          dni: user.doc,
+          message: "El DNI está duplicado dentro del archivo.",
         });
+        return;
       }
+      seenDni.add(user.doc);
+    }
+
+    // El círculo destino siempre lo determina el selector de la interfaz.
+    if (!cleanTargetCircle) {
+      errors.push({
+        row: excelRow,
+        message: "El círculo destino es obligatorio.",
+      });
+      return;
+    }
+
+    const matchingCircle = circles.find(
+      (circle) =>
+        String(circle.name || "").trim().toUpperCase() ===
+        cleanTargetCircle.toUpperCase()
     );
 
-    /*
-     * Buscar DNIs que ya existen
-     * en MongoDB.
-     */
-    const docs =
-      validRows.map(
-        (row) => row.doc
-      );
+    if (!matchingCircle) {
+      errors.push({
+        row: excelRow,
+        dni: user.doc || "",
+        message: `El círculo destino "${cleanTargetCircle}" no existe o está inactivo.`,
+      });
+      return;
+    }
 
-    const existingUsers =
-      await User.find({
-        doc: {
-          $in: docs,
-        },
-      }).select(
-        "doc"
-      );
-
-    const existingDocs =
-      new Set(
-        existingUsers.map(
-          (user) =>
-            user.doc
-        )
-      );
-
-    const usersToInsert =
-      [];
-
-    let skipped = 0;
-    let updated = 0;
-
-    for (
-      const row of validRows
+    if (
+      allowedCircleSet &&
+      !allowedCircleSet.has(cleanTargetCircle.toUpperCase())
     ) {
-      if (
-        existingDocs.has(
-          row.doc
-        )
-      ) {
-        const existingUser = await User.findOne({ doc: row.doc });
+      errors.push({
+        row: excelRow,
+        dni: user.doc || "",
+        message: `No tienes permisos para importar miembros al círculo "${cleanTargetCircle}".`,
+      });
+      return;
+    }
 
-        if (!existingUser) {
-          skipped++;
-          continue;
-        }
+    validRows.push({
+      ...user,
+      circle: matchingCircle.name,
+      excelRow,
+    });
+  });
 
-        const changed =
-          String(existingUser.name || "") !== String(row.name || "") ||
-          String(existingUser.username || "") !== String(row.username || "") ||
-          String(existingUser.circle || "") !== String(row.circle || "") ||
-          String(existingUser.job || "") !== String(row.job || "") ||
-          String(existingUser.email || "") !== String(row.email || "") ||
-          String(existingUser.phone || "") !== String(row.phone || "");
+  // Solo buscamos usuarios existentes cuando hay DNIs reales.
+  const docs = validRows
+    .map((row) => row.doc)
+    .filter(Boolean);
 
-        if (changed) {
-          existingUser.name = row.name;
-          existingUser.username = row.username || "";
-          existingUser.circle = row.circle;
-          existingUser.job = row.job || "";
-          existingUser.email = row.email || "";
-          existingUser.phone = row.phone || "";
-          await existingUser.save();
-          updated++;
-        } else {
-          skipped++;
-        }
+  const existingUsers = docs.length
+    ? await User.find({ doc: { $in: docs } }).select("doc")
+    : [];
 
+  const existingDocs = new Set(existingUsers.map((user) => user.doc));
+  const usersToInsert = [];
+  let skipped = 0;
+  let updated = 0;
+
+  for (const row of validRows) {
+    // Un DNI permite actualizar al usuario existente.
+    if (row.doc && existingDocs.has(row.doc)) {
+      const existingUser = await User.findOne({ doc: row.doc });
+
+      if (!existingUser) {
+        skipped++;
         continue;
       }
 
-      usersToInsert.push({
-        doc: row.doc,
-        name: row.name,
-        username:
-          row.username || "",
-        circle: row.circle,
-        job: row.job || "",
-        email:
-          row.email || "",
-        phone:
-          row.phone || "",
-      });
+      const changed =
+        String(existingUser.name || "") !== String(row.name || "") ||
+        String(existingUser.username || "") !== String(row.username || "") ||
+        String(existingUser.circle || "") !== String(row.circle || "") ||
+        String(existingUser.job || "") !== String(row.job || "") ||
+        String(existingUser.email || "") !== String(row.email || "") ||
+        String(existingUser.phone || "") !== String(row.phone || "");
+
+      if (changed) {
+        existingUser.name = row.name || "";
+        existingUser.username = row.username || "";
+        existingUser.circle = row.circle;
+        existingUser.job = row.job || "";
+        existingUser.email = row.email || "";
+        existingUser.phone = row.phone || "";
+        await existingUser.save();
+        updated++;
+      } else {
+        skipped++;
+      }
+
+      continue;
     }
 
-    let inserted = 0;
-
-    if (
-      usersToInsert.length
-    ) {
-      const created =
-        await User.insertMany(
-          usersToInsert,
-          {
-            ordered: false,
-          }
-        );
-
-      inserted =
-        created.length;
-    }
-
-    return {
-      inserted,
-      updated,
-      skipped,
-      errors,
+    // Para un DNI vacío NO enviamos doc: "" a MongoDB. Se omite el campo
+    // para que el índice sparse permita múltiples miembros sin DNI.
+    const newUser = {
+      name: row.name || "",
+      username: row.username || "",
+      circle: row.circle,
+      job: row.job || "",
+      email: row.email || "",
+      phone: row.phone || "",
     };
+
+    if (row.doc) {
+      newUser.doc = row.doc;
+    }
+
+    usersToInsert.push(newUser);
+  }
+
+  let inserted = 0;
+
+  if (usersToInsert.length) {
+    const created = await User.insertMany(usersToInsert, {
+      ordered: false,
+    });
+    inserted = created.length;
+  }
+
+  return {
+    inserted,
+    updated,
+    skipped,
+    errors,
   };
+};
 
 const previewUsersFromRows = async (rows) => {
   const errors = [];
   const validRows = [];
 
   if (!Array.isArray(rows) || !rows.length) {
-    return { validRows: [], errors: [{ row: 0, message: "El archivo no contiene registros." }] };
+    return {
+      validRows: [],
+      errors: [{ row: 0, message: "El archivo no contiene registros." }],
+    };
   }
 
   const headers = Object.keys(rows[0] || {});
@@ -364,14 +279,29 @@ const previewUsersFromRows = async (rows) => {
     const excelRow = index + 2;
     const user = mapRow(row, headers);
 
-    if (!user.doc) { errors.push({ row: excelRow, message: "El DNI es obligatorio." }); return; }
-    if (!user.name) { errors.push({ row: excelRow, message: "El nombre es obligatorio." }); return; }
-    if (seenDni.has(user.doc)) { errors.push({ row: excelRow, dni: user.doc, message: "El DNI está duplicado dentro del archivo." }); return; }
-    seenDni.add(user.doc);
+    if (!hasAnyMemberData(user)) {
+      errors.push({
+        row: excelRow,
+        message: "La fila está completamente vacía.",
+      });
+      return;
+    }
+
+    if (user.doc) {
+      if (seenDni.has(user.doc)) {
+        errors.push({
+          row: excelRow,
+          dni: user.doc,
+          message: "El DNI está duplicado dentro del archivo.",
+        });
+        return;
+      }
+      seenDni.add(user.doc);
+    }
 
     validRows.push({
-      doc: user.doc,
-      name: user.name,
+      doc: user.doc || "",
+      name: user.name || "",
       username: user.username || "",
       circle: user.circle || "",
       job: user.job || "",
