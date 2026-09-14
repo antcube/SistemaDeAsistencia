@@ -8,7 +8,6 @@ import circleService from "../services/circleService";
 import importService from "../services/importService";
 import { useAuth } from "../context/AuthContext";
 import ExcelImportModal from "../components/ExcelImportModal";
-import CircleManager from "../components/CircleManager";
 
 const EMPTY_FORM = {
   doc: "",
@@ -81,9 +80,6 @@ const Members = () => {
 
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [pendingExcelFile, setPendingExcelFile] = useState(null);
-
-  const [circleManagerOpen, setCircleManagerOpen] =
-    useState(false);
 
   /*
    * =========================================================
@@ -559,18 +555,6 @@ const Members = () => {
             />
           </label>
 
-          {/* GESTIONAR CÍRCULOS — SOLO ADMIN PRINCIPAL */}
-
-          {isMainAdmin && (
-            <button
-              type="button"
-              onClick={() => setCircleManagerOpen(true)}
-              className="h-10 rounded-lg border border-violet-300 bg-white px-4 text-xs font-bold text-violet-700 transition hover:bg-violet-50"
-            >
-              ⚙️ Gestionar Círculos
-            </button>
-          )}
-
           {/* NUEVO MIEMBRO */}
 
           <button
@@ -895,16 +879,6 @@ const Members = () => {
             setExcelImportOpen(false);
             setPendingExcelFile(null);
             setPage(1);
-            await loadUsers();
-          }}
-        />
-      )}
-
-      {isMainAdmin && circleManagerOpen && (
-        <CircleManager
-          onClose={() => setCircleManagerOpen(false)}
-          onCirclesChanged={async () => {
-            await loadCircles();
             await loadUsers();
           }}
         />

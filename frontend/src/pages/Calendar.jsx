@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import MeetingForm from "../components/calendar/MeetingForm";
 import CalendarGrid from "../components/calendar/CalendarGrid";
@@ -53,7 +53,7 @@ const normalizeCircles = (circles = []) => {
 };
 
 const Calendar = () => {
-  const { admin } = useAuth();
+  const { admin, loading: authLoading } = useAuth();
   const today = new Date();
 
   const isMainAdmin =
@@ -92,70 +92,171 @@ const Calendar = () => {
    * CARGAR DATOS
    * ============================================================
    */
+  const loadRequestRef = useRef(0);
+  const circleRequestRef = useRef(0);
+
+  /*
+   * ============================================================
+   * CARGAR CÍRCULOS PRIMERO
+   * ============================================================
+   *
+   * El círculo seleccionado NO puede depender de la respuesta de
+   * reuniones. Primero obtenemos el alcance del usuario, respetamos
+   * el orden de circleScope y elegimos el primer círculo.
+   *
+   * Esto evita que una petición inicial sin círculo devuelva todas
+   * las reuniones del mes.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    const requestId = ++circleRequestRef.current;
+
+    const loadCircles = async () => {
+      if (authLoading || !admin) {
+        return;
+      }
+
+      try {
+        const response = await circleService.getCircles();
+
+        if (
+          cancelled ||
+          requestId !== circleRequestRef.current
+        ) {
+          return;
+        }
+
+        const circleList = extractList(response, [
+          "circles",
+          "data",
+        ]);
+
+        const allowedScope = Array.isArray(admin?.circleScope)
+          ? admin.circleScope
+              .map((value) => String(value || "").trim())
+              .filter(Boolean)
+          : [];
+
+        let visibleCircles = isCircleManager
+          ? circleList.filter((item) => {
+              const name = getCircleName(item);
+
+              return allowedScope.some(
+                (allowed) =>
+                  allowed.toLowerCase() ===
+                  name.toLowerCase()
+              );
+            })
+          : circleList;
+
+        // Para un gestor el orden de circleScope es el orden de
+        // asignación. El primer elemento siempre será la vista inicial.
+        if (isCircleManager && allowedScope.length) {
+          const byName = new Map(
+            visibleCircles.map((item) => [
+              getCircleName(item).toLowerCase(),
+              item,
+            ])
+          );
+
+          visibleCircles = allowedScope
+            .map((name) => byName.get(name.toLowerCase()))
+            .filter(Boolean);
+        }
+
+        setCircles(visibleCircles);
+
+        setSelectedCircle((current) => {
+          const currentName = String(current || "").trim();
+
+          const currentExists = currentName &&
+            visibleCircles.some(
+              (item) =>
+                getCircleName(item).toLowerCase() ===
+                currentName.toLowerCase()
+            );
+
+          if (currentExists) {
+            return currentName;
+          }
+
+          return getCircleName(visibleCircles[0]);
+        });
+      } catch (err) {
+        if (cancelled || requestId !== circleRequestRef.current) {
+          return;
+        }
+
+        console.error("Error cargando círculos del calendario:", err);
+        setCircles([]);
+        setSelectedCircle("");
+        setMeetings([]);
+        setError(
+          err?.message ||
+            "No se pudieron cargar los círculos."
+        );
+      }
+    };
+
+    loadCircles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, admin, isCircleManager]);
+
+  /*
+   * ============================================================
+   * CARGAR REUNIONES DEL CÍRCULO SELECCIONADO
+   * ============================================================
+   */
   const loadData = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
+    const effectiveCircle = String(selectedCircle || "").trim();
+
+    // Nunca consultamos reuniones sin círculo.
+    if (authLoading || !admin || !effectiveCircle) {
+      setMeetings([]);
+      setLoading(true);
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
-      const [
-        meetingResponse,
-        circleResponse,
-      ] = await Promise.all([
-        meetingService.getMeetings(
-          year,
-          month,
-          selectedCircle
-            ? {
-                circle: selectedCircle,
-              }
-            : {}
-        ),
+      // Al cambiar de círculo se limpia inmediatamente la vista anterior.
+      setMeetings([]);
 
-        circleService.getCircles(),
-      ]);
-
-      const meetingList = extractList(
-        meetingResponse,
-        [
-          "meetings",
-          "data",
-        ]
+      const meetingResponse = await meetingService.getMeetings(
+        year,
+        month,
+        {
+          circle: effectiveCircle,
+        }
       );
 
-      /*
-       * ========================================================
-       * FILTRO DE SEGURIDAD
-       * ========================================================
-       *
-       * Si hay un círculo seleccionado, solamente permitimos
-       * reuniones pertenecientes a ese círculo.
-       *
-       * Esto evita que una reunión de otro círculo aparezca
-       * accidentalmente en el calendario.
-       */
-      const filteredMeetings = selectedCircle
-        ? meetingList.filter((meeting) => {
-            const meetingCircle = String(
-              meeting?.circle || ""
-            )
-              .trim()
-              .toLowerCase();
+      if (requestId !== loadRequestRef.current) {
+        return;
+      }
 
-            const currentCircle = String(
-              selectedCircle
-            )
-              .trim()
-              .toLowerCase();
+      const meetingList = extractList(meetingResponse, [
+        "meetings",
+        "data",
+      ]);
 
-            return (
-              meetingCircle === currentCircle
-            );
-          })
-        : meetingList;
+      // Segunda barrera: aunque el backend devuelva algo inesperado,
+      // solo permitimos reuniones del círculo actualmente seleccionado.
+      const normalizedCircle = effectiveCircle.toLowerCase();
 
-      /*
-       * Evitar reuniones duplicadas visualmente.
-       */
+      const filteredMeetings = meetingList.filter((meeting) => {
+        const meetingCircle = String(meeting?.circle || "")
+          .trim()
+          .toLowerCase();
+
+        return meetingCircle === normalizedCircle;
+      });
+
       const uniqueMeetings = [];
       const seenMeetings = new Set();
 
@@ -182,85 +283,35 @@ const Calendar = () => {
       }
 
       setMeetings(uniqueMeetings);
-
-      const circleList = extractList(
-        circleResponse,
-        [
-          "circles",
-          "data",
-        ]
-      );
-
-      const allowedScope = Array.isArray(admin?.circleScope)
-        ? admin.circleScope.map((value) => String(value || "").trim()).filter(Boolean)
-        : [];
-
-      const visibleCircles = isCircleManager
-        ? circleList.filter((circle) => {
-            const name = getCircleName(circle);
-            return allowedScope.some(
-              (allowed) => String(allowed).toLowerCase() === String(name).toLowerCase()
-            );
-          })
-        : circleList;
-
-      setCircles(visibleCircles);
-
-      /*
-       * ========================================================
-       * CÍRCULO SELECCIONADO
-       * ========================================================
-       *
-       * Si todavía no hay círculo seleccionado,
-       * utilizamos el primero que viene desde MongoDB.
-       *
-       * Si el círculo seleccionado ya no existe,
-       * seleccionamos nuevamente el primero disponible.
-       */
-      setSelectedCircle((current) => {
-        const normalizedCurrent =
-          String(current || "").trim();
-
-        if (
-          normalizedCurrent &&
-          visibleCircles.some(
-            (circle) =>
-              getCircleName(circle) ===
-              normalizedCurrent
-          )
-        ) {
-          return normalizedCurrent;
-        }
-
-        const firstCircle =
-          visibleCircles.find(Boolean);
-
-        return firstCircle
-          ? getCircleName(firstCircle)
-          : "";
-      });
     } catch (err) {
+      if (requestId !== loadRequestRef.current) {
+        return;
+      }
+
       console.error(err);
 
+      setMeetings([]);
       setError(
         err?.message ||
           "No se pudo cargar el calendario."
       );
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [
     year,
     month,
     selectedCircle,
     admin,
-    isCircleManager,
+    authLoading,
   ]);
 
   /*
-   * ============================================================
-   * CARGA INICIAL Y CAMBIO DE MES / CÍRCULO
-   * ============================================================
+   * La consulta de reuniones solamente ocurre cuando ya existe un
+   * círculo seleccionado. Al entrar por primera vez, el efecto de
+   * círculos establece el primero y recién entonces se ejecuta esto.
    */
   useEffect(() => {
     loadData();

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import scheduleService from "../services/scheduleService";
 import circleService from "../services/circleService";
+import { useAuth } from "../context/AuthContext";
+import CircleManager from "../components/CircleManager";
 
 const WEEKDAYS = [
   { value: 1, label: "Lunes" },
@@ -111,8 +113,10 @@ const getStatusClasses = (active) => {
 };
 
 const Programaciones = () => {
+  const { admin } = useAuth();
   const [schedules, setSchedules] = useState([]);
   const [circles, setCircles] = useState([]);
+  const [circleManagerOpen, setCircleManagerOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -162,6 +166,9 @@ const Programaciones = () => {
 
   const [terminationDate, setTerminationDate] =
     useState("");
+
+  const isMainAdmin =
+    String(admin?.adminId || "").trim() === "ADM-001";
 
   const loadData = async () => {
     try {
@@ -762,14 +769,26 @@ const Programaciones = () => {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={loadData}
-              disabled={loading}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              ↻ Actualizar
-            </button>
+            <div className="flex items-center gap-2">
+              {isMainAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setCircleManagerOpen(true)}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-violet-300 bg-white px-4 text-xs font-bold text-violet-700 shadow-sm transition hover:bg-violet-50"
+                >
+                  ⚙️ Gestionar Círculos
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={loadData}
+                disabled={loading}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                ↻ Actualizar
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2012,6 +2031,15 @@ const Programaciones = () => {
             </div>
           </div>
         )}
+
+      {isMainAdmin && circleManagerOpen && (
+        <CircleManager
+          onClose={() => setCircleManagerOpen(false)}
+          onCirclesChanged={async () => {
+            await loadData();
+          }}
+        />
+      )}
     </div>
   );
 };

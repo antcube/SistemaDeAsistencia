@@ -233,21 +233,26 @@ const MonthlyReport = () => {
 
         setAvailableCircles(names);
 
-        if (isCircleManager) {
-          setCircle((current) => {
-            const currentName =
-              String(current || "").trim();
+        // ======================================================
+        // CÍRCULO INICIAL
+        // ======================================================
+        // La primera carga NUNCA debe quedar en "Todos los círculos".
+        // Se toma el primer círculo en el mismo orden en que el backend
+        // entrega los círculos disponibles para el usuario.
+        // Si el usuario ya estaba en un círculo válido, lo conservamos.
+        setCircle((current) => {
+          const currentName =
+            String(current || "").trim();
 
-            if (
-              currentName &&
-              names.includes(currentName)
-            ) {
-              return currentName;
-            }
+          if (
+            currentName &&
+            names.includes(currentName)
+          ) {
+            return currentName;
+          }
 
-            return names[0] || "";
-          });
-        }
+          return names[0] || "";
+        });
       } catch (err) {
         console.error(
           "Error cargando círculos del reporte:",
@@ -405,11 +410,10 @@ const MonthlyReport = () => {
      *
      * `circleService.getCircles()` ya devuelve el
      * alcance correcto para cada usuario.
+     * El primer círculo se selecciona automáticamente;
+     * este selector solo sirve para cambiar entre los
+     * círculos disponibles, nunca para mostrar todos juntos.
      */
-    if (isCircleManager) {
-      return availableCircles;
-    }
-
     return availableCircles;
   }, [
     availableCircles,
@@ -538,8 +542,18 @@ const MonthlyReport = () => {
   };
 
   const REPORT_MONTH_NAMES = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
   ];
 
   const reportTitle =
@@ -1442,7 +1456,6 @@ const MonthlyReport = () => {
 
             <div className="monthly-report-title">
               <h2>
-                Reporte de{" "}
                 {reportTitle}
               </h2>
             </div>
@@ -1636,10 +1649,6 @@ const MonthlyReport = () => {
                   setCircle(event.target.value)
                 }
               >
-                <option value="">
-                  Todos los círculos
-                </option>
-
                 {circles.map((item) => (
                   <option key={item} value={item}>
                     {item}

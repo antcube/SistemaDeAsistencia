@@ -123,23 +123,16 @@ const ensureDefaultSchedules = async (
 ) => {
   let circles;
 
-  if (
-    Array.isArray(specificCircles)
-  ) {
+  if (Array.isArray(specificCircles)) {
     circles = [
       ...new Set(
         specificCircles
-          .map((circle) =>
-            String(
-              circle || ""
-            ).trim()
-          )
+          .map((circle) => String(circle || "").trim())
           .filter(Boolean)
       ),
     ];
   } else {
-    circles =
-      await getExistingCircles();
+    circles = await getExistingCircles();
   }
 
   if (!circles.length) {
@@ -147,100 +140,177 @@ const ensureDefaultSchedules = async (
   }
 
   const createdSchedules = [];
+  const today = getTodayString();
 
-  const today =
-    getTodayString();
-
-  for (
-    const defaultSchedule of DEFAULT_SCHEDULES
-  ) {
-    for (
-      const circle of circles
-    ) {
+  for (const defaultSchedule of DEFAULT_SCHEDULES) {
+    for (const circle of circles) {
       /*
-       * Buscamos cualquier programación existente
-       * para ese tipo y círculo.
+       * Una programación predeterminada es única por:
+       * tipo + círculo + nombre + horario + días.
        *
-       * No importa si contiene otros círculos:
-       * mientras este círculo ya esté incluido,
-       * no creamos otra.
+       * Primero buscamos una programación activa que ya incluya
+       * el círculo. Esto conserva las programaciones existentes
+       * que fueron creadas para varios círculos.
        */
-      const existingSchedule =
-        await Schedule.findOne({
-          active: true,
-          type:
-            defaultSchedule.type,
-          circles: circle,
-        });
+      let existingSchedules = await Schedule.find({
+        active: true,
+        type: defaultSchedule.type,
+        circles: circle,
+      }).sort({ createdAt: 1, _id: 1 });
 
-      if (existingSchedule) {
+      if (existingSchedules.length) {
+        /*
+         * Si por una ejecución anterior ya quedaron dos o más
+         * programaciones predeterminadas para el mismo círculo,
+         * conservamos la primera y desactivamos las demás SOLO
+         * cuando tienen las características del horario oficial.
+         */
+        const matchingSchedules = existingSchedules.filter(
+          (schedule) =>
+            String(schedule.name || "").trim() ===
+              defaultSchedule.name &&
+            String(schedule.title || "").trim() ===
+              defaultSchedule.title &&
+            String(schedule.time || "").trim() ===
+              defaultSchedule.time &&
+            String(schedule.endTime || "").trim() ===
+              defaultSchedule.endTime &&
+            JSON.stringify(
+              [...(schedule.weekdays || [])].sort((a, b) => a - b)
+            ) ===
+              JSON.stringify(
+                [...defaultSchedule.weekdays].sort((a, b) => a - b)
+              )
+        );
+
+        if (matchingSchedules.length) {
+          const keeper = matchingSchedules[0];
+          const duplicateIds = matchingSchedules
+            .slice(1)
+            .map((schedule) => schedule._id);
+
+          if (duplicateIds.length) {
+            await Schedule.updateMany(
+              { _id: { $in: duplicateIds } },
+              {
+                $set: {
+                  active: false,
+                  deletedAt: new Date(),
+                  deletedBy: "SYSTEM_DUPLICATE_CLEANUP",
+                  changeType: "TERMINATED",
+                },
+              }
+            );
+
+            /*
+             * También desactivamos las reuniones duplicadas que
+             * pertenecían a las programaciones repetidas. No
+             * tocamos la reunión que pertenece a la programación
+             * que conservamos.
+             */
+            await Meeting.updateMany(
+              {
+                scheduleId: { $in: duplicateIds },
+                active: true,
+              },
+              {
+                $set: {
+                  active: false,
+                  deletedAt: new Date(),
+                  deletedBy: "SYSTEM_DUPLICATE_CLEANUP",
+                  deletedBySchedule: true,
+                },
+              }
+            );
+          }
+
+          continue;
+        }
+
+        /*
+         * Hay una programación del mismo tipo para el círculo,
+         * pero no coincide exactamente con el horario oficial.
+         * No la tocamos: podría ser una programación personalizada.
+         */
         continue;
       }
 
       /*
-       * Si existe una programación inactiva,
-       * NO la reutilizamos automáticamente porque
-       * podría representar una programación terminada.
+       * No existe una programación activa para este círculo.
+       * La creamos una sola vez.
        *
-       * Creamos una nueva programación activa.
+       * El filtro exacto de arriba, combinado con esta sección
+       * dentro de un proceso, evita que una navegación normal del
+       * calendario genere nuevas copias.
        */
-      const schedule =
-        await Schedule.create({
-          seriesId:
-            crypto.randomUUID(),
+      const schedule = await Schedule.create({
+        seriesId: crypto.randomUUID(),
+        version: 1,
+        previousScheduleId: null,
+        name: defaultSchedule.name,
+        circles: [circle],
+        type: defaultSchedule.type,
+        title: defaultSchedule.title,
+        host: "",
+        time: defaultSchedule.time,
+        endTime: defaultSchedule.endTime,
+        location: "",
+        weekdays: defaultSchedule.weekdays,
+        startDate: today,
+        endDate: null,
+        changeType: "CREATED",
+        active: true,
+        createdBy: "SYSTEM",
+      });
 
-          version: 1,
+      createdSchedules.push(schedule);
+    }
+  }
 
-          previousScheduleId:
-            null,
+  /*
+   * Limpieza final de reuniones oficiales duplicadas.
+   *
+   * Esto corrige también duplicados que ya estaban almacenados
+   * antes de instalar esta corrección. Conservamos la reunión
+   * activa más antigua para cada combinación:
+   * tipo + círculo + fecha + hora.
+   */
+  for (const defaultSchedule of DEFAULT_SCHEDULES) {
+    for (const circle of circles) {
+      const meetings = await Meeting.find({
+        active: true,
+        type: defaultSchedule.type,
+        circle,
+        time: defaultSchedule.time,
+      }).sort({ date: 1, createdAt: 1, _id: 1 });
 
-          name:
-            defaultSchedule.name,
+      const keeperByDate = new Map();
+      const duplicateMeetingIds = [];
 
-          circles: [circle],
+      for (const meeting of meetings) {
+        const key = `${meeting.date}|${meeting.time}`;
 
-          type:
-            defaultSchedule.type,
+        if (!keeperByDate.has(key)) {
+          keeperByDate.set(key, meeting._id);
+          continue;
+        }
 
-          title:
-            defaultSchedule.title,
+        duplicateMeetingIds.push(meeting._id);
+      }
 
-          host: "",
-
-          time:
-            defaultSchedule.time,
-
-          endTime:
-            defaultSchedule.endTime,
-
-          location: "",
-
-          weekdays:
-            defaultSchedule.weekdays,
-
-          /*
-           * Para círculos nuevos:
-           * la programación comienza desde el día
-           * en que fue creada.
-           *
-           * Para círculos que ya existían:
-           * también funciona porque generateMeetingsForMonth
-           * se encargará de crear las sesiones correspondientes.
-           */
-          startDate: today,
-
-          endDate: null,
-
-          changeType: "CREATED",
-
-          active: true,
-
-          createdBy: "SYSTEM",
-        });
-
-      createdSchedules.push(
-        schedule
-      );
+      if (duplicateMeetingIds.length) {
+        await Meeting.updateMany(
+          { _id: { $in: duplicateMeetingIds } },
+          {
+            $set: {
+              active: false,
+              deletedAt: new Date(),
+              deletedBy: "SYSTEM_DUPLICATE_CLEANUP",
+              deletedBySchedule: true,
+            },
+          }
+        );
+      }
     }
   }
 

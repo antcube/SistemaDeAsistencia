@@ -373,6 +373,30 @@ const setAttendance = async (req, res) => {
         });
     }
 
+    /*
+     * IMPORTANTE PARA DESHACER:
+     * Capturamos el estado ANTERIOR antes de modificar cualquier
+     * campo de la asistencia. La versión anterior de este código
+     * hacía esta copia después de asignar el nuevo estado, por lo
+     * que "previousAttendance" terminaba conteniendo el estado nuevo
+     * y Deshacer volvía a guardar exactamente el mismo estado.
+     */
+    const previousAttendance = attendance && !isNewAttendance
+      ? {
+          status: attendance.status || "No asistió",
+          note: attendance.note || "",
+          notes: attendance.notes || "",
+          justificationReason: attendance.justificationReason || "",
+          justifiedBy: attendance.justifiedBy || "",
+          justifiedAt: attendance.justifiedAt || null,
+          attendedAt: attendance.attendedAt || null,
+          registeredBy: attendance.registeredBy || "",
+          source: attendance.source || "ADMIN",
+          attendanceMode: attendance.attendanceMode || "MANUAL",
+          registeredAt: attendance.registeredAt || null,
+        }
+      : null;
+
     attendance.doc = user.doc;
     attendance.name = user.name;
     attendance.circle = user.circle;
@@ -454,93 +478,56 @@ const setAttendance = async (req, res) => {
       attendance.attendedAt = null;
     }
 
+    /*
+     * previousAttendance ya fue capturado ANTES de cualquier cambio.
+     * Ahora sí persistimos el nuevo estado.
+     */
     await attendance.save();
 
-    /**
-     * --------------------------------------------------------
-     * BITÁCORA
-     * --------------------------------------------------------
-     */
+    const actorName = req.user?.name || req.user?.adminId || "Administrador";
+    const actorId = req.user?.adminId || "";
+    const actorRole = req.user?.role || "";
+    const meetingType = normalizeMeetingType(meeting.type);
+    const meetingTitle = meeting.title || meeting.type || "Reunión";
+    const meetingDate = meeting.date || "";
+    const meetingTime = meeting.time || "";
+
+    const previousLabel = previousStatus || "Sin registro";
+
+    const detailedDescription = isNewAttendance
+      ? `${actorId || actorName} registró a ${user.name} con estado "${normalizedStatus}" para la reunión ${meetingTitle} (${meetingType}) del ${meetingDate}${meetingTime ? ` a las ${meetingTime}` : ""}, en el círculo ${meeting.circle}.`
+      : `${actorId || actorName} cambió el estado de ${user.name} de "${previousLabel}" a "${normalizedStatus}" para la reunión ${meetingTitle} (${meetingType}) del ${meetingDate}${meetingTime ? ` a las ${meetingTime}` : ""}, en el círculo ${meeting.circle}.`;
 
     await createAuditLog({
       admin: req.user,
-
-      action: isNewAttendance
-        ? "CREATE_ATTENDANCE"
-        : "UPDATE_ATTENDANCE",
-
+      action: isNewAttendance ? "CREATE_ATTENDANCE" : "UPDATE_ATTENDANCE",
       module: "attendance",
-
-      description: isNewAttendance
-        ? `Registro de asistencia creado para ${user.name} en la reunión ${
-            meeting.title ||
-            meeting.type ||
-            meeting._id
-          }.`
-        : `Asistencia modificada para ${user.name}: ${
-            previousStatus ||
-            "Sin registro"
-          } → ${normalizedStatus}.`,
-
-      targetId:
-        attendance._id,
-
-      targetName:
-        user.name ||
-        user.doc ||
-        "",
-
-      circle:
-        meeting.circle ||
-        user.circle ||
-        "",
-
+      description: detailedDescription,
+      targetId: attendance._id,
+      targetName: user.name || user.doc || "",
+      circle: meeting.circle || user.circle || "",
+      reversible: true,
       metadata: {
-        attendanceId:
-          String(
-            attendance._id
-          ),
-
-        meetingId:
-          String(
-            meeting._id
-          ),
-
-        userId:
-          String(
-            user._id
-          ),
-
-        doc:
-          user.doc ||
-          "",
-
-        meetingTitle:
-          meeting.title ||
-          "",
-
-        meetingType:
-          meeting.type ||
-          "",
-
-        previousStatus,
-
-        newStatus:
-          normalizedStatus,
-
-        note:
-          attendance.note ||
-          "",
-
-        justificationReason:
-          attendance.justificationReason ||
-          "",
-
-        source:
-          attendance.source,
-
-        attendanceMode:
-          attendance.attendanceMode,
+        attendanceId: String(attendance._id),
+        meetingId: String(meeting._id),
+        userId: String(user._id),
+        memberDoc: user.doc || "",
+        memberName: user.name || "",
+        meetingTitle,
+        meetingType,
+        meetingDate,
+        meetingTime,
+        previousStatus: previousLabel,
+        newStatus: normalizedStatus,
+        wasCreated: isNewAttendance,
+        previousAttendance,
+        note: attendance.note || "",
+        justificationReason: attendance.justificationReason || "",
+        source: attendance.source,
+        attendanceMode: attendance.attendanceMode,
+        afterUpdatedAt: attendance.updatedAt
+          ? attendance.updatedAt.toISOString()
+          : new Date().toISOString(),
       },
     });
 

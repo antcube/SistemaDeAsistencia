@@ -8,31 +8,22 @@ const createAuditLog = async ({
   targetId = "",
   targetName = "",
   circle = "",
+  reversible = false,
   metadata = {},
 }) => {
   try {
     const log = await AuditLog.create({
-      adminId:
-        admin?.adminId || "",
-
-      adminName:
-        admin?.name || "",
-
+      adminId: admin?.adminId || "",
+      adminName: admin?.name || "",
+      adminRole: admin?.role || "",
       action,
-
       module,
-
       description,
-
-      targetId:
-        targetId
-          ? String(targetId)
-          : "",
-
+      targetId: targetId ? String(targetId) : "",
       targetName,
-
       circle,
-
+      reversible: Boolean(reversible),
+      undone: false,
       metadata,
     });
 
@@ -42,15 +33,9 @@ const createAuditLog = async ({
      * La bitácora nunca debe tumbar una operación
      * principal del sistema.
      */
-    console.error(
-      "Error creando bitácora:",
-      error.message
-    );
-
+    console.error("Error creando bitácora:", error.message);
     return null;
   }
 };
 
-module.exports = {
-  createAuditLog,
-};
+module.exports = { createAuditLog };
