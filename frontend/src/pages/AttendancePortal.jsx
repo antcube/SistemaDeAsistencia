@@ -1284,12 +1284,6 @@ const AttendancePortal = () => {
                     </button>
                   )}
 
-                  {qrSuccess && (
-                    <div className="attendance-portal-success">
-                      ✓ Tu asistencia ha sido registrada.
-                    </div>
-                  )}
-
                 </form>
               ) : (
                 <div className="attendance-portal-error">

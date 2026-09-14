@@ -361,6 +361,7 @@ const getMonthlyCircleReport =
             user: {
               $in: userIds,
             },
+            active: true,
           }).sort({
             registeredAt: 1,
             _id: 1,

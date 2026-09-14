@@ -239,7 +239,10 @@ const undoAuditLog = async (req, res) => {
 
     if (wasCreated) {
       if (attendance) {
-        await Attendance.deleteOne({ _id: attendance._id });
+        attendance.active = false;
+        attendance.deletedAt = new Date();
+        attendance.deletedBy = admin.adminId || admin.name || "ADM-001";
+        await attendance.save();
       }
     } else {
       if (!attendance) {

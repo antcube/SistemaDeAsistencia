@@ -58,6 +58,11 @@ const MeetingAttendanceModal = ({
   const [qrLoading, setQrLoading] = useState(false);
   const [qrMeeting, setQrMeeting] = useState(meeting);
   const [qrTick, setQrTick] = useState(Date.now());
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveDate, setMoveDate] = useState("");
+  const [moveTime, setMoveTime] = useState("");
+  const [moveEndTime, setMoveEndTime] = useState("");
+  const [moveSaving, setMoveSaving] = useState(false);
 
   const isModerator = String(admin?.role || "").trim() === "Moderador";
   const isMainAdmin = String(admin?.adminId || "").trim() === "ADM-001";
@@ -87,6 +92,10 @@ const MeetingAttendanceModal = ({
     setEditingRow(null);
     setQrOpen(false);
     setQrMeeting(meeting);
+    setMoveOpen(false);
+    setMoveDate(String(meeting.date || "").slice(0, 10));
+    setMoveTime(String(meeting.time || "").slice(0, 5));
+    setMoveEndTime(String(meeting.endTime || "").slice(0, 5));
     loadAttendance();
   }, [open, meeting?._id]);
 
@@ -177,6 +186,40 @@ const MeetingAttendanceModal = ({
     }
   };
 
+  const handleMoveMeeting = async () => {
+    if (!meeting?._id || !isMainAdmin) return;
+
+    if (!moveDate || !moveTime) {
+      setError("Selecciona la nueva fecha y hora.");
+      return;
+    }
+
+    if (moveEndTime && moveEndTime <= moveTime) {
+      setError("La hora de finalización debe ser posterior a la hora de inicio.");
+      return;
+    }
+
+    try {
+      setMoveSaving(true);
+      setError("");
+      const response = await meetingService.moveMeeting(meeting._id, {
+        date: moveDate,
+        time: moveTime,
+        endTime: moveEndTime,
+      });
+      const data = response?.data || response;
+      setQrMeeting(data?.meeting || { ...meeting, date: moveDate, time: moveTime, endTime: moveEndTime });
+      setMoveOpen(false);
+      await loadAttendance();
+      onRefresh?.();
+    } catch (err) {
+      console.error("Error cambiando día:", err);
+      setError(err?.message || "No se pudo cambiar el día de la sesión.");
+    } finally {
+      setMoveSaving(false);
+    }
+  };
+
   const activateQr = async () => {
     if (!meeting?._id || !canManageAttendance) return;
     try {
@@ -211,12 +254,14 @@ const MeetingAttendanceModal = ({
     }
   };
 
-  const copyQr = async () => {
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-    } catch {
-      // El enlace también está visible para copiarlo manualmente.
-    }
+  const openQrLink = () => {
+    if (!publicUrl) return;
+
+    window.open(
+      publicUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
   };
 
   if (!open || !meeting) return null;
@@ -252,6 +297,22 @@ const MeetingAttendanceModal = ({
               {isMainAdmin && (
                 <button
                   type="button"
+                  onClick={() => {
+                    setMoveDate(String(meeting.date || "").slice(0, 10));
+                    setMoveTime(String(meeting.time || "").slice(0, 5));
+                    setMoveEndTime(String(meeting.endTime || "").slice(0, 5));
+                    setError("");
+                    setMoveOpen(true);
+                  }}
+                  disabled={loading || saving || moveSaving}
+                  className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+                >
+                  📅 Cambiar de día
+                </button>
+              )}
+              {isMainAdmin && (
+                <button
+                  type="button"
                   onClick={() => meetingService.deleteMeeting(meeting._id).then(() => { onClose?.(); onRefresh?.(); }).catch((err) => setError(err?.message || "No se pudo eliminar la sesión."))}
                   className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
                 >
@@ -277,7 +338,13 @@ const MeetingAttendanceModal = ({
                     <div className="text-xs font-bold text-emerald-950">📱 QR Activo · Tiempo disponible: <span className="font-mono text-sm text-emerald-700">{qrTime}</span></div>
                     <div className="mt-1 flex items-center gap-2">
                       <span className="min-w-0 truncate rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-mono text-[11px] text-slate-600">{publicUrl}</span>
-                      <button type="button" onClick={copyQr} className="shrink-0 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-bold text-emerald-800">📋 Copiar</button>
+                      <button
+                        type="button"
+                        onClick={openQrLink}
+                        className="shrink-0 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-[11px] font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-md active:translate-y-0"
+                      >
+                        ↗️ Abrir enlace
+                      </button>
                     </div>
                   </div>
                   <div className="flex shrink-0 gap-2">
@@ -339,6 +406,28 @@ const MeetingAttendanceModal = ({
         </div>
       </div>
 
+      {moveOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-[430px] rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
+            <div className="mb-5 flex items-start justify-between border-b border-slate-100 pb-4">
+              <div>
+                <div className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600">Reprogramar sesión</div>
+                <h3 className="mt-1 text-lg font-bold text-slate-900">Cambiar de día</h3>
+                <p className="mt-1 text-xs text-slate-500">La sesión conservará todas sus asistencias y datos.</p>
+              </div>
+              <button type="button" onClick={() => setMoveOpen(false)} disabled={moveSaving} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">✕</button>
+            </div>
+            <div className="space-y-4">
+              <div><label className="mb-1 block text-xs font-bold text-slate-700">Nueva fecha</label><input type="date" value={moveDate} onChange={(event) => setMoveDate(event.target.value)} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15" /></div>
+              <div><label className="mb-1 block text-xs font-bold text-slate-700">Nueva hora de inicio</label><input type="time" value={moveTime} onChange={(event) => setMoveTime(event.target.value)} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15" /></div>
+              <div><label className="mb-1 block text-xs font-bold text-slate-700">Nueva hora de finalización</label><input type="time" value={moveEndTime} onChange={(event) => setMoveEndTime(event.target.value)} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15" /></div>
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3"><div className="text-[11px] font-bold text-blue-800">ℹ️ La sesión seguirá siendo la misma</div><p className="mt-1 text-[10px] leading-relaxed text-blue-700">Solo se cambiarán la fecha y el horario. Las asistencias, estados, justificaciones y observaciones permanecerán guardados.</p></div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={() => setMoveOpen(false)} disabled={moveSaving} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Cancelar</button><button type="button" onClick={handleMoveMeeting} disabled={moveSaving} className="rounded-lg bg-[#2457c5] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#1d4ed8] disabled:opacity-50">{moveSaving ? "Guardando..." : "Guardar cambio"}</button></div>
+          </div>
+        </div>
+      )}
+
       {editingRow && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
@@ -358,7 +447,13 @@ const MeetingAttendanceModal = ({
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between"><div><h3 className="text-base font-bold text-slate-900">QR de Asistencia</h3><p className="mt-1 text-xs text-slate-500">{meeting.title || meeting.type} · {meeting.circle}</p></div><button type="button" onClick={() => setQrOpen(false)} className="text-slate-400">✕</button></div>
-            {qrIsActive ? <div className="mt-4 text-center"><div className="mx-auto mb-3 flex h-[220px] w-[220px] items-center justify-center rounded-xl border border-slate-200 bg-white p-3"><img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(publicUrl)}`} alt="QR de asistencia" className="h-[200px] w-[200px]" /></div><div className="text-sm font-extrabold text-emerald-700">⏱️ Tiempo restante: {qrTime}</div><div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2 font-mono text-[10px] text-slate-600 break-all">{publicUrl}</div><button type="button" onClick={copyQr} className="mt-3 rounded-lg border border-emerald-300 bg-white px-4 py-2 text-xs font-bold text-emerald-800">📋 Copiar enlace</button></div> : <div className="py-10 text-center text-sm text-slate-500">El QR está inactivo o expirado.</div>}
+            {qrIsActive ? <div className="mt-4 text-center"><div className="mx-auto mb-3 flex h-[220px] w-[220px] items-center justify-center rounded-xl border border-slate-200 bg-white p-3"><img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(publicUrl)}`} alt="QR de asistencia" className="h-[200px] w-[200px]" /></div><div className="text-sm font-extrabold text-emerald-700">⏱️ Tiempo restante: {qrTime}</div><div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2 font-mono text-[10px] text-slate-600 break-all">{publicUrl}</div><button
+              type="button"
+              onClick={openQrLink}
+              className="mt-3 inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-white px-4 py-2 text-xs font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-md active:translate-y-0"
+            >
+              ↗️ Abrir enlace de asistencia
+            </button></div> : <div className="py-10 text-center text-sm text-slate-500">El QR está inactivo o expirado.</div>}
             <div className="mt-5 flex justify-end"><button type="button" onClick={() => setQrOpen(false)} className="rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-white">Cerrar</button></div>
           </div>
         </div>

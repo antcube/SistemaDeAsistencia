@@ -211,6 +211,7 @@ const countMonthlyJustificationsInternal = async ({
     status: {
       $in: ["Justificado"],
     },
+    active: true,
   };
 
   if (excludeAttendanceId) {
@@ -326,6 +327,12 @@ const setAttendance = async (req, res) => {
       : "";
 
     const isNewAttendance = !attendance;
+
+    if (attendance && attendance.active === false) {
+      attendance.active = true;
+      attendance.deletedAt = null;
+      attendance.deletedBy = "";
+    }
 
     /**
      * --------------------------------------------------------
@@ -666,6 +673,7 @@ const getMeetingAttendance = async (
 
       Attendance.find({
         meeting: meeting._id,
+        active: true,
       })
         .populate(
           "user",
@@ -963,6 +971,7 @@ const getMonthAttendance = async (
         user: {
           $in: userIds,
         },
+        active: true,
       }).populate(
         "user",
         "doc name username circle job email phone"
@@ -1197,6 +1206,7 @@ const getUserMonthlyAttendance = async (
                     meeting._id
                 ),
             },
+            active: true,
           })
         : [];
 
@@ -1393,6 +1403,7 @@ const getUserMonthlyAttendanceByDni =
                       meeting._id
                   ),
               },
+              active: true,
             })
           : [];
 
@@ -1690,6 +1701,12 @@ const registerAttendanceByQr =
       const isNewAttendance =
         !attendance;
 
+      if (attendance && attendance.active === false) {
+        attendance.active = true;
+        attendance.deletedAt = null;
+        attendance.deletedBy = "";
+      }
+
       if (!attendance) {
         attendance =
           new Attendance({
@@ -1893,10 +1910,14 @@ const deleteAttendance =
           attendance.user
         );
 
-      await Attendance.deleteOne({
-        _id:
-          attendance._id,
-      });
+      attendance.active = false;
+      attendance.deletedAt = new Date();
+      attendance.deletedBy =
+        req.user?.adminId ||
+        req.user?.name ||
+        "";
+
+      await attendance.save();
 
       if (
         user &&

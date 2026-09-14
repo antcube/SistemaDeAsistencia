@@ -22,11 +22,6 @@ const hasCirclePermission = (req, circle) => {
   return canManageCircle(req.user, circle);
 };
 
-/**
- * ============================================================
- * LISTAR MIEMBROS
- * ============================================================
- */
 const getUsers = async (req, res) => {
   try {
     const {
@@ -148,11 +143,6 @@ const getUsers = async (req, res) => {
   }
 };
 
-/**
- * ============================================================
- * OBTENER MIEMBRO POR ID
- * ============================================================
- */
 const getUserById = async (req, res) => {
   try {
     const user =
@@ -193,11 +183,6 @@ const getUserById = async (req, res) => {
   }
 };
 
-/**
- * ============================================================
- * CREAR MIEMBRO
- * ============================================================
- */
 const createUser = async (req, res) => {
   try {
     const {
@@ -300,10 +285,6 @@ const createUser = async (req, res) => {
       error
     );
 
-    /*
-     * Protección adicional contra carreras
-     * con el índice unique de MongoDB.
-     */
     if (
       error.code === 11000
     ) {
@@ -320,11 +301,7 @@ const createUser = async (req, res) => {
   }
 };
 
-/**
- * ============================================================
- * ACTUALIZAR MIEMBRO
- * ============================================================
- */
+
 const updateUser = async (req, res) => {
   try {
     const user =
@@ -339,11 +316,6 @@ const updateUser = async (req, res) => {
       });
     }
 
-    /*
-     * Para cambiar un miembro de círculo,
-     * necesitamos permiso tanto sobre el círculo
-     * actual como sobre el nuevo.
-     */
     if (
       !hasCirclePermission(
         req,
@@ -511,18 +483,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-/**
- * ============================================================
- * ELIMINAR MIEMBRO
- * ============================================================
- *
- * Eliminar un miembro NO elimina:
- * - reuniones
- * - asistencias históricas
- * - registros de asistencia
- *
- * Solamente elimina el registro del miembro.
- */
 const deleteUser = async (req, res) => {
   try {
     const user =
@@ -585,10 +545,126 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const deleteUsersByCircle = async (req, res) => {
+  try {
+    if (!hasGlobalPermission(req)) {
+      return res.status(403).json({
+        message:
+          "Solo el Administrador Principal puede eliminar miembros.",
+      });
+    }
+
+    const circleName = decodeURIComponent(
+      String(req.params.circleName || "").trim()
+    );
+
+    if (!circleName) {
+      return res.status(400).json({
+        message:
+          "El círculo es obligatorio.",
+      });
+    }
+
+    const circle = await Circle.findOne({
+      name: {
+        $regex: `^${circleName.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}$`,
+        $options: "i",
+      },
+    });
+
+    if (!circle) {
+      return res.status(404).json({
+        message:
+          "Círculo no encontrado.",
+      });
+    }
+
+    const members = await User.find({
+      circle: circle.name,
+    }).select(
+      "_id doc name username circle job email phone"
+    );
+
+    if (!members.length) {
+      return res.json({
+        message:
+          "El círculo no tiene miembros para eliminar.",
+        deletedCount: 0,
+        circle: circle.name,
+      });
+    }
+
+    const memberSnapshots = members.map((member) => ({
+      userId: String(member._id),
+      doc: member.doc || "",
+      name: member.name || "",
+      username: member.username || "",
+      circle: member.circle || "",
+      job: member.job || "",
+      email: member.email || "",
+      phone: member.phone || "",
+    }));
+
+    const result = await User.deleteMany({
+      circle: circle.name,
+    });
+
+    // La eliminación de miembros no debe fallar si la bitácora
+    // presenta un problema. Los miembros ya fueron eliminados
+    // correctamente y el círculo, reuniones y asistencias históricas
+    // deben permanecer intactos.
+    try {
+      await createAuditLog({
+        admin: req.user || req.admin,
+        action: "DELETE_CIRCLE_MEMBERS",
+        module: "members",
+        description:
+          `Se eliminaron ${result.deletedCount} miembro(s) del círculo ${circle.name}. El círculo, sus reuniones y sus asistencias históricas permanecen intactos.`,
+        targetId: circle._id,
+        targetName: circle.name,
+        circle: circle.name,
+        metadata: {
+          circleId: String(circle._id),
+          circleName: circle.name,
+          deletedCount: result.deletedCount,
+          members: memberSnapshots,
+          circlePreserved: true,
+          meetingsPreserved: true,
+          attendanceHistoryPreserved: true,
+        },
+      });
+    } catch (auditError) {
+      console.error(
+        "Error guardando bitácora de eliminación masiva:",
+        auditError
+      );
+    }
+
+    return res.json({
+      message:
+        `${result.deletedCount} miembro(s) eliminado(s) correctamente del círculo.`,
+      deletedCount: result.deletedCount,
+      circle: circle.name,
+    });
+  } catch (error) {
+    console.error(
+      "Error eliminando todos los miembros del círculo:",
+      error
+    );
+
+    return res.status(500).json({
+      message:
+        error?.message ||
+        "Error eliminando los miembros del círculo.",
+    });
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
+  deleteUsersByCircle,
 };

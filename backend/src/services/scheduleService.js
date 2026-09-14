@@ -381,6 +381,25 @@ const generateMeetingsForSchedule = async (
       const circle of schedule.circles
     ) {
       /*
+       * Una ocurrencia programada puede haber sido reprogramada
+       * manualmente a otra fecha. En ese caso no generamos otra
+       * sesión en la fecha original.
+       */
+      const manuallyRescheduledMeeting =
+        await Meeting.findOne({
+          scheduleId: schedule._id,
+          circle,
+          manuallyRescheduled: true,
+          originalScheduleDate: date,
+          originalScheduleTime: schedule.time,
+          active: true,
+        });
+
+      if (manuallyRescheduledMeeting) {
+        continue;
+      }
+
+      /*
        * Primero comprobamos si ESTA programación
        * ya generó la reunión.
        */
@@ -400,6 +419,20 @@ const generateMeetingsForSchedule = async (
         });
 
       if (existingMeeting) {
+        continue;
+      }
+
+      const deletedMeeting = await Meeting.findOne({
+        scheduleId: schedule._id,
+        circle,
+        date,
+        time: schedule.time,
+        active: false,
+        deletedBySchedule: { $ne: true },
+        deletedByScheduleChange: { $ne: true },
+      });
+
+      if (deletedMeeting) {
         continue;
       }
 

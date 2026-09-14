@@ -162,6 +162,7 @@ const dashboardController = {
             meeting: {
               $in: meetingIds,
             },
+            active: true,
           }).lean();
       }
 

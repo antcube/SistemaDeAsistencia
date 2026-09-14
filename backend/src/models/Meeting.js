@@ -91,6 +91,27 @@ const meetingSchema = new mongoose.Schema(
       default: null,
     },
 
+    /*
+     * Permite mover una ocurrencia de una programación sin que el
+     * generador automático vuelva a crearla en su fecha original.
+     */
+    manuallyRescheduled: {
+      type: Boolean,
+      default: false,
+    },
+
+    originalScheduleDate: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    originalScheduleTime: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     createdBy: {
       type: String,
       trim: true,

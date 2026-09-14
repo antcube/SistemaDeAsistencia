@@ -879,6 +879,12 @@ const saveZoomAttendance =
         }
       );
 
+    if (attendance && attendance.active === false) {
+      attendance.active = true;
+      attendance.deletedAt = null;
+      attendance.deletedBy = "";
+    }
+
     if (!attendance) {
       attendance =
         new Attendance({
@@ -886,6 +892,7 @@ const saveZoomAttendance =
             meeting._id,
           user:
             user._id,
+          active: true,
         });
     }
 
