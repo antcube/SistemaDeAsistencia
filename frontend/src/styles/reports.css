@@ -656,3 +656,236 @@
     min-width: 58px;
   }
 }
+
+
+.report-summary-card {
+  position: relative;
+  overflow: hidden;
+
+  cursor: default;
+
+  transform: translateY(0) scale(1);
+
+  box-shadow:
+    0 8px 20px rgba(15, 23, 42, 0.12);
+
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease;
+}
+
+
+.report-summary-card:hover {
+  transform: translateY(-5px) scale(1.015);
+
+  box-shadow:
+    0 16px 32px rgba(15, 23, 42, 0.20);
+}
+
+
+.report-summary-card::before {
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+  left: -120%;
+
+  width: 70%;
+  height: 100%;
+
+  background:
+    linear-gradient(
+      100deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.05) 35%,
+      rgba(255, 255, 255, 0.18) 50%,
+      rgba(255, 255, 255, 0.05) 65%,
+      transparent 100%
+    );
+
+  transform: skewX(-18deg);
+
+  pointer-events: none;
+
+  transition: left 0.65s ease;
+}
+
+.report-summary-card:hover::before {
+  left: 140%;
+}
+
+
+.report-summary-card::after {
+  content: "";
+
+  position: absolute;
+
+  right: -18px;
+  bottom: -28px;
+
+  width: 76px;
+  height: 76px;
+
+  border-radius: 50%;
+
+  background:
+    rgba(255, 255, 255, 0.12);
+
+  pointer-events: none;
+
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s ease;
+}
+
+.report-summary-card:hover::after {
+  transform: scale(1.22) translate(-4px, -4px);
+}
+
+
+.report-summary-card > div {
+  position: relative;
+  z-index: 2;
+
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.report-summary-card:hover > div {
+  transform: translateX(2px);
+}
+
+.report-summary-card > span {
+  position: relative;
+  z-index: 3;
+
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.25s ease;
+}
+
+.report-summary-card:hover > span {
+  transform: scale(1.08);
+}
+
+
+.report-summary-card strong {
+  transition:
+    transform 0.25s ease;
+}
+
+.report-summary-card:hover strong {
+  transform: translateY(-1px);
+}
+
+
+.report-summary-card:active {
+  transform:
+    translateY(-1px)
+    scale(0.995);
+
+  transition-duration: 0.08s;
+}
+
+.navigation-arrow {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.navigation-arrow:hover {
+  transform: scale(1.08);
+
+  box-shadow:
+    0 6px 14px rgba(15, 23, 42, 0.20);
+}
+
+.navigation-arrow:active {
+  transform: scale(0.94);
+}
+
+
+.monthly-report-today {
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.monthly-report-today:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 5px 12px rgba(36, 87, 197, 0.12);
+}
+
+.monthly-report-today:active {
+  transform: translateY(0);
+}
+
+
+.monthly-report-download-btn {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.monthly-report-download-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 6px 14px rgba(4, 120, 87, 0.13);
+}
+
+.monthly-report-download-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+
+.monthly-report-search,
+.monthly-report-select {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.monthly-report-search:hover,
+.monthly-report-select:hover {
+  border-color: #a9bad3;
+}
+
+.monthly-report-search:focus,
+.monthly-report-select:focus {
+  transform: translateY(-1px);
+}
+
+
+
+@media (prefers-reduced-motion: reduce) {
+
+  .report-summary-card,
+  .report-summary-card::before,
+  .report-summary-card::after,
+  .report-summary-card > div,
+  .report-summary-card > span,
+  .report-summary-card strong,
+  .navigation-arrow,
+  .monthly-report-today,
+  .monthly-report-download-btn,
+  .monthly-report-search,
+  .monthly-report-select {
+    transition: none !important;
+  }
+
+  .report-summary-card:hover,
+  .navigation-arrow:hover,
+  .monthly-report-today:hover,
+  .monthly-report-download-btn:hover {
+    transform: none !important;
+  }
+}

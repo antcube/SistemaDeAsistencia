@@ -766,24 +766,6 @@ const Members = () => {
   </button>
 )}
 
-                            {/* ELIMINAR:
-                                SOLO ADMIN PRINCIPAL */}
-
-                            {isMainAdmin && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleDelete(
-                                    user
-                                  )
-                                }
-                                title="Eliminar miembro"
-                                className="inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-white px-2 text-[11px] font-bold text-rose-600 transition hover:bg-rose-50"
-                              >
-                                🗑️
-                              </button>
-                            )}
-
                           </div>
 
                         </td>

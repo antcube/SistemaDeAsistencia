@@ -1,0 +1,230 @@
+/* ==========================================================
+   /ASISTENCIA — REGISTRO DE ASISTENCIA MEDIANTE QR
+   Este archivo controla únicamente la vista que aparece cuando
+   se abre /asistencia?asistencia_qr=...
+   ========================================================== */
+
+.attendance-portal-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 24px 20px 40px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(31, 65, 121, 0.24), transparent 38%),
+    linear-gradient(145deg, #0d1629 0%, #0c172b 52%, #0a1425 100%);
+}
+
+.attendance-register-view {
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+  margin: 9vh auto 0;
+  padding: 30px 30px 31px;
+  border: 1px solid rgba(255, 255, 255, 0.94);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.28),
+    0 8px 24px rgba(0, 0, 0, 0.14);
+  text-align: center;
+  animation: register-card-in 0.28s ease both;
+}
+
+@keyframes register-card-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.attendance-register-view .attendance-portal-logo {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #5545df, #3b2dc1);
+  color: #ffffff;
+  font-size: 23px;
+  box-shadow: 0 10px 23px rgba(67, 53, 207, 0.28);
+}
+
+.attendance-register-view .attendance-portal-kicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  margin-bottom: 8px;
+  padding: 5px 9px;
+  border: 1px solid #dce4ff;
+  border-radius: 7px;
+  background: #f2f5ff;
+  color: #4e5ba8;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.attendance-register-view h1 {
+  margin: 0;
+  color: #15233a;
+  font-size: 23px;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.attendance-register-view > p {
+  margin: 8px 0 19px;
+  color: #8a9ab0;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+/* En el QR mostramos primero el estado de disponibilidad. */
+.attendance-register-view .attendance-portal-form::before {
+  content: "●  QR Activo para Registro";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 39px;
+  box-sizing: border-box;
+  margin: 4px 0 9px;
+  padding: 0 12px;
+  border: 1px solid #8de7c1;
+  border-radius: 10px;
+  background: #ecfbf5;
+  color: #168566;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.attendance-register-view .attendance-portal-form {
+  text-align: left;
+}
+
+.attendance-register-view .attendance-portal-form label {
+  display: block;
+  margin: 13px 0 6px;
+  color: #435875;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.attendance-register-view .attendance-portal-input-wrap {
+  position: relative;
+}
+
+.attendance-register-view .attendance-portal-input-wrap > span {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  z-index: 1;
+  transform: translateY(-50%);
+  color: #7654d8;
+  font-size: 14px;
+}
+
+.attendance-register-view .attendance-portal-input-wrap input {
+  width: 100%;
+  height: 48px;
+  box-sizing: border-box;
+  border: 2px solid #cbd7e7;
+  border-radius: 10px;
+  padding: 0 13px 0 39px;
+  outline: none;
+  background: #ffffff;
+  color: #253c59;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.attendance-register-view .attendance-portal-input-wrap input::placeholder {
+  color: #a7b1c0;
+  opacity: 1;
+}
+
+.attendance-register-view .attendance-portal-input-wrap input:focus {
+  border-color: #617ed4;
+  box-shadow: 0 0 0 4px rgba(65, 91, 204, 0.10);
+}
+
+.attendance-register-view .text-center {
+  margin-top: 8px;
+  color: #667a94 !important;
+  font-size: 9px !important;
+  font-family: monospace;
+  font-weight: 800 !important;
+  text-align: center;
+}
+
+.attendance-register-view .attendance-portal-submit,
+.attendance-register-view .attendance-portal-form button {
+  width: 100%;
+  min-height: 43px;
+  margin-top: 13px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #214887, #1a3d78);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(26, 61, 120, 0.22);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.attendance-register-view .attendance-portal-submit:hover:not(:disabled),
+.attendance-register-view .attendance-portal-form button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 11px 22px rgba(26, 61, 120, 0.28);
+}
+
+.attendance-register-view .attendance-portal-submit:disabled,
+.attendance-register-view .attendance-portal-form button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.attendance-register-view .attendance-portal-error,
+.attendance-register-view .attendance-portal-success {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.attendance-register-view .attendance-portal-error {
+  border: 1px solid #efcccc;
+  background: #fff5f5;
+  color: #a63f3f;
+}
+
+.attendance-register-view .attendance-portal-success {
+  border: 1px solid #9ce7c8;
+  background: #edfbf5;
+  color: #158362;
+}
+
+@media (max-width: 560px) {
+  .attendance-portal-page { padding: 12px 9px 28px; }
+  .attendance-register-view {
+    max-width: 100%;
+    margin-top: 25px;
+    padding: 25px 20px 27px;
+    border-radius: 18px;
+  }
+  .attendance-register-view .attendance-portal-logo {
+    width: 56px;
+    height: 56px;
+  }
+  .attendance-register-view h1 { font-size: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attendance-register-view { animation: none; }
+}

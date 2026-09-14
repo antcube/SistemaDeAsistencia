@@ -1,0 +1,802 @@
+/* ==========================================================
+   /ASISTENCIA — CONSULTA DE HISTORIAL
+   Este archivo controla únicamente el ingreso de DNI para
+   consultar asistencia y el reporte personal posterior.
+   ========================================================== */
+
+.attendance-portal-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 26px 20px 45px;
+  background:
+    radial-gradient(circle at 50% -15%, rgba(40, 91, 163, 0.28), transparent 42%),
+    linear-gradient(145deg, #07172c 0%, #081a31 52%, #061326 100%);
+  color: #17263a;
+}
+
+/* ==========================================================
+   INGRESO DEL DNI PARA CONSULTAR
+   ========================================================== */
+
+.attendance-history-login-view {
+  width: 100%;
+  max-width: 430px;
+  box-sizing: border-box;
+  margin: 10vh auto 0;
+  padding: 31px 30px 32px;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.27), 0 8px 25px rgba(0, 9, 27, 0.18);
+  text-align: center;
+  animation: history-login-in 0.28s ease both;
+}
+
+@keyframes history-login-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.attendance-history-login-view .attendance-portal-logo {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #5545df, #3b2dc1);
+  color: #ffffff;
+  font-size: 23px;
+  box-shadow: 0 10px 23px rgba(67, 53, 207, 0.28);
+}
+
+.attendance-history-login-view .attendance-portal-kicker {
+  display: inline-flex;
+  margin-bottom: 8px;
+  padding: 5px 9px;
+  border: 1px solid #dce4ff;
+  border-radius: 7px;
+  background: #f2f5ff;
+  color: #4e5ba8;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.attendance-history-login-view h1 {
+  margin: 0;
+  color: #15233a;
+  font-size: 23px;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.attendance-history-login-view h1 strong { color: #2855c9; }
+
+.attendance-history-login-view > p {
+  margin: 8px 0 22px;
+  color: #8a9ab0;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.attendance-history-login-view .attendance-portal-form { text-align: left; }
+
+.attendance-history-login-view .attendance-portal-form label {
+  display: block;
+  margin: 13px 0 6px;
+  color: #435875;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.attendance-history-login-view .attendance-portal-input-wrap { position: relative; }
+
+.attendance-history-login-view .attendance-portal-input-wrap > span {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  z-index: 1;
+  transform: translateY(-50%);
+  color: #7654d8;
+  font-size: 14px;
+}
+
+.attendance-history-login-view .attendance-portal-input-wrap input {
+  width: 100%;
+  height: 48px;
+  box-sizing: border-box;
+  border: 2px solid #cbd7e7;
+  border-radius: 10px;
+  padding: 0 13px 0 39px;
+  outline: none;
+  background: #ffffff;
+  color: #253c59;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.attendance-history-login-view .attendance-portal-input-wrap input:focus {
+  border-color: #617ed4;
+  box-shadow: 0 0 0 4px rgba(65, 91, 204, 0.10);
+}
+
+.attendance-history-login-view .attendance-portal-input-wrap input::placeholder {
+  color: #a7b1c0;
+  opacity: 1;
+}
+
+.attendance-history-login-view .attendance-portal-submit,
+.attendance-history-login-view .attendance-portal-form button {
+  width: 100%;
+  min-height: 43px;
+  margin-top: 13px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #214887, #1a3d78);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(26, 61, 120, 0.22);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.attendance-history-login-view .attendance-portal-submit:hover:not(:disabled),
+.attendance-history-login-view .attendance-portal-form button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 11px 22px rgba(26, 61, 120, 0.28);
+}
+
+.attendance-history-login-view .attendance-portal-submit:disabled,
+.attendance-history-login-view .attendance-portal-form button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.attendance-history-login-view .attendance-portal-error {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #efcccc;
+  border-radius: 8px;
+  background: #fff5f5;
+  color: #a63f3f;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* ==========================================================
+   REPORTE PERSONAL
+   ========================================================== */
+
+.attendance-history-view {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.attendance-history-view .attendance-portal-member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  box-sizing: border-box;
+  padding: 19px 21px;
+  border: 1px solid rgba(93, 137, 190, 0.42);
+  border-radius: 17px;
+  background: linear-gradient(135deg, #0b2c51 0%, #0c294a 56%, #0a203b 100%);
+  color: #ffffff;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.18);
+}
+
+.attendance-history-view .attendance-portal-member-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.attendance-history-view .attendance-portal-avatar {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.075);
+  color: #7855c9;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.attendance-history-view .attendance-portal-kicker {
+  display: inline-flex;
+  margin-bottom: 5px;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #aabed7;
+  font-size: 7px;
+  font-weight: 900;
+}
+
+.attendance-history-view .attendance-portal-member h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 22px;
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+.attendance-history-view .attendance-portal-member p {
+  margin: 5px 0 0;
+  color: #c8d6e9;
+  font-size: 10px;
+}
+
+.attendance-history-view .attendance-portal-member p strong { color: #ffffff; }
+
+.attendance-history-view .attendance-portal-member-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.attendance-history-view .attendance-portal-member-actions button {
+  height: 36px;
+  padding: 0 13px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.attendance-history-view .attendance-portal-refresh {
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+}
+
+.attendance-history-view .attendance-portal-change {
+  border: 0;
+  background: #ed1e4b;
+  color: #ffffff;
+  box-shadow: 0 7px 15px rgba(237, 30, 75, 0.20);
+}
+
+.attendance-history-view .attendance-portal-member-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.attendance-history-view .attendance-portal-member-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.attendance-history-view .attendance-portal-error.global {
+  margin: 14px 0;
+  padding: 10px 12px;
+  border: 1px solid #efcccc;
+  border-radius: 8px;
+  background: #fff5f5;
+  color: #a63f3f;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* MES */
+
+.attendance-history-view .attendance-portal-monthbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 17px;
+  padding: 10px 13px;
+  border: 1px solid rgba(128, 164, 204, 0.32);
+  border-radius: 12px;
+  background: rgba(10, 34, 61, 0.92);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.11);
+}
+
+.attendance-history-view .attendance-portal-monthbar > button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(151, 180, 216, 0.25);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #dbe7f7;
+  font-size: 21px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.attendance-history-view .attendance-portal-monthbar > button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.attendance-history-view .attendance-portal-monthbar > div {
+  min-width: 245px;
+  text-align: center;
+}
+
+.attendance-history-view .attendance-portal-monthbar small {
+  display: block;
+  color: #90a7c3;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.attendance-history-view .attendance-portal-monthbar strong {
+  display: block;
+  margin-top: 2px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.attendance-history-view .attendance-portal-monthbar .attendance-portal-today {
+  width: auto;
+  min-width: 47px;
+  padding: 0 12px;
+  color: #dce9ff;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+/* RESUMEN */
+
+.attendance-history-view .attendance-portal-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 11px;
+  margin-top: 14px;
+}
+
+.attendance-history-view .portal-summary-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.10);
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.attendance-history-view .portal-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.14);
+}
+
+.attendance-history-view .portal-summary-card > span {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.attendance-history-view .portal-summary-card small {
+  display: block;
+  color: #73839a;
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.attendance-history-view .portal-summary-card strong {
+  display: block;
+  margin-top: 2px;
+  color: #152d4a;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.attendance-history-view .portal-summary-card.blue { border-color: #9dbce8; }
+.attendance-history-view .portal-summary-card.blue > span { background: #e7efff; color: #2863dc; }
+.attendance-history-view .portal-summary-card.green { border-color: #8ed8bd; }
+.attendance-history-view .portal-summary-card.green > span { background: #ddf7ee; color: #079c6d; }
+.attendance-history-view .portal-summary-card.orange { border-color: #f0ce82; }
+.attendance-history-view .portal-summary-card.orange > span { background: #fff3d7; color: #d5960c; }
+.attendance-history-view .portal-summary-card.red { border-color: #f0a1b4; }
+.attendance-history-view .portal-summary-card.red > span { background: #ffe4eb; color: #e31c4b; }
+
+/* REPORTE */
+
+.attendance-history-view .attendance-portal-report {
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(144, 174, 210, 0.34);
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 13px 30px rgba(0, 0, 0, 0.12);
+}
+
+.attendance-history-view .attendance-portal-report-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  box-sizing: border-box;
+  padding: 17px 19px;
+  border-bottom: 1px solid #dfe6ef;
+  background: linear-gradient(180deg, #0c2039 0%, #0a1d34 100%);
+}
+
+.attendance-history-view .attendance-portal-report-head > div:first-child > span {
+  color: #73a5ff;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.attendance-history-view .attendance-portal-report-head h2 {
+  margin: 4px 0 0;
+  color: #ffffff;
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.attendance-history-view .attendance-portal-report-head p {
+  margin: 5px 0 0;
+  color: #9db0c8;
+  font-size: 9px;
+}
+
+.attendance-history-view .attendance-portal-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.attendance-history-view .attendance-portal-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #c2cede;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.attendance-history-view .legend-dot {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.attendance-history-view .legend-dot.attended { background: #e5f8ef; color: #07845f; }
+.attendance-history-view .legend-dot.justified { background: #fff3d4; color: #9b7315; }
+.attendance-history-view .legend-dot.absent { background: #ffe8ed; color: #d71c48; }
+
+.attendance-history-view .attendance-portal-categories {
+  padding: 13px;
+  background: #f7f9fc;
+}
+
+.attendance-history-view .attendance-portal-category {
+  margin-bottom: 11px;
+  overflow: hidden;
+  border: 1px solid #dce4ee;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.attendance-history-view .attendance-portal-category:last-child { margin-bottom: 0; }
+
+.attendance-history-view .attendance-portal-category-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #e1e7ef;
+  background: #f0f4f9;
+}
+
+.attendance-history-view .attendance-portal-category-title span {
+  color: #263f5b;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.attendance-history-view .attendance-portal-category-title small {
+  color: #7d8da2;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.attendance-history-view .attendance-portal-session-list { background: #ffffff; }
+
+.attendance-history-view .attendance-portal-session {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) 270px;
+  align-items: center;
+  gap: 14px;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border-bottom: 1px solid #edf1f5;
+  transition: background 0.16s ease;
+}
+
+.attendance-history-view .attendance-portal-session:last-child { border-bottom: 0; }
+.attendance-history-view .attendance-portal-session:hover { background: #fbfdff; }
+
+.attendance-history-view .portal-session-date strong,
+.attendance-history-view .portal-session-date small,
+.attendance-history-view .portal-session-info strong,
+.attendance-history-view .portal-session-info span { display: block; }
+
+.attendance-history-view .portal-session-date strong {
+  color: #294763;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.attendance-history-view .portal-session-date small {
+  margin-top: 3px;
+  color: #8291a4;
+  font-size: 8px;
+}
+
+/* ETIQUETAS DE CATEGORÍA */
+.attendance-history-view .portal-category-badge {
+  display: inline-flex !important;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0 !important;
+  padding: 5px 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 8px !important;
+  line-height: 1.2;
+  font-weight: 900 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.attendance-history-view .portal-category-badge.leadership {
+  border-color: #a9c4ef;
+  background: #e7efff;
+  color: #2457c5;
+}
+
+.attendance-history-view .portal-category-badge.health {
+  border-color: #9adfe8;
+  background: #e2f8fb;
+  color: #188da0;
+}
+
+.attendance-history-view .portal-category-badge.mentoria {
+  border-color: #c6b7e8;
+  background: #eee9fb;
+  color: #7654c6;
+}
+
+.attendance-history-view .portal-category-badge.masterclass {
+  border-color: #c2c8d0;
+  background: #edf0f3;
+  color: #68717e;
+}
+
+.attendance-history-view .portal-category-badge.announcements {
+  border-color: #1e3158;
+  background: #e8edf6;
+  color: #0b1736;
+}
+
+.attendance-history-view .portal-category-badge.default {
+  border-color: #cbd6e4;
+  background: #f0f4f9;
+  color: #294763;
+}
+
+.attendance-history-view .portal-session-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.attendance-history-view .portal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 104px;
+  box-sizing: border-box;
+  padding: 5px 7px;
+  border-radius: 6px;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.attendance-history-view .portal-status b {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  border-radius: 4px;
+  font-size: 8px;
+}
+
+.attendance-history-view .portal-status.attended { border: 1px solid #a8e0c9; background: #ecfaf4; color: #16815f; }
+.attendance-history-view .portal-status.attended b { background: #d4f2e3; }
+.attendance-history-view .portal-status.presencial { border: 1px solid #b2c9ed; background: #edf4ff; color: #3569aa; }
+.attendance-history-view .portal-status.presencial b { background: #dce9fb; }
+.attendance-history-view .portal-status.justified { border: 1px solid #e8d19a; background: #fff8e7; color: #927020; }
+.attendance-history-view .portal-status.justified b { background: #f9edc9; }
+
+/* J válida = cuenta como asistencia */
+.attendance-history-view .portal-status.justified-valid { border: 1px solid #a8e0c9; background: #ecfaf4; color: #16815f; }
+.attendance-history-view .portal-status.justified-valid b { background: #d4f2e3; }
+
+/* J excedida = cuenta como falta */
+.attendance-history-view .portal-status.justified-extra { border: 1px solid #efadbd; background: #fff0f3; color: #c8244d; }
+.attendance-history-view .portal-status.justified-extra b { background: #f9dce4; }
+
+.attendance-history-view .portal-status.absent { border: 1px solid #efadbd; background: #fff0f3; color: #c8244d; }
+.attendance-history-view .portal-status.absent b { background: #f9dce4; }
+
+.attendance-history-view .portal-qr-note {
+  padding: 4px 6px;
+  border-radius: 5px;
+  background: #e8f0ff;
+  color: #285bc4;
+  font-size: 7px;
+  font-weight: 900;
+}
+
+.attendance-history-view .portal-session-note {
+  max-width: 170px;
+  color: #7b8798;
+  font-size: 7px;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.attendance-history-view .attendance-portal-empty {
+  padding: 45px 20px;
+  color: #7e8ea3;
+  font-size: 10px;
+  text-align: center;
+  background: #ffffff;
+}
+
+.attendance-history-view .attendance-portal-footer {
+  padding: 17px;
+  color: #8394a9;
+  font-size: 8px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .attendance-history-view .attendance-portal-session {
+    grid-template-columns: 105px minmax(0, 1fr);
+  }
+  .attendance-history-view .portal-session-status {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .attendance-history-view .portal-session-note {
+    max-width: none;
+    text-align: left;
+  }
+}
+
+@media (max-width: 760px) {
+  .attendance-history-view .attendance-portal-member {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .attendance-history-view .attendance-portal-member-actions { width: 100%; }
+  .attendance-history-view .attendance-portal-member-actions button { flex: 1; }
+  .attendance-history-view .attendance-portal-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .attendance-history-view .attendance-portal-report-head { flex-direction: column; }
+  .attendance-history-view .attendance-portal-legend { justify-content: flex-start; }
+}
+
+@media (max-width: 560px) {
+  .attendance-portal-page { padding: 12px 9px 28px; }
+  .attendance-history-login-view {
+    max-width: 100%;
+    margin-top: 25px;
+    padding: 25px 20px 27px;
+    border-radius: 18px;
+  }
+  .attendance-history-login-view .attendance-portal-logo { width: 56px; height: 56px; }
+  .attendance-history-login-view h1 { font-size: 20px; }
+  .attendance-history-view .attendance-portal-member { padding: 15px; }
+  .attendance-history-view .attendance-portal-avatar { width: 47px; height: 47px; flex-basis: 47px; font-size: 19px; }
+  .attendance-history-view .attendance-portal-member h1 { font-size: 17px; }
+  .attendance-history-view .attendance-portal-monthbar { gap: 5px; }
+  .attendance-history-view .attendance-portal-monthbar > div { min-width: 130px; }
+  .attendance-history-view .attendance-portal-monthbar strong { font-size: 14px; }
+  .attendance-history-view .attendance-portal-summary { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .attendance-history-view .portal-summary-card { min-height: 65px; padding: 9px; gap: 8px; }
+  .attendance-history-view .portal-summary-card > span { width: 31px; height: 31px; flex-basis: 31px; font-size: 13px; }
+  .attendance-history-view .portal-summary-card strong { font-size: 18px; }
+  .attendance-history-view .attendance-portal-report-head { padding: 14px; }
+  .attendance-history-view .attendance-portal-categories { padding: 9px; }
+  .attendance-history-view .attendance-portal-session { grid-template-columns: 1fr; gap: 7px; padding: 10px; }
+  .attendance-history-view .portal-session-status { grid-column: auto; }
+  .attendance-history-view .attendance-portal-category-title { align-items: flex-start; flex-direction: column; gap: 3px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attendance-history-login-view { animation: none; }
+  .attendance-history-view .attendance-portal-member-actions button,
+  .attendance-history-view .attendance-portal-monthbar > button,
+  .attendance-history-view .portal-summary-card,
+  .attendance-history-view .attendance-portal-session { transition: none; }
+}
+
+/* ==========================================================
+   BONO — RESUMEN DEL PORTAL
+   ========================================================== */
+
+.attendance-history-view .portal-summary-card.bonus-pending {
+  border-color: #cbd3dd;
+  background: #f1f3f5;
+}
+
+.attendance-history-view .portal-summary-card.bonus-pending > span {
+  background: #e0e4e9;
+  color: #7f8995;
+}
+
+.attendance-history-view .portal-summary-card.bonus-pending small,
+.attendance-history-view .portal-summary-card.bonus-pending strong {
+  color: #7b8591;
+}
+
+.attendance-history-view .portal-summary-card.bonus-earned {
+  border-color: #8ed8bd;
+}
+
+.attendance-history-view .portal-summary-card.bonus-earned > span {
+  background: #ddf7ee;
+  color: #079c6d;
+}
+
+.attendance-history-view .portal-summary-card.bonus-earned strong {
+  color: #16815f;
+}

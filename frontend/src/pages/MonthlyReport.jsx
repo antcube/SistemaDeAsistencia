@@ -156,6 +156,51 @@ const formatSessionHeader = (
   return date;
 };
 
+
+const formatSessionTime = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  const raw = String(value).trim().toUpperCase();
+
+  // Ya viene con AM/PM: normalizamos el formato.
+  const meridiemMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/);
+  if (meridiemMatch) {
+    let hour = Number(meridiemMatch[1]);
+    const minutes = meridiemMatch[2];
+    const meridiem = meridiemMatch[3];
+
+    if (!Number.isFinite(hour) || hour < 1 || hour > 12) {
+      return raw;
+    }
+
+    return `${hour}:${minutes} ${meridiem}`;
+  }
+
+  // Formato 24 horas: HH:mm o H:mm.
+  const timeMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (timeMatch) {
+    const hour24 = Number(timeMatch[1]);
+    const minutes = timeMatch[2];
+
+    if (
+      !Number.isFinite(hour24) ||
+      hour24 < 0 ||
+      hour24 > 23
+    ) {
+      return raw;
+    }
+
+    const meridiem = hour24 >= 12 ? "PM" : "AM";
+    const hour12 = hour24 % 12 || 12;
+
+    return `${hour12}:${minutes} ${meridiem}`;
+  }
+
+  return raw;
+};
+
 const MonthlyReport = () => {
   const today = new Date();
   const { admin } = useAuth();
@@ -186,6 +231,12 @@ const MonthlyReport = () => {
   const [availableCircles, setAvailableCircles] =
     useState([]);
 
+  // Evita que la primera consulta del reporte se haga con
+  // circle="" y termine cargando todos los círculos antes de
+  // seleccionar automáticamente el primero correspondiente.
+  const [circlesReady, setCirclesReady] =
+    useState(false);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -214,7 +265,7 @@ const MonthlyReport = () => {
             ? response.data
             : [];
 
-        const names = [
+        const apiNames = [
           ...new Set(
             list
               .map((item) =>
@@ -231,14 +282,59 @@ const MonthlyReport = () => {
 
         if (cancelled) return;
 
+        /*
+         * Para un Gestor de Círculo respetamos EXACTAMENTE el orden
+         * de circleScope. De esta forma, el primer círculo asignado
+         * al gestor es también el primero que se carga al entrar.
+         *
+         * Para el Administrador Principal usamos el orden de círculos
+         * que entrega el backend y también seleccionamos el primero.
+         */
+        const normalizeCircleName = (value) =>
+          String(value || "")
+            .trim()
+            .toUpperCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+
+        let names = apiNames;
+
+        if (isCircleManager) {
+          const scope = Array.isArray(admin?.circleScope)
+            ? admin.circleScope
+                .map((item) => String(item || "").trim())
+                .filter(Boolean)
+            : admin?.circleScope
+            ? [String(admin.circleScope).trim()]
+            : [];
+
+          const apiByNormalizedName = new Map(
+            apiNames.map((name) => [
+              normalizeCircleName(name),
+              name,
+            ])
+          );
+
+          names = [
+            ...new Set(
+              scope
+                .map((scopeName) =>
+                  apiByNormalizedName.get(
+                    normalizeCircleName(scopeName)
+                  )
+                )
+                .filter(Boolean)
+            ),
+          ];
+        }
+
         setAvailableCircles(names);
 
         // ======================================================
         // CÍRCULO INICIAL
         // ======================================================
-        // La primera carga NUNCA debe quedar en "Todos los círculos".
-        // Se toma el primer círculo en el mismo orden en que el backend
-        // entrega los círculos disponibles para el usuario.
+        // La primera carga NUNCA debe consultar todos los círculos.
+        // Siempre seleccionamos primero el círculo correspondiente.
         // Si el usuario ya estaba en un círculo válido, lo conservamos.
         setCircle((current) => {
           const currentName =
@@ -246,13 +342,19 @@ const MonthlyReport = () => {
 
           if (
             currentName &&
-            names.includes(currentName)
+            names.some(
+              (name) =>
+                normalizeCircleName(name) ===
+                normalizeCircleName(currentName)
+            )
           ) {
             return currentName;
           }
 
           return names[0] || "";
         });
+
+        setCirclesReady(true);
       } catch (err) {
         console.error(
           "Error cargando círculos del reporte:",
@@ -261,6 +363,8 @@ const MonthlyReport = () => {
 
         if (!cancelled) {
           setAvailableCircles([]);
+          setCircle("");
+          setCirclesReady(true);
         }
       }
     };
@@ -276,15 +380,27 @@ const MonthlyReport = () => {
     useCallback(
       async () => {
         /*
-         * Un Gestor de Círculo necesita un círculo
-         * seleccionado. Evitamos enviar una consulta
-         * vacía que el backend rechaza correctamente.
+         * IMPORTANTE:
+         *
+         * No hacemos la primera consulta mientras todavía estamos
+         * cargando los círculos y determinando el círculo inicial.
+         *
+         * Antes esto provocaba exactamente el problema de la captura:
+         * el primer request salía con circle="" y el backend del
+         * Administrador Principal interpretaba eso como "todos los
+         * círculos". Después llegaba el círculo inicial y se hacía
+         * una segunda consulta.
+         *
+         * Ahora el reporte espera hasta tener seleccionado el primer
+         * círculo y solamente entonces hace la consulta.
          */
-        if (
-          isCircleManager &&
-          !String(circle || "").trim()
-        ) {
+        if (!circlesReady) {
+          return;
+        }
+
+        if (!String(circle || "").trim()) {
           setLoading(false);
+          setReport(null);
           return;
         }
 
@@ -323,6 +439,7 @@ const MonthlyReport = () => {
         month,
         circle,
         isCircleManager,
+        circlesReady,
       ]
     );
 
@@ -706,7 +823,6 @@ const MonthlyReport = () => {
         properties: { defaultRowHeight: 20 },
       });
 
-      worksheet.sheetView.showGridLines = false;
 
       const sessionColumns = [];
       visibleCategories.forEach((category) => {
@@ -883,7 +999,9 @@ const MonthlyReport = () => {
 
         const sessionCell = worksheet.getCell(headerBottomRow, col);
         sessionCell.value = `${formatSessionHeader(session)}${
-          session.time ? `\n${session.time}` : ""
+          session.time
+            ? `\n${formatSessionTime(session.time)}`
+            : ""
         }`;
       });
 
@@ -1203,7 +1321,6 @@ const MonthlyReport = () => {
       const winnerSheet = workbook.addWorksheet("Ganadores del Bono", {
         views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
       });
-      winnerSheet.sheetView.showGridLines = false;
 
       const winnerHeaders = [
         "DNI",
@@ -1732,7 +1849,9 @@ const MonthlyReport = () => {
                           className="report-session-header"
                           title={`${session.title || ""}${
                             session.time
-                              ? ` · ${session.time}`
+                              ? ` · ${formatSessionTime(
+                                  session.time
+                                )}`
                               : ""
                           }${
                             session.circle
@@ -1749,7 +1868,9 @@ const MonthlyReport = () => {
                           {session.time && (
                             <small>
                               {
-                                session.time
+                                formatSessionTime(
+                                  session.time
+                                )
                               }
                             </small>
                           )}

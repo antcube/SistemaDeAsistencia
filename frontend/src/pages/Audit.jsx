@@ -55,6 +55,41 @@ const getActorLabel = (log) => {
   return name || id || "Administrador";
 };
 
+const normalizeMeetingCategory = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (normalized.includes("CIRCULO DE LIDERAZGO") || normalized === "MES") {
+    return "CIRCULO DE LIDERAZGO";
+  }
+
+  if (normalized.includes("HEALTH")) return "HEALTH";
+  if (normalized.includes("MENTORIA")) return "MENTORIA";
+  if (normalized.includes("MASTERCLASS")) return "MASTERCLASS";
+  if (normalized.includes("ANUNCIOS CORPORATIVOS")) return "ANUNCIOS CORPORATIVOS";
+  if (normalized.includes("ORDINARIA")) return "ORDINARIA";
+
+  return String(value || "").trim();
+};
+
+const getMeetingCategoryClass = (value) => {
+  const category = normalizeMeetingCategory(value);
+
+  const classes = {
+    "CIRCULO DE LIDERAZGO": "audit-meeting-leadership",
+    HEALTH: "audit-meeting-health",
+    MENTORIA: "audit-meeting-mentoria",
+    MASTERCLASS: "audit-meeting-masterclass",
+    "ANUNCIOS CORPORATIVOS": "audit-meeting-corporate",
+    ORDINARIA: "audit-meeting-ordinaria",
+  };
+
+  return classes[category] || "audit-meeting-default";
+};
+
 const getDetailedDescription = (log) => {
   const metadata = getMetadata(log);
   const memberName = metadata.memberName || log.targetName || "el miembro";
@@ -328,6 +363,14 @@ const Audit = () => {
                       const meetingDate = metadata.meetingDate;
                       const meetingType = metadata.meetingType || "—";
                       const meetingTitle = metadata.meetingTitle || log.action || "—";
+                      const normalizedMeetingCategory =
+                        meetingType !== "—"
+                          ? normalizeMeetingCategory(meetingType)
+                          : "—";
+                      const showMeetingTitle =
+                        meetingTitle !== "—" &&
+                        String(meetingTitle).trim().toUpperCase() !==
+                          String(normalizedMeetingCategory).trim().toUpperCase();
                       const statusChange =
                         log.module === "attendance" &&
                         metadata.previousStatus !== undefined
@@ -371,11 +414,25 @@ const Audit = () => {
 
                           <td>{formatMeetingDate(meetingDate)}</td>
 
-                          <td>
-                            <strong>{meetingTitle}</strong>
-                            <small>{meetingType}</small>
+                          <td className="audit-meeting-cell">
+                            {showMeetingTitle && (
+                              <strong>{meetingTitle}</strong>
+                            )}
+
+                            {meetingType !== "—" && (
+                              <span
+                                className={`audit-meeting-badge ${getMeetingCategoryClass(
+                                  meetingType
+                                )}`}
+                              >
+                                {normalizedMeetingCategory}
+                              </span>
+                            )}
+
                             {metadata.meetingTime && (
-                              <small>{metadata.meetingTime}</small>
+                              <small className="audit-meeting-time">
+                                {metadata.meetingTime}
+                              </small>
                             )}
                           </td>
 

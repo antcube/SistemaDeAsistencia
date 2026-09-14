@@ -8,7 +8,8 @@ import {
 import attendanceService from "../services/attendanceService";
 import meetingService from "../services/meetingService";
 
-import "../styles/attendancePortal.css";
+import "../styles/attendanceRegister.css";
+import "../styles/attendanceHistory.css";
 
 const CATEGORY_ORDER = [
   "CIRCULO DE LIDERAZGO",
@@ -16,7 +17,6 @@ const CATEGORY_ORDER = [
   "MENTORIA",
   "MASTERCLASS",
   "ANUNCIOS CORPORATIVOS",
-  "ORDINARIA",
 ];
 
 const CATEGORY_LABELS = {
@@ -35,9 +35,17 @@ const CATEGORY_LABELS = {
   "ANUNCIOS CORPORATIVOS":
     "Anuncios Corporativos",
 
-  ORDINARIA:
-    "Ordinaria",
 };
+
+const GENERAL_JUSTIFICATION_CATEGORIES = [
+  "HEALTH",
+  "MENTORIA",
+  "MASTERCLASS",
+  "ANUNCIOS CORPORATIVOS",
+];
+
+const LEADERSHIP_JUSTIFICATION_LIMIT = 1;
+const GENERAL_JUSTIFICATION_LIMIT = 3;
 
 const normalizeStatus = (
   status
@@ -46,17 +54,111 @@ const normalizeStatus = (
     status || ""
   )
     .trim()
-    .toLowerCase();
+    .toUpperCase();
 
   if (
-    value === "faltó" ||
-    value === "falto"
+    value === "ASISTIO" ||
+    value === "ASISTIÓ"
+  ) {
+    return "Asistió";
+  }
+
+  if (
+    value === "CLASE PRESENCIAL"
+  ) {
+    return "Clase Presencial";
+  }
+
+  if (
+    value === "JUSTIFICADO" ||
+    value === "FALTA JUSTIFICADA"
+  ) {
+    return "Justificado";
+  }
+
+  if (
+    value === "PENDIENTE"
+  ) {
+    return "Pendiente";
+  }
+
+  if (
+    value === "NO ASISTIO" ||
+    value === "NO ASISTIÓ" ||
+    value === "FALTO" ||
+    value === "FALTÓ"
   ) {
     return "No asistió";
   }
 
   return status || "No asistió";
 };
+
+const normalizeCategory = (
+  meeting
+) => {
+  const type = String(
+    meeting?.type || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  const title = String(
+    meeting?.title || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  if (
+    type === "CIRCULO DE LIDERAZGO" ||
+    type === "MES" ||
+    title.includes("CIRCULO DE LIDERAZGO") ||
+    title === "MES" ||
+    /^SESI[ÓO]N\s+\d+$/i.test(title)
+  ) {
+    return "CIRCULO DE LIDERAZGO";
+  }
+
+  if (
+    type === "MENTORIA" ||
+    type === "MENTORÍA" ||
+    title === "MENTORIA" ||
+    title === "MENTORÍA"
+  ) {
+    return "MENTORIA";
+  }
+
+  if (
+    type === "MASTERCLASS" ||
+    title.includes("MASTERCLASS")
+  ) {
+    return "MASTERCLASS";
+  }
+
+  if (
+    type === "HEALTH" ||
+    title === "HEALTH"
+  ) {
+    return "HEALTH";
+  }
+
+  if (
+    type === "ANUNCIOS CORPORATIVOS" ||
+    type === "ANUNCIO CORPORATIVO" ||
+    title.includes("ANUNCIOS CORPORATIVOS") ||
+    title.includes("ANUNCIO CORPORATIVO")
+  ) {
+    return "ANUNCIOS CORPORATIVOS";
+  }
+
+  return type || "";
+};
+
+const isJustified = (
+  status
+) =>
+  normalizeStatus(status) ===
+  "Justificado";
 
 const AttendancePortal = () => {
   const today =
@@ -612,6 +714,158 @@ const AttendancePortal = () => {
     );
 
   // ============================================================
+  // APLICAR REGLAS DE JUSTIFICACIONES
+  // ============================================================
+
+  const effectiveMeetings =
+    useMemo(() => {
+      const leadershipJustifications = [];
+      const generalJustifications = [];
+
+      meetings.forEach((meeting) => {
+        const category =
+          normalizeCategory(meeting);
+
+        if (!isJustified(meeting.status)) {
+          return;
+        }
+
+        const item = {
+          meeting,
+          category,
+          date: meeting?.date || "",
+          time: meeting?.time || "",
+        };
+
+        if (
+          category ===
+          "CIRCULO DE LIDERAZGO"
+        ) {
+          leadershipJustifications.push(item);
+        } else if (
+          GENERAL_JUSTIFICATION_CATEGORIES.includes(
+            category
+          )
+        ) {
+          generalJustifications.push(item);
+        }
+      });
+
+      const sorter = (a, b) =>
+        String(a.date).localeCompare(
+          String(b.date)
+        ) ||
+        String(a.time).localeCompare(
+          String(b.time)
+        ) ||
+        String(
+          a.meeting?.meetingId ||
+            a.meeting?._id ||
+            a.meeting?.id ||
+            ""
+        ).localeCompare(
+          String(
+            b.meeting?.meetingId ||
+              b.meeting?._id ||
+              b.meeting?.id ||
+              ""
+          )
+        );
+
+      leadershipJustifications.sort(sorter);
+      generalJustifications.sort(sorter);
+
+      const validJustifications = new Set();
+      const extraJustifications = new Set();
+
+      leadershipJustifications.forEach(
+        (item, index) => {
+          const key = String(
+            item.meeting?.meetingId ||
+              item.meeting?._id ||
+              item.meeting?.id ||
+              ""
+          );
+
+          if (
+            index <
+            LEADERSHIP_JUSTIFICATION_LIMIT
+          ) {
+            validJustifications.add(key);
+          } else {
+            extraJustifications.add(key);
+          }
+        }
+      );
+
+      generalJustifications.forEach(
+        (item, index) => {
+          const key = String(
+            item.meeting?.meetingId ||
+              item.meeting?._id ||
+              item.meeting?.id ||
+              ""
+          );
+
+          if (
+            index <
+            GENERAL_JUSTIFICATION_LIMIT
+          ) {
+            validJustifications.add(key);
+          } else {
+            extraJustifications.add(key);
+          }
+        }
+      );
+
+      return meetings.map((meeting) => {
+        const status =
+          normalizeStatus(meeting.status);
+
+        if (!isJustified(status)) {
+          return {
+            ...meeting,
+            status,
+            justificationValidity: null,
+          };
+        }
+
+        const key = String(
+          meeting?.meetingId ||
+            meeting?._id ||
+            meeting?.id ||
+            ""
+        );
+
+        if (
+          validJustifications.has(key)
+        ) {
+          return {
+            ...meeting,
+            status: "Justificado",
+            justificationValidity: "valid",
+          };
+        }
+
+        if (
+          extraJustifications.has(key)
+        ) {
+          return {
+            ...meeting,
+            status: "Justificado",
+            justificationValidity: "extra",
+          };
+        }
+
+        return {
+          ...meeting,
+          status: "Justificado",
+          justificationValidity: "extra",
+        };
+      });
+    }, [meetings]);
+
+  // ============================================================
   // RESUMEN
   // ============================================================
 
@@ -619,10 +873,9 @@ const AttendancePortal = () => {
     useMemo(() => {
       let attended = 0;
       let absent = 0;
-      let justified = 0;
       let presencial = 0;
 
-      meetings.forEach(
+      effectiveMeetings.forEach(
         (meeting) => {
           const status =
             normalizeStatus(
@@ -630,8 +883,7 @@ const AttendancePortal = () => {
             );
 
           if (
-            status ===
-            "Asistió"
+            status === "Asistió"
           ) {
             attended++;
           }
@@ -643,11 +895,25 @@ const AttendancePortal = () => {
             presencial++;
           }
 
+          // Una J válida convalida como asistencia.
+          // Las J excedidas ya fueron convertidas a falta
+          // mediante justificationValidity === "extra".
           if (
             status ===
-            "Justificado"
+              "Justificado" &&
+            meeting.justificationValidity ===
+              "valid"
           ) {
-            justified++;
+            attended++;
+          }
+
+          if (
+            status ===
+              "Justificado" &&
+            meeting.justificationValidity ===
+              "extra"
+          ) {
+            absent++;
           }
 
           if (
@@ -659,25 +925,55 @@ const AttendancePortal = () => {
         }
       );
 
+      const total =
+        effectiveMeetings.length;
+
+      // Para obtener el bono primero deben estar
+      // completadas todas las sesiones del mes.
+      // Una sesión pendiente/sin estado todavía no
+      // puede considerarse parte de un 100%.
+      const completedSessions =
+        effectiveMeetings.filter(
+          (meeting) => {
+            const rawStatus = String(
+              meeting?.status ??
+                ""
+            )
+              .trim()
+              .toUpperCase();
+
+            return (
+              rawStatus !== "" &&
+              rawStatus !== "PENDIENTE"
+            );
+          }
+        ).length;
+
+      const allSessionsCompleted =
+        total > 0 &&
+        completedSessions === total;
+
+      // El bono se obtiene cuando todas las sesiones
+      // del mes están llenas y todas cuentan como
+      // asistencia efectiva. Las J válidas cuentan
+      // como asistencia; las J excedidas cuentan
+      // como falta.
+      const bonus =
+        allSessionsCompleted &&
+        absent === 0 &&
+        attended + presencial === total;
+
       return {
-        total:
-          meetings.length,
-
+        total,
         attended,
-
         presencial,
-
-        valid:
-          attended +
-          presencial,
-
-        justified,
-
+        valid: attended + presencial,
         absent,
+        completedSessions,
+        allSessionsCompleted,
+        bonus,
       };
-    }, [
-      meetings,
-    ]);
+    }, [effectiveMeetings]);
 
   // ============================================================
   // AGRUPAR REUNIONES
@@ -696,13 +992,10 @@ const AttendancePortal = () => {
         }
       );
 
-      meetings.forEach(
+      effectiveMeetings.forEach(
         (meeting) => {
           const type =
-            String(
-              meeting.type ||
-                ""
-            )
+            normalizeCategory(meeting)
               .trim()
               .toUpperCase();
 
@@ -747,7 +1040,7 @@ const AttendancePortal = () => {
 
       return groups;
     }, [
-      meetings,
+      effectiveMeetings,
     ]);
 
   // ============================================================
@@ -779,36 +1072,43 @@ const AttendancePortal = () => {
   // CLASE ESTADO
   // ============================================================
 
-  const getStatusClass =
-    (status) => {
-      const normalized =
-        normalizeStatus(
-          status
-        );
+  const getCategoryBadgeClasses = (category) => {
+    const value = String(category || "")
+      .trim()
+      .toUpperCase();
 
-      if (
-        normalized ===
-        "Asistió"
-      ) {
-        return "portal-status attended";
-      }
+    switch (value) {
+      case "CIRCULO DE LIDERAZGO":
+        return "border border-[#a9c4ef] bg-[#e7efff] text-[#2457c5]";
 
-      if (
-        normalized ===
-        "Clase Presencial"
-      ) {
-        return "portal-status presencial";
-      }
+      case "HEALTH":
+        return "border border-[#9adfe8] bg-[#e2f8fb] text-[#188da0]";
 
-      if (
-        normalized ===
-        "Justificado"
-      ) {
-        return "portal-status justified";
-      }
+      case "MENTORIA":
+        return "border border-[#c6b7e8] bg-[#eee9fb] text-[#7654c6]";
 
+      case "MASTERCLASS":
+        return "border border-[#c2c8d0] bg-[#edf0f3] text-[#68717e]";
+
+      case "ANUNCIOS CORPORATIVOS":
+        return "border border-[#1e3158] bg-[#e8edf6] text-[#0b1736]";
+
+      default:
+        return "border border-[#cbd6e4] bg-[#f0f4f9] text-[#294763]";
+    }
+  };
+  const getStatusClass = (status, justificationValidity = null) => {
+    const normalized = normalizeStatus(status);
+
+    if (normalized === "Justificado" && justificationValidity === "extra") {
       return "portal-status absent";
-    };
+    }
+
+    if (normalized === "Asistió") return "portal-status attended";
+    if (normalized === "Clase Presencial") return "portal-status presencial";
+    if (normalized === "Justificado") return "portal-status justified";
+    return "portal-status absent";
+  };
 
   const getStatusSymbol =
     (status) => {
@@ -852,7 +1152,7 @@ const AttendancePortal = () => {
       {isQrMode && (
         <>
           {qrLoading && (
-            <section className="attendance-portal-login">
+            <section className="attendance-portal-login attendance-register-view">
 
               <div className="attendance-portal-logo">
                 📱
@@ -874,7 +1174,7 @@ const AttendancePortal = () => {
           )}
 
           {!qrLoading && qrMeeting && (
-            <section className="attendance-portal-login">
+            <section className="attendance-portal-login attendance-register-view">
 
               <div className="attendance-portal-logo">
                 📱
@@ -1002,7 +1302,7 @@ const AttendancePortal = () => {
 
           {!qrLoading &&
             !qrMeeting && (
-              <section className="attendance-portal-login">
+              <section className="attendance-portal-login attendance-register-view">
 
                 <div className="attendance-portal-logo">
                   ❌
@@ -1036,7 +1336,7 @@ const AttendancePortal = () => {
 
       {!isQrMode &&
         !member && (
-          <section className="attendance-portal-login">
+          <section className="attendance-portal-login attendance-history-login-view">
 
             <div className="attendance-portal-logo">
               ⭐
@@ -1126,7 +1426,7 @@ const AttendancePortal = () => {
 
       {!isQrMode &&
         member && (
-          <div className="attendance-portal-content">
+          <div className="attendance-portal-content attendance-history-view">
 
             <section className="attendance-portal-member">
 
@@ -1307,26 +1607,6 @@ const AttendancePortal = () => {
 
               </div>
 
-              <div className="portal-summary-card orange">
-
-                <span>
-                  J
-                </span>
-
-                <div>
-
-                  <small>
-                    Justificadas
-                  </small>
-
-                  <strong>
-                    {summary.justified}
-                  </strong>
-
-                </div>
-
-              </div>
-
               <div className="portal-summary-card red">
 
                 <span>
@@ -1341,6 +1621,34 @@ const AttendancePortal = () => {
 
                   <strong>
                     {summary.absent}
+                  </strong>
+
+                </div>
+
+              </div>
+
+              <div
+                className={`portal-summary-card ${
+                  summary.bonus
+                    ? "bonus-earned"
+                    : "bonus-pending"
+                }`}
+              >
+
+                <span>
+                  🏆
+                </span>
+
+                <div>
+
+                  <small>
+                    Bono
+                  </small>
+
+                  <strong>
+                    {summary.bonus
+                      ? "Ganado"
+                      : "—"}
                   </strong>
 
                 </div>
@@ -1469,9 +1777,14 @@ const AttendancePortal = () => {
                                     meeting.status
                                   );
 
+                                                                const displayStatus =
+                                  meeting.justificationValidity === "extra"
+                                    ? "No asistió"
+                                    : status;
+
                                 return (
                                   <article
-                                    className="attendance-portal-session"
+                                    className="attendance-portal-session grid grid-cols-1 gap-3 px-3 py-3 md:grid-cols-[120px_minmax(0,1fr)_270px] md:items-center md:gap-[14px] md:py-[11px]"
                                     key={
                                       meeting.meetingId
                                     }
@@ -1487,7 +1800,7 @@ const AttendancePortal = () => {
 
                                       <small>
                                         {meeting.time ||
-                                          "—"}
+                                          ""}
                                         {meeting.endTime
                                           ? ` - ${meeting.endTime}`
                                           : ""}
@@ -1495,9 +1808,13 @@ const AttendancePortal = () => {
 
                                     </div>
 
-                                    <div className="portal-session-info">
+                                    <div className="portal-session-info min-w-0">
 
-                                      <strong>
+                                      <strong
+                                        className={`inline-flex w-fit max-w-full items-center rounded-md px-2.5 py-1.5 text-[8px] font-black uppercase tracking-[0.02em] leading-tight ${getCategoryBadgeClasses(
+                                          category
+                                        )}`}
+                                      >
                                         {meeting.title ||
                                           CATEGORY_LABELS[
                                             category
@@ -1505,18 +1822,14 @@ const AttendancePortal = () => {
                                           category}
                                       </strong>
 
-                                      <span>
-                                        {meeting.location ||
-                                          "—"}
-                                      </span>
-
                                     </div>
 
-                                    <div className="portal-session-status">
+                                    <div className="portal-session-status flex flex-wrap items-center justify-start gap-1.5 md:justify-end md:[grid-column:auto]">
 
                                       <span
                                         className={getStatusClass(
-                                          status
+                                          status,
+                                          meeting.justificationValidity
                                         )}
                                       >
 
@@ -1526,7 +1839,7 @@ const AttendancePortal = () => {
                                           )}
                                         </b>
 
-                                        {status}
+                                        {displayStatus}
 
                                       </span>
 
