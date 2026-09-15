@@ -481,7 +481,7 @@ const Members = () => {
 
   if (!canManageMembers) {
     return (
-      <section className="min-h-[calc(100vh-115px)] px-4 py-8">
+      <section className="px-4 py-8">
         <div className="mx-auto max-w-[1085px]">
           <div className="rounded-xl border border-slate-700 bg-white p-8 text-center shadow-lg">
             <div className="mb-3 text-3xl">
@@ -503,7 +503,7 @@ const Members = () => {
   }
 
   return (
-    <section className="min-h-[calc(100vh-115px)] px-3 py-5 sm:px-5 lg:px-6">
+    <section className="px-3 py-5 sm:px-5 lg:px-6">
 
       <div className="mx-auto w-full max-w-[1085px]">
 

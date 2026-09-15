@@ -82,6 +82,11 @@ const Header = () => {
 
         </div>
 
+        <div className="cc-department-badge" aria-label="Departamento de Ventas Pariscorp">
+          <span className="cc-department-icon">▦</span>
+          <span>Departamento de Ventas Pariscorp</span>
+        </div>
+
         <div className="cc-header-right">
 
           <div className="cc-admin-info">

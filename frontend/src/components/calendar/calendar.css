@@ -6,10 +6,7 @@
 
 .calendar-page {
   width: 100%;
-  min-width: 0;
-  min-height: calc(100vh - 123px);
-
-  background:
+  min-width: 0;background:
     linear-gradient(
       135deg,
       #050812 0%,

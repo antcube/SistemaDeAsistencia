@@ -702,7 +702,7 @@ const Calendar = () => {
   };
 
   return (
-    <section className="min-h-[calc(100vh-125px)] bg-transparent">
+    <section className="bg-transparent">
       <div className="mx-auto w-full max-w-[1420px] px-4 py-5">
 
         {/* =====================================================

@@ -333,7 +333,7 @@ const Audit = () => {
       ) : (
         <>
           <div className="admin-management-card">
-            <div className="admin-table-wrapper">
+            <div className="admin-table-wrapper audit-scroll-container">
               <table className="admin-management-table audit-table audit-table-detailed">
                 <thead>
                   <tr>
