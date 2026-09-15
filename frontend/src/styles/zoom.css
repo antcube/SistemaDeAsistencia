@@ -1,11 +1,11 @@
 .zoom-page {
-  width: 100%;
+  @apply w-full;
   min-height: calc(100vh - 125px);
   padding: 26px 38px 40px;
 }
 
 .zoom-main-card {
-  width: 100%;
+  @apply w-full;
   max-width: 1220px;
   margin: 0 auto;
   padding: 24px;
@@ -19,15 +19,12 @@
     0 3px 10px rgba(36, 87, 197, 0.05);
 }
 
-/* ============================================================
-   ENCABEZADO
-============================================================ */
 
 .zoom-heading {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  @apply relative;
+  @apply flex;
+  @apply items-start;
+  @apply justify-between;
   gap: 24px;
   margin-bottom: 22px;
   padding: 4px 2px 18px;
@@ -36,7 +33,7 @@
 
 .zoom-heading::before {
   content: "";
-  position: absolute;
+  @apply absolute;
   left: 0;
   bottom: -1px;
   width: 76px;
@@ -46,7 +43,7 @@
 }
 
 .zoom-heading > div:first-child {
-  min-width: 0;
+  @apply min-w-0;
 }
 
 .zoom-heading h2 {
@@ -54,7 +51,7 @@
   color: #07122c;
   font-size: 20px;
   line-height: 27px;
-  font-weight: 900;
+  @apply font-black;
   letter-spacing: -0.2px;
 }
 
@@ -68,8 +65,8 @@
 
 .zoom-validation {
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
+  @apply inline-flex;
+  @apply items-center;
   gap: 7px;
   padding: 10px 13px;
   border: 1px solid #b9d4ff;
@@ -77,8 +74,8 @@
   background: linear-gradient(135deg, #f3f8ff, #eaf2ff);
   color: #2457c5;
   font-size: 10px;
-  font-weight: 900;
-  white-space: nowrap;
+  @apply font-black;
+  @apply whitespace-nowrap;
   box-shadow: 0 5px 14px rgba(36, 87, 197, 0.07);
 }
 
@@ -86,31 +83,27 @@
   content: "✓";
   width: 18px;
   height: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  @apply inline-flex;
+  @apply items-center;
+  @apply justify-center;
   border-radius: 50%;
   background: #2457c5;
   color: #fff;
   font-size: 10px;
-  font-weight: 900;
+  @apply font-black;
 }
 
-/* ============================================================
-   BLOQUE PRINCIPAL DE CONTROLES
-============================================================ */
-
 .zoom-grid {
-  display: grid;
+  @apply grid;
   grid-template-columns: minmax(210px, 1fr) minmax(210px, 1fr) minmax(420px, 2fr);
   gap: 14px;
 }
 
 .zoom-card {
-  position: relative;
+  @apply relative;
   min-height: 145px;
   padding: 17px;
-  overflow: hidden;
+  @apply overflow-hidden;
   border: 1px solid;
   border-radius: 14px;
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
@@ -122,7 +115,7 @@
 
 .zoom-card::after {
   content: "";
-  position: absolute;
+  @apply absolute;
   right: -28px;
   bottom: -34px;
   width: 92px;
@@ -164,14 +157,14 @@
 .zoom-session-card::before,
 .zoom-file-card::before,
 .zoom-processing-card::before {
-  position: absolute;
+  @apply absolute;
   top: 13px;
   right: 15px;
   width: 27px;
   height: 27px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  @apply inline-flex;
+  @apply items-center;
+  @apply justify-center;
   border-radius: 8px;
   font-size: 13px;
   z-index: 1;
@@ -196,18 +189,18 @@
 }
 
 .zoom-card h3 {
-  position: relative;
+  @apply relative;
   z-index: 2;
   margin: 0;
   padding-right: 38px;
   color: #172b4d;
   font-size: 12px;
   line-height: 17px;
-  font-weight: 900;
+  @apply font-black;
 }
 
 .zoom-card p {
-  position: relative;
+  @apply relative;
   z-index: 2;
   margin: 8px 0 0;
   color: #64748b;
@@ -215,19 +208,15 @@
   line-height: 1.55;
 }
 
-/* ============================================================
-   TIPO DE SESIÓN
-============================================================ */
-
 .zoom-session-card label {
-  position: relative;
+  @apply relative;
   z-index: 2;
   display: block;
   margin-bottom: 7px;
   color: #065f46;
   font-size: 10px;
   line-height: 15px;
-  font-weight: 900;
+  @apply font-black;
 }
 
 .zoom-session-card label span {
@@ -235,9 +224,9 @@
 }
 
 .zoom-session-card select {
-  position: relative;
+  @apply relative;
   z-index: 2;
-  width: 100%;
+  @apply w-full;
   height: 39px;
   padding: 0 11px;
   border: 1px solid #91ddbf;
@@ -245,9 +234,9 @@
   background: #ffffff;
   color: #243b53;
   font-size: 10px;
-  font-weight: 800;
+  @apply font-extrabold;
   outline: none;
-  cursor: pointer;
+  @apply cursor-pointer;
   box-shadow: 0 3px 9px rgba(5, 150, 105, 0.04);
   transition:
     border-color 0.2s ease,
@@ -265,20 +254,17 @@
 }
 
 .zoom-session-card select:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
+  @apply cursor-not-allowed;
+  @apply opacity-70;
 }
 
-/* ============================================================
-   CARGA DE ARCHIVO
-============================================================ */
 
 .zoom-file-label {
-  position: relative;
+  @apply relative;
   z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @apply flex;
+  @apply items-center;
+  @apply justify-center;
   gap: 7px;
   height: 52px;
   margin-top: 11px;
@@ -287,8 +273,8 @@
   background: rgba(255, 255, 255, 0.78);
   color: #36537c;
   font-size: 10px;
-  font-weight: 900;
-  cursor: pointer;
+  @apply font-black;
+  @apply cursor-pointer;
   transition:
     border-color 0.2s ease,
     background 0.2s ease,
@@ -317,9 +303,9 @@
   min-height: 15px;
   margin-top: 8px;
   color: #7b8ba3;
-  overflow: hidden;
+  @apply overflow-hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply whitespace-nowrap;
 }
 
 /* ============================================================
@@ -331,16 +317,16 @@
 }
 
 .zoom-process-grid {
-  position: relative;
+  @apply relative;
   z-index: 2;
-  display: grid;
+  @apply grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 12px;
 }
 
 .zoom-process-grid > div {
-  min-width: 0;
+  @apply min-w-0;
   padding: 11px 10px;
   border: 1px solid #dfd4f0;
   border-radius: 10px;
@@ -366,7 +352,7 @@
   color: #4b3b69;
   font-size: 9px;
   line-height: 13px;
-  font-weight: 900;
+  @apply font-black;
 }
 
 .zoom-process-grid span {
@@ -381,16 +367,16 @@
 ============================================================ */
 
 .zoom-info-grid {
-  display: grid;
+  @apply grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 10px;
   margin-top: 17px;
 }
 
 .zoom-info-grid > div {
-  position: relative;
+  @apply relative;
   min-height: 73px;
-  overflow: hidden;
+  @apply overflow-hidden;
   padding: 12px 13px;
   border: 1px solid;
   border-radius: 11px;
@@ -402,7 +388,7 @@
 
 .zoom-info-grid > div::after {
   content: "";
-  position: absolute;
+  @apply absolute;
   right: -20px;
   bottom: -30px;
   width: 70px;
@@ -454,7 +440,7 @@
 
 .zoom-info-grid small,
 .zoom-info-grid strong {
-  position: relative;
+  @apply relative;
   z-index: 2;
   display: block;
 }
@@ -463,7 +449,7 @@
   color: #64748b;
   font-size: 8.5px;
   line-height: 13px;
-  font-weight: 700;
+  @apply font-bold;
 }
 
 .zoom-info-grid strong {
@@ -471,7 +457,7 @@
   color: #1e3353;
   font-size: 19px;
   line-height: 22px;
-  font-weight: 900;
+  @apply font-black;
 }
 
 /* ============================================================
@@ -479,9 +465,9 @@
 ============================================================ */
 
 .zoom-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  @apply flex;
+  @apply items-center;
+  @apply justify-between;
   gap: 22px;
   margin-top: 17px;
   padding: 14px 0 2px;
@@ -497,22 +483,22 @@
 
 .zoom-bottom p strong {
   color: #334155;
-  font-weight: 900;
+  @apply font-black;
 }
 
 .zoom-bottom button {
-  position: relative;
+  @apply relative;
   min-width: 235px;
   height: 40px;
   padding: 0 17px;
-  overflow: hidden;
+  @apply overflow-hidden;
   border: 0;
   border-radius: 10px;
   background: #aabbd7;
   color: #ffffff;
   font-size: 10px;
-  font-weight: 900;
-  cursor: pointer;
+  @apply font-black;
+  @apply cursor-pointer;
   box-shadow: none;
   transition:
     transform 0.2s ease,
@@ -527,11 +513,11 @@
 
 .zoom-bottom button:not(:disabled)::before {
   content: "";
-  position: absolute;
+  @apply absolute;
   top: 0;
   left: -110%;
   width: 55%;
-  height: 100%;
+  @apply h-full;
   background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.18), transparent);
   transform: skewX(-18deg);
   transition: left 0.6s ease;
@@ -551,8 +537,8 @@
 }
 
 .zoom-bottom button:disabled {
-  cursor: not-allowed;
-  opacity: 0.72;
+  @apply cursor-not-allowed;
+  @apply opacity-[0.72];
 }
 
 /* ============================================================
@@ -568,7 +554,7 @@
   color: #b42318;
   font-size: 10px;
   line-height: 1.5;
-  font-weight: 700;
+  @apply font-bold;
   box-shadow: 0 5px 14px rgba(180, 35, 24, 0.05);
 }
 
@@ -578,7 +564,7 @@
 
 .zoom-results-panel {
   margin-top: 19px;
-  overflow: hidden;
+  @apply overflow-hidden;
   border: 1px solid #d8e4f5;
   border-radius: 14px;
   background: #ffffff;
@@ -586,9 +572,9 @@
 }
 
 .zoom-results-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  @apply flex;
+  @apply items-center;
+  @apply justify-between;
   gap: 15px;
   padding: 15px 17px;
   border-bottom: 1px solid #e2e8f0;
@@ -602,7 +588,7 @@
   color: #0f172a;
   font-size: 13px;
   line-height: 18px;
-  font-weight: 900;
+  @apply font-black;
 }
 
 .zoom-results-header p {
@@ -612,8 +598,8 @@
 }
 
 .zoom-results-header > span {
-  display: inline-flex;
-  align-items: center;
+  @apply inline-flex;
+  @apply items-center;
   gap: 5px;
   padding: 7px 10px;
   border: 1px solid #a7e7bc;
@@ -621,20 +607,20 @@
   background: #effcf3;
   color: #15803d;
   font-size: 9px;
-  font-weight: 900;
-  white-space: nowrap;
+  @apply font-black;
+  @apply whitespace-nowrap;
 }
 
 .zoom-result-summary {
-  display: grid;
+  @apply grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 9px;
   padding: 13px 15px;
 }
 
 .zoom-result-summary > div {
-  position: relative;
-  overflow: hidden;
+  @apply relative;
+  @apply overflow-hidden;
   padding: 11px;
   border: 1px solid #e2e8f0;
   border-radius: 9px;
@@ -680,17 +666,17 @@
   color: #0f172a;
   font-size: 18px;
   line-height: 22px;
-  font-weight: 900;
+  @apply font-black;
 }
 
 .zoom-results-table-wrapper {
-  width: 100%;
-  overflow-x: auto;
+  @apply w-full;
+  @apply overflow-x-auto;
   border-top: 1px solid #e2e8f0;
 }
 
 .zoom-results-table {
-  width: 100%;
+  @apply w-full;
   min-width: 850px;
   border-collapse: collapse;
 }
@@ -701,9 +687,9 @@
   background: #f8fafc;
   color: #475569;
   font-size: 9px;
-  font-weight: 900;
-  text-align: left;
-  text-transform: uppercase;
+  @apply font-black;
+  @apply text-left;
+  @apply uppercase;
   letter-spacing: 0.02em;
 }
 
@@ -725,15 +711,15 @@
 
 .zoom-status-present,
 .zoom-status-absent {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  @apply inline-flex;
+  @apply items-center;
+  @apply justify-center;
   min-width: 65px;
   padding: 5px 8px;
   border-radius: 999px;
   font-size: 8.5px;
   line-height: 1;
-  font-weight: 900;
+  @apply font-black;
 }
 
 .zoom-status-present {
@@ -768,7 +754,7 @@
 
 @media (max-width: 900px) {
   .zoom-heading {
-    flex-direction: column;
+    @apply flex-col;
   }
 
   .zoom-validation {
@@ -801,8 +787,8 @@
   .zoom-heading,
   .zoom-bottom,
   .zoom-results-header {
-    align-items: stretch;
-    flex-direction: column;
+    @apply items-stretch;
+    @apply flex-col;
   }
 
   .zoom-grid {
@@ -827,7 +813,7 @@
   }
 
   .zoom-bottom button {
-    width: 100%;
+    @apply w-full;
   }
 }
 
