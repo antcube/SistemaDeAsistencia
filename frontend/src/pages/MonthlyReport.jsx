@@ -991,18 +991,54 @@ const MonthlyReport = () => {
         cell.value = header;
       });
 
-      sessionColumns.forEach(({ category, session }, index) => {
-        const col = baseHeaders.length + index + 1;
-        const categoryCell = worksheet.getCell(headerTopRow, col);
-        categoryCell.value = CATEGORY_LABELS[category] || category;
+      // Cada categoría ocupa una sola celda superior fusionada,
+      // igual que en la vista web. Debajo se mantienen las sesiones
+      // individuales con su fecha y hora.
+      let categoryStartIndex = 0;
+      while (categoryStartIndex < sessionColumns.length) {
+        const currentCategory = sessionColumns[categoryStartIndex].category;
+        let categoryEndIndex = categoryStartIndex;
 
-        const sessionCell = worksheet.getCell(headerBottomRow, col);
-        sessionCell.value = `${formatSessionHeader(session)}${
-          session.time
-            ? `\n${formatSessionTime(session.time)}`
-            : ""
-        }`;
-      });
+        while (
+          categoryEndIndex + 1 < sessionColumns.length &&
+          sessionColumns[categoryEndIndex + 1].category === currentCategory
+        ) {
+          categoryEndIndex += 1;
+        }
+
+        const categoryStartCol =
+          baseHeaders.length + categoryStartIndex + 1;
+        const categoryEndCol =
+          baseHeaders.length + categoryEndIndex + 1;
+
+        worksheet.mergeCells(
+          headerTopRow,
+          categoryStartCol,
+          headerTopRow,
+          categoryEndCol
+        );
+
+        const categoryCell = worksheet.getCell(
+          headerTopRow,
+          categoryStartCol
+        );
+        categoryCell.value =
+          CATEGORY_LABELS[currentCategory] || currentCategory;
+
+        // Cada sesión conserva su propio encabezado de fecha y hora.
+        for (let index = categoryStartIndex; index <= categoryEndIndex; index += 1) {
+          const { session } = sessionColumns[index];
+          const col = baseHeaders.length + index + 1;
+          const sessionCell = worksheet.getCell(headerBottomRow, col);
+          sessionCell.value = `${formatSessionHeader(session)}${
+            session.time
+              ? `\n${formatSessionTime(session.time)}`
+              : ""
+          }`;
+        }
+
+        categoryStartIndex = categoryEndIndex + 1;
+      }
 
       const summaryStart = baseHeaders.length + sessionColumns.length + 1;
       worksheet.mergeCells(

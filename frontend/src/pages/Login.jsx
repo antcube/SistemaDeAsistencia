@@ -59,33 +59,33 @@ const Login = () => {
               </div>
               <div>
                 <h1 className="text-xl font-extrabold tracking-tight">Sistema De Gestión</h1>
-                <p className="text-sm text-blue-100">Control De Círculos Y Asistencia</p>
+                <p className="text-sm text-blue-100">Círculos Y Asistencia</p>
               </div>
             </div>
 
-            <div className="relative z-10 mt-12 max-w-xl xl:mt-14">
+            <div className="relative z-10 mt-9 max-w-xl xl:mt-11">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-blue-100 backdrop-blur-md">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
                 Plataforma Administrativa
               </div>
 
-              <h2 className="text-4xl font-black leading-[1.05] tracking-[-0.04em] xl:text-[46px]">
+              <h2 className="text-4xl font-black leading-[1.05] tracking-[-0.04em] xl:text-[40px]">
                 Todo El Control De Tus Círculos,
                 <span className="mt-2 block bg-gradient-to-r from-sky-300 via-blue-200 to-white bg-clip-text text-transparent">
                   En Un Solo Lugar.
                 </span>
               </h2>
 
-              <p className="mt-5 max-w-lg text-sm leading-6 text-blue-100/85 xl:text-base">
-                Administra Reuniones, Asistencia, Miembros, Reportes Y Procesos Administrativos Desde Una Plataforma Centralizada.
+              <p className="mt-4 max-w-md text-sm leading-5 text-blue-100/85 xl:text-[15px]">
+                Reuniones, Asistencia, Miembros Y Reportes En Un Solo Espacio.
               </p>
             </div>
 
-            <div className="relative z-10 mt-auto grid grid-cols-2 gap-3 pt-8">
-              <FeatureCard title="Reportes" text="Información Organizada Para Una Mejor Gestión." icon="chart" />
+            <div className="relative z-10 mt-auto grid grid-cols-2 gap-3 pt-6">
+              <FeatureCard title="Reportes" text="Información Para Una Mejor Gestión." icon="chart" />
               <FeatureCard title="Asistencia" text="Seguimiento Rápido Y Centralizado." icon="users" />
-              <FeatureCard title="Seguridad" text="Acceso Controlado Para Cada Rol." icon="shield" />
-              <FeatureCard title="Gestión" text="Todo Lo Necesario En Un Mismo Espacio." icon="panel" />
+              <FeatureCard title="Seguridad" text="Acceso Controlado Por Rol." icon="shield" />
+              <FeatureCard title="Gestión" text="Todo En Un Mismo Espacio." icon="panel" />
             </div>
           </div>
 
@@ -250,11 +250,11 @@ const FeatureCard = ({ title, text, icon }) => {
 
   return (
     <div className="group rounded-xl border border-white/15 bg-white/10 p-3.5 xl:p-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:bg-white/15 hover:shadow-xl hover:shadow-black/10">
-      <div className="mb-2.5 flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-cyan-200 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+      <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-cyan-200 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">{icons[icon]}</svg>
       </div>
       <h3 className="text-sm font-extrabold">{title}</h3>
-      <p className="mt-1 text-[10px] font-medium leading-4 text-blue-100/70">{text}</p>
+      <p className="mt-0.5 text-[10px] font-medium leading-4 text-blue-100/70">{text}</p>
     </div>
   );
 };

@@ -184,7 +184,7 @@ const importUsersFromRows = async (
     .filter(Boolean);
 
   const existingUsers = docs.length
-    ? await User.find({ doc: { $in: docs } }).select("doc")
+    ? await User.find({ doc: { $in: docs } }).select("doc active")
     : [];
 
   const existingDocs = new Set(existingUsers.map((user) => user.doc));
@@ -210,13 +210,18 @@ const importUsersFromRows = async (
         String(existingUser.email || "") !== String(row.email || "") ||
         String(existingUser.phone || "") !== String(row.phone || "");
 
-      if (changed) {
+      const wasInactive = existingUser.active === false;
+
+      if (changed || wasInactive) {
         existingUser.name = row.name || "";
         existingUser.username = row.username || "";
         existingUser.circle = row.circle;
         existingUser.job = row.job || "";
         existingUser.email = row.email || "";
         existingUser.phone = row.phone || "";
+        existingUser.active = true;
+        existingUser.deletedAt = null;
+        existingUser.deletedBy = "";
         await existingUser.save();
         updated++;
       } else {

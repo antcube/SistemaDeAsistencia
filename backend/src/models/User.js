@@ -45,6 +45,23 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+
+    active: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+
+    deletedBy: {
+      type: String,
+      trim: true,
+      default: "",
+    },
   },
   {
     timestamps: true,

@@ -332,9 +332,9 @@ const Members = () => {
 
   const handleDelete =
     async (user) => {
-      if (!isMainAdmin) {
+      if (!canManageMembers) {
         setError(
-          "Solo el Administrador Principal puede eliminar miembros."
+          "No tienes permisos para eliminar miembros."
         );
 
         return;
@@ -722,49 +722,35 @@ const Members = () => {
 
                           <div className="flex items-center gap-2">
 
-                            {/* EDITAR:
-                                ADMIN + GESTOR */}
+                            {/* EDITAR: ADMIN + GESTOR DENTRO DE SU CÍRCULO */}
 
-                            {/* =====================================================
-    EDITAR
-    SOLO ADMINISTRADOR PRINCIPAL
+                            {canManageMembers && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openEdit(user)
+                                }
+                                title="Editar miembro"
+                                className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                              >
+                                ✏️
+                              </button>
+                            )}
 
-    El Gestor NO puede editar miembros existentes.
-    Solamente puede:
-    - Crear nuevos miembros manualmente.
-    - Subir nuevos miembros mediante Excel.
-===================================================== */}
+                            {/* ELIMINAR: ADMIN + GESTOR DENTRO DE SU CÍRCULO */}
 
-{isMainAdmin && (
-  <button
-    type="button"
-    onClick={() =>
-      openEdit(user)
-    }
-    title="Editar miembro"
-    className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-  >
-    ✏️
-  </button>
-)}
-
-{/* =====================================================
-    ELIMINAR
-    SOLO ADMINISTRADOR PRINCIPAL
-===================================================== */}
-
-{isMainAdmin && (
-  <button
-    type="button"
-    onClick={() =>
-      handleDelete(user)
-    }
-    title="Eliminar miembro"
-    className="inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-white px-2 text-[11px] font-bold text-rose-600 transition hover:bg-rose-50"
-  >
-    🗑️
-  </button>
-)}
+                            {canManageMembers && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDelete(user)
+                                }
+                                title="Eliminar miembro"
+                                className="inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-white px-2 text-[11px] font-bold text-rose-600 transition hover:bg-rose-50"
+                              >
+                                🗑️
+                              </button>
+                            )}
 
                           </div>
 

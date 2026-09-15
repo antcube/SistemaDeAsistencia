@@ -10,10 +10,6 @@ const {
 
 const authMiddleware = require("../middleware/authMiddleware");
 
-const {
-  requireGlobalAdministrator,
-} = require("../middleware/permissionMiddleware");
-
 const router = express.Router();
 
 // ============================================================
@@ -48,11 +44,10 @@ router.put(
   updateUser
 );
 
-// Eliminar: únicamente Administrador Principal
+// Eliminar: Administrador Principal o Gestor dentro de su círculo
 router.delete(
   "/:id",
   authMiddleware,
-  requireGlobalAdministrator,
   deleteUser
 );
 

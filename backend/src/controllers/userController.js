@@ -41,7 +41,9 @@ const getUsers = async (req, res) => {
       200
     );
 
-    const query = {};
+    const query = {
+      active: { $ne: false },
+    };
 
     /*
      * Los gestores solamente pueden consultar
@@ -150,7 +152,7 @@ const getUserById = async (req, res) => {
         req.params.id
       );
 
-    if (!user) {
+    if (!user || user.active === false) {
       return res.status(404).json({
         message:
           "Miembro no encontrado.",
@@ -217,21 +219,11 @@ const createUser = async (req, res) => {
     const normalizedDoc =
       String(doc).trim();
 
-    const existing =
-      await User.findOne({
-        doc: normalizedDoc,
-      });
-
-    if (existing) {
-      return res.status(409).json({
-        message:
-          "Ya existe un miembro con ese DNI.",
-      });
-    }
+    const circleName = String(circle).trim();
 
     const circleExists =
       await Circle.findOne({
-        name: circle,
+        name: circleName,
         active: true,
       });
 
@@ -242,12 +234,65 @@ const createUser = async (req, res) => {
       });
     }
 
+    const existing =
+      await User.findOne({
+        doc: normalizedDoc,
+      });
+
+    if (existing) {
+      if (existing.active === false) {
+        existing.name = name.trim();
+        existing.username = username.trim();
+        existing.circle = circleName;
+        existing.job = job.trim();
+        existing.email = email.trim();
+        existing.phone = phone.trim();
+        existing.active = true;
+        existing.deletedAt = null;
+        existing.deletedBy = "";
+
+        await existing.save();
+
+        await createAuditLog({
+          admin: req.user || req.admin,
+          action: "REACTIVATE_MEMBER",
+          module: "members",
+          description: `Se reactivó el miembro ${existing.name} en el círculo ${existing.circle}.`,
+          targetId: existing._id,
+          targetName: existing.name,
+          circle: existing.circle,
+          metadata: {
+            userId: existing._id,
+            doc: existing.doc,
+            name: existing.name,
+            username: existing.username,
+            circle: existing.circle,
+            job: existing.job,
+            email: existing.email,
+            phone: existing.phone,
+            source: "manual_reactivation",
+          },
+        });
+
+        return res.status(200).json({
+          message:
+            "Miembro reactivado correctamente.",
+          user: existing,
+        });
+      }
+
+      return res.status(409).json({
+        message:
+          "Ya existe un miembro con ese DNI.",
+      });
+    }
+
     const user =
       await User.create({
         doc: normalizedDoc,
         name: name.trim(),
         username: username.trim(),
-        circle: circle.trim(),
+        circle: circleName,
         job: job.trim(),
         email: email.trim(),
         phone: phone.trim(),
@@ -309,7 +354,7 @@ const updateUser = async (req, res) => {
         req.params.id
       );
 
-    if (!user) {
+    if (!user || user.active === false) {
       return res.status(404).json({
         message:
           "Miembro no encontrado.",
@@ -490,29 +535,38 @@ const deleteUser = async (req, res) => {
         req.params.id
       );
 
-    if (!user) {
+    if (!user || user.active === false) {
       return res.status(404).json({
         message:
           "Miembro no encontrado.",
       });
     }
 
-    if (!hasGlobalPermission(req)) {
+    if (!hasCirclePermission(req, user.circle)) {
       return res.status(403).json({
         message:
-          "Solo el Administrador Principal puede eliminar miembros.",
+          "No tienes permisos para eliminar este miembro.",
       });
     }
 
-    await User.findByIdAndDelete(
-      user._id
-    );
+    const deletedBy = String(
+      req.user?.adminId ||
+      req.user?.username ||
+      req.user?.name ||
+      ""
+    ).trim();
+
+    user.active = false;
+    user.deletedAt = new Date();
+    user.deletedBy = deletedBy;
+
+    await user.save();
 
     await createAuditLog({
       admin: req.user || req.admin,
       action: "DELETE_MEMBER",
       module: "members",
-      description: `Se eliminó el miembro ${user.name}.`,
+      description: `Se eliminó el miembro ${user.name}. Sus asistencias históricas fueron conservadas.`,
       targetId: user._id,
       targetName: user.name,
       circle: user.circle,
@@ -525,12 +579,14 @@ const deleteUser = async (req, res) => {
         job: user.job,
         email: user.email,
         phone: user.phone,
+        softDelete: true,
+        historicalAttendancePreserved: true,
       },
     });
 
     return res.json({
       message:
-        "Miembro eliminado correctamente.",
+        "Miembro eliminado correctamente. Su historial fue conservado.",
     });
   } catch (error) {
     console.error(
@@ -581,8 +637,9 @@ const deleteUsersByCircle = async (req, res) => {
 
     const members = await User.find({
       circle: circle.name,
+      active: { $ne: false },
     }).select(
-      "_id doc name username circle job email phone"
+      "_id doc name username circle job email phone active"
     );
 
     if (!members.length) {
@@ -605,9 +662,26 @@ const deleteUsersByCircle = async (req, res) => {
       phone: member.phone || "",
     }));
 
-    const result = await User.deleteMany({
-      circle: circle.name,
-    });
+    const deletedBy = String(
+      req.user?.adminId ||
+      req.user?.username ||
+      req.user?.name ||
+      ""
+    ).trim();
+
+    const result = await User.updateMany(
+      {
+        circle: circle.name,
+        active: { $ne: false },
+      },
+      {
+        $set: {
+          active: false,
+          deletedAt: new Date(),
+          deletedBy,
+        },
+      }
+    );
 
     // La eliminación de miembros no debe fallar si la bitácora
     // presenta un problema. Los miembros ya fueron eliminados
@@ -619,14 +693,14 @@ const deleteUsersByCircle = async (req, res) => {
         action: "DELETE_CIRCLE_MEMBERS",
         module: "members",
         description:
-          `Se eliminaron ${result.deletedCount} miembro(s) del círculo ${circle.name}. El círculo, sus reuniones y sus asistencias históricas permanecen intactos.`,
+          `Se eliminaron ${result.modifiedCount} miembro(s) del círculo ${circle.name}. El círculo, sus reuniones y sus asistencias históricas permanecen intactos.`,
         targetId: circle._id,
         targetName: circle.name,
         circle: circle.name,
         metadata: {
           circleId: String(circle._id),
           circleName: circle.name,
-          deletedCount: result.deletedCount,
+          deletedCount: result.modifiedCount,
           members: memberSnapshots,
           circlePreserved: true,
           meetingsPreserved: true,
@@ -642,8 +716,8 @@ const deleteUsersByCircle = async (req, res) => {
 
     return res.json({
       message:
-        `${result.deletedCount} miembro(s) eliminado(s) correctamente del círculo.`,
-      deletedCount: result.deletedCount,
+        `${result.modifiedCount} miembro(s) eliminado(s) correctamente del círculo.`,
+      deletedCount: result.modifiedCount,
       circle: circle.name,
     });
   } catch (error) {
