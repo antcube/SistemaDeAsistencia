@@ -836,6 +836,7 @@ const MonthlyReport = () => {
         "USUARIO",
         "CÍRCULO",
         "RANGO / CARGO",
+        "FECHA CAMBIO RANGO",
         "CORREO",
         "TELÉFONO",
       ];
@@ -991,54 +992,18 @@ const MonthlyReport = () => {
         cell.value = header;
       });
 
-      // Cada categoría ocupa una sola celda superior fusionada,
-      // igual que en la vista web. Debajo se mantienen las sesiones
-      // individuales con su fecha y hora.
-      let categoryStartIndex = 0;
-      while (categoryStartIndex < sessionColumns.length) {
-        const currentCategory = sessionColumns[categoryStartIndex].category;
-        let categoryEndIndex = categoryStartIndex;
+      sessionColumns.forEach(({ category, session }, index) => {
+        const col = baseHeaders.length + index + 1;
+        const categoryCell = worksheet.getCell(headerTopRow, col);
+        categoryCell.value = CATEGORY_LABELS[category] || category;
 
-        while (
-          categoryEndIndex + 1 < sessionColumns.length &&
-          sessionColumns[categoryEndIndex + 1].category === currentCategory
-        ) {
-          categoryEndIndex += 1;
-        }
-
-        const categoryStartCol =
-          baseHeaders.length + categoryStartIndex + 1;
-        const categoryEndCol =
-          baseHeaders.length + categoryEndIndex + 1;
-
-        worksheet.mergeCells(
-          headerTopRow,
-          categoryStartCol,
-          headerTopRow,
-          categoryEndCol
-        );
-
-        const categoryCell = worksheet.getCell(
-          headerTopRow,
-          categoryStartCol
-        );
-        categoryCell.value =
-          CATEGORY_LABELS[currentCategory] || currentCategory;
-
-        // Cada sesión conserva su propio encabezado de fecha y hora.
-        for (let index = categoryStartIndex; index <= categoryEndIndex; index += 1) {
-          const { session } = sessionColumns[index];
-          const col = baseHeaders.length + index + 1;
-          const sessionCell = worksheet.getCell(headerBottomRow, col);
-          sessionCell.value = `${formatSessionHeader(session)}${
-            session.time
-              ? `\n${formatSessionTime(session.time)}`
-              : ""
-          }`;
-        }
-
-        categoryStartIndex = categoryEndIndex + 1;
-      }
+        const sessionCell = worksheet.getCell(headerBottomRow, col);
+        sessionCell.value = `${formatSessionHeader(session)}${
+          session.time
+            ? `\n${formatSessionTime(session.time)}`
+            : ""
+        }`;
+      });
 
       const summaryStart = baseHeaders.length + sessionColumns.length + 1;
       worksheet.mergeCells(
@@ -1140,6 +1105,7 @@ const MonthlyReport = () => {
           directory?.username || "",
           member?.circle || directory?.circle || "",
           directory?.rank || directory?.job || "",
+          directory?.rangeChangeDate || member?.rangeChangeDate || "",
           directory?.email || "",
           directory?.phone || "",
         ];
@@ -1147,6 +1113,13 @@ const MonthlyReport = () => {
         values.forEach((value, index) => {
           const cell = worksheet.getCell(row, index + 1);
           cell.value = value;
+          if (index === 5 && value) {
+            const parsedDate = value instanceof Date ? value : new Date(value);
+            if (!Number.isNaN(parsedDate.getTime())) {
+              cell.value = parsedDate;
+              cell.numFmt = "dd/mm/yyyy";
+            }
+          }
           cell.font = {
             name: FONT,
             size: 9,
@@ -1284,6 +1257,7 @@ const MonthlyReport = () => {
         18, // USUARIO
         20, // CÍRCULO
         20, // RANGO / CARGO
+        18, // FECHA CAMBIO RANGO
         30, // CORREO
         17, // TELÉFONO
       ];
@@ -1363,6 +1337,7 @@ const MonthlyReport = () => {
         "USUARIO",
         "CÍRCULO",
         "RANGO / CARGO",
+        "FECHA CAMBIO RANGO",
         "CORREO",
         "TELÉFONO",
         "ASISTENCIAS",
@@ -1444,6 +1419,7 @@ const MonthlyReport = () => {
           directory?.username || "",
           member?.circle || directory?.circle || "",
           directory?.rank || directory?.job || "",
+          directory?.rangeChangeDate || member?.rangeChangeDate || "",
           directory?.email || "",
           directory?.phone || "",
           totals.attended,
@@ -1455,6 +1431,13 @@ const MonthlyReport = () => {
         values.forEach((value, colIndex) => {
           const cell = winnerSheet.getCell(row, colIndex + 1);
           cell.value = value;
+          if (colIndex === 5 && value) {
+            const parsedDate = value instanceof Date ? value : new Date(value);
+            if (!Number.isNaN(parsedDate.getTime())) {
+              cell.value = parsedDate;
+              cell.numFmt = "dd/mm/yyyy";
+            }
+          }
           cell.font = {
             name: FONT,
             size: 9,
@@ -1500,7 +1483,7 @@ const MonthlyReport = () => {
         };
       });
 
-      [12, 34, 18, 20, 20, 30, 17, 13, 10, 15, 14].forEach(
+      [12, 34, 18, 20, 20, 18, 30, 17, 13, 10, 15, 14].forEach(
         (width, index) => {
           winnerSheet.getColumn(index + 1).width = width;
         }

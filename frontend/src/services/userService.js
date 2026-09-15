@@ -44,6 +44,12 @@ const userService = {
     );
   },
 
+  async getRangeHistory(id) {
+    return api.get(
+      `/users/${id}/range-history`
+    );
+  },
+
   async createUser(data) {
     return api.post(
       "/users",

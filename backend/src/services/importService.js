@@ -15,6 +15,48 @@ const normalizeValue = (value) => {
   return String(value).trim();
 };
 
+const normalizeDateValue = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()));
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    return new Date(excelEpoch.getTime() + Math.round(value) * 86400000);
+  }
+
+  const text = String(value).trim();
+  if (!text) return null;
+
+  const match = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (match) {
+    const [, year, month, day] = match;
+    return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  }
+
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  return new Date(Date.UTC(
+    parsed.getFullYear(),
+    parsed.getMonth(),
+    parsed.getDate()
+  ));
+};
+
+const formatDateOnly = (value) => {
+  const date = normalizeDateValue(value);
+  if (!date) return "";
+
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0"),
+  ].join("-");
+};
+
 const HEADER_MAP = {
   dni: "doc",
   doc: "doc",
@@ -43,6 +85,12 @@ const HEADER_MAP = {
   puesto: "job",
   job: "job",
 
+  fechadecambioderango: "rangeChangeDate",
+  fechacambioderango: "rangeChangeDate",
+  fechacambiorango: "rangeChangeDate",
+  fechaderangocambio: "rangeChangeDate",
+  rangechangedate: "rangeChangeDate",
+
   correo: "email",
   email: "email",
 
@@ -59,6 +107,12 @@ const mapRow = (row, headers) => {
     const normalized = normalizeHeader(header);
     const field = HEADER_MAP[normalized];
     if (!field) continue;
+
+    if (field === "rangeChangeDate") {
+      mapped[field] = formatDateOnly(row[header]);
+      continue;
+    }
+
     mapped[field] = normalizeValue(row[header]);
   }
 
@@ -72,9 +126,70 @@ const hasAnyMemberData = (user) => {
     user.username ||
     user.circle ||
     user.job ||
+    user.rangeChangeDate ||
     user.email ||
     user.phone
   );
+};
+
+const applyImportedRangeHistory = ({
+  user,
+  previousRange,
+  previousRangeChangeDate,
+  newRange,
+  newRangeChangeDate,
+}) => {
+  const oldRange = String(previousRange || "").trim();
+  const currentRange = String(newRange || "").trim();
+
+  if (!currentRange) return;
+
+  const effectiveDate =
+    normalizeDateValue(newRangeChangeDate) ||
+    normalizeDateValue(previousRangeChangeDate);
+
+  if (!Array.isArray(user.rangeHistory)) {
+    user.rangeHistory = [];
+  }
+
+  const currentEntry = user.rangeHistory
+    .slice()
+    .reverse()
+    .find((entry) => !entry.endDate);
+
+  if (oldRange === currentRange) {
+    if (!effectiveDate) return;
+
+    user.rangeChangeDate = effectiveDate;
+
+    if (currentEntry) {
+      currentEntry.range = currentRange;
+      currentEntry.startDate = effectiveDate;
+      currentEntry.changedBy = "Importación Excel";
+    } else {
+      user.rangeHistory.push({
+        range: currentRange,
+        startDate: effectiveDate,
+        endDate: null,
+        changedBy: "Importación Excel",
+      });
+    }
+
+    return;
+  }
+
+  if (currentEntry) {
+    currentEntry.endDate = effectiveDate || new Date();
+  }
+
+  user.rangeHistory.push({
+    range: currentRange,
+    startDate: effectiveDate || new Date(),
+    endDate: null,
+    changedBy: "Importación Excel",
+  });
+
+  user.rangeChangeDate = effectiveDate || new Date();
 };
 
 const importUsersFromRows = async (
@@ -184,7 +299,7 @@ const importUsersFromRows = async (
     .filter(Boolean);
 
   const existingUsers = docs.length
-    ? await User.find({ doc: { $in: docs } }).select("doc active")
+    ? await User.find({ doc: { $in: docs } }).select("doc")
     : [];
 
   const existingDocs = new Set(existingUsers.map((user) => user.doc));
@@ -207,21 +322,29 @@ const importUsersFromRows = async (
         String(existingUser.username || "") !== String(row.username || "") ||
         String(existingUser.circle || "") !== String(row.circle || "") ||
         String(existingUser.job || "") !== String(row.job || "") ||
+        formatDateOnly(existingUser.rangeChangeDate) !== formatDateOnly(row.rangeChangeDate) ||
         String(existingUser.email || "") !== String(row.email || "") ||
         String(existingUser.phone || "") !== String(row.phone || "");
 
-      const wasInactive = existingUser.active === false;
+      if (changed) {
+        const previousRange = existingUser.job;
+        const previousRangeChangeDate = existingUser.rangeChangeDate;
 
-      if (changed || wasInactive) {
         existingUser.name = row.name || "";
         existingUser.username = row.username || "";
         existingUser.circle = row.circle;
         existingUser.job = row.job || "";
         existingUser.email = row.email || "";
         existingUser.phone = row.phone || "";
-        existingUser.active = true;
-        existingUser.deletedAt = null;
-        existingUser.deletedBy = "";
+
+        applyImportedRangeHistory({
+          user: existingUser,
+          previousRange,
+          previousRangeChangeDate,
+          newRange: row.job || "",
+          newRangeChangeDate: row.rangeChangeDate,
+        });
+
         await existingUser.save();
         updated++;
       } else {
@@ -238,6 +361,18 @@ const importUsersFromRows = async (
       username: row.username || "",
       circle: row.circle,
       job: row.job || "",
+      rangeChangeDate: normalizeDateValue(row.rangeChangeDate),
+      rangeHistory:
+        row.job && row.rangeChangeDate
+          ? [
+              {
+                range: row.job,
+                startDate: normalizeDateValue(row.rangeChangeDate),
+                endDate: null,
+                changedBy: "Importación Excel",
+              },
+            ]
+          : [],
       email: row.email || "",
       phone: row.phone || "",
     };
@@ -310,6 +445,7 @@ const previewUsersFromRows = async (rows) => {
       username: user.username || "",
       circle: user.circle || "",
       job: user.job || "",
+      rangeChangeDate: user.rangeChangeDate || "",
       email: user.email || "",
       phone: user.phone || "",
       excelRow,

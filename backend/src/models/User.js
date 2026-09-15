@@ -34,6 +34,36 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    rangeChangeDate: {
+      type: Date,
+      default: null,
+    },
+
+    rangeHistory: {
+      type: [
+        {
+          range: {
+            type: String,
+            trim: true,
+          },
+          startDate: {
+            type: Date,
+            default: null,
+          },
+          endDate: {
+            type: Date,
+            default: null,
+          },
+          changedBy: {
+            type: String,
+            trim: true,
+            default: "",
+          },
+        },
+      ],
+      default: [],
+    },
+
     email: {
     type: String,
     trim: true,
@@ -41,23 +71,6 @@ const userSchema = new mongoose.Schema(
     },
 
     phone: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-
-    active: {
-      type: Boolean,
-      default: true,
-      index: true,
-    },
-
-    deletedAt: {
-      type: Date,
-      default: null,
-    },
-
-    deletedBy: {
       type: String,
       trim: true,
       default: "",

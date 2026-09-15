@@ -15,6 +15,7 @@ const EMPTY_FORM = {
   username: "",
   circle: "",
   job: "",
+  rangeChangeDate: "",
   email: "",
   phone: "",
 };
@@ -27,6 +28,33 @@ const RANK_OPTIONS = [
   "PRESIDENTIAL",
   "INFINITY",
 ];
+
+const toInputDate = (value) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0"),
+  ].join("-");
+};
+
+const formatDate = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return new Intl.DateTimeFormat("es-PE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+};
 
 const Members = () => {
   const { admin } = useAuth();
@@ -71,6 +99,18 @@ const Members = () => {
 
   const [editingUser, setEditingUser] =
     useState(null);
+
+  const [rangeHistoryOpen, setRangeHistoryOpen] =
+    useState(false);
+
+  const [rangeHistoryUser, setRangeHistoryUser] =
+    useState(null);
+
+  const [rangeHistory, setRangeHistory] =
+    useState([]);
+
+  const [rangeHistoryLoading, setRangeHistoryLoading] =
+    useState(false);
 
   const [form, setForm] =
     useState(EMPTY_FORM);
@@ -239,6 +279,9 @@ const Members = () => {
         job:
           user.job || "",
 
+        rangeChangeDate:
+          toInputDate(user.rangeChangeDate),
+
         email:
           user.email || "",
 
@@ -278,6 +321,45 @@ const Members = () => {
     };
 
 
+
+  const openRangeHistory =
+    async (user) => {
+      try {
+        setRangeHistoryLoading(true);
+        setRangeHistoryUser(user);
+        setRangeHistoryOpen(true);
+        setRangeHistory([]);
+        setError("");
+
+        const data =
+          await userService.getRangeHistory(
+            user._id
+          );
+
+        setRangeHistory(
+          Array.isArray(data.history)
+            ? data.history
+            : []
+        );
+      } catch (err) {
+        setRangeHistoryOpen(false);
+        setRangeHistoryUser(null);
+        setError(
+          err?.message ||
+            "No se pudo cargar el historial de rangos."
+        );
+      } finally {
+        setRangeHistoryLoading(false);
+      }
+    };
+
+  const closeRangeHistory = () => {
+    if (rangeHistoryLoading) return;
+
+    setRangeHistoryOpen(false);
+    setRangeHistoryUser(null);
+    setRangeHistory([]);
+  };
 
   const handleSubmit =
     async (event) => {
@@ -332,9 +414,9 @@ const Members = () => {
 
   const handleDelete =
     async (user) => {
-      if (!canManageMembers) {
+      if (!isMainAdmin) {
         setError(
-          "No tienes permisos para eliminar miembros."
+          "Solo el Administrador Principal puede eliminar miembros."
         );
 
         return;
@@ -630,6 +712,10 @@ const Members = () => {
                       Rango
                     </th>
 
+                    <th className="w-[145px] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
+                      Fecha Cambio Rango
+                    </th>
+
                     <th className="w-[190px] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
                       Correo
                     </th>
@@ -696,6 +782,12 @@ const Members = () => {
                           </span>
                         </td>
 
+                        {/* FECHA DE CAMBIO DE RANGO */}
+
+                        <td className="px-3.5 py-3 align-middle text-xs font-medium text-slate-600">
+                          {formatDate(user.rangeChangeDate)}
+                        </td>
+
                         {/* CORREO */}
 
                         <td className="overflow-hidden px-3.5 py-3 align-middle">
@@ -722,35 +814,60 @@ const Members = () => {
 
                           <div className="flex items-center gap-2">
 
-                            {/* EDITAR: ADMIN + GESTOR DENTRO DE SU CÍRCULO */}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openRangeHistory(user)
+                              }
+                              title="Ver historial de rangos"
+                              className="inline-flex h-8 items-center justify-center rounded-md border border-indigo-200 bg-white px-2 text-[11px] font-bold text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-700"
+                            >
+                              📋
+                            </button>
 
-                            {canManageMembers && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openEdit(user)
-                                }
-                                title="Editar miembro"
-                                className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-                              >
-                                ✏️
-                              </button>
-                            )}
+                            {/* EDITAR:
+                                ADMIN + GESTOR */}
 
-                            {/* ELIMINAR: ADMIN + GESTOR DENTRO DE SU CÍRCULO */}
+                            {/* =====================================================
+    EDITAR
+    SOLO ADMINISTRADOR PRINCIPAL
 
-                            {canManageMembers && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleDelete(user)
-                                }
-                                title="Eliminar miembro"
-                                className="inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-white px-2 text-[11px] font-bold text-rose-600 transition hover:bg-rose-50"
-                              >
-                                🗑️
-                              </button>
-                            )}
+    El Gestor NO puede editar miembros existentes.
+    Solamente puede:
+    - Crear nuevos miembros manualmente.
+    - Subir nuevos miembros mediante Excel.
+===================================================== */}
+
+{isMainAdmin && (
+  <button
+    type="button"
+    onClick={() =>
+      openEdit(user)
+    }
+    title="Editar miembro"
+    className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+  >
+    ✏️
+  </button>
+)}
+
+{/* =====================================================
+    ELIMINAR
+    SOLO ADMINISTRADOR PRINCIPAL
+===================================================== */}
+
+{isMainAdmin && (
+  <button
+    type="button"
+    onClick={() =>
+      handleDelete(user)
+    }
+    title="Eliminar miembro"
+    className="inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-white px-2 text-[11px] font-bold text-rose-600 transition hover:bg-rose-50"
+  >
+    🗑️
+  </button>
+)}
 
                           </div>
 
@@ -1045,6 +1162,24 @@ const Members = () => {
   </select>
 </label>
 
+              {/* FECHA DE CAMBIO DE RANGO */}
+
+              <label className="flex flex-col gap-1.5 text-[11px] font-bold text-slate-600">
+                Fecha De Cambio De Rango
+
+                <input
+                  type="date"
+                  value={form.rangeChangeDate}
+                  onChange={(event) =>
+                    updateForm(
+                      "rangeChangeDate",
+                      event.target.value
+                    )
+                  }
+                  className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-normal text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
               {/* CORREO */}
 
               <label className="flex flex-col gap-1.5 text-[11px] font-bold text-slate-600">
@@ -1123,6 +1258,96 @@ const Members = () => {
 
           </div>
 
+        </div>
+      )}
+
+      {rangeHistoryOpen && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm"
+          onMouseDown={closeRangeHistory}
+        >
+          <div
+            className="max-h-[85vh] w-full max-w-[560px] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div>
+                <span className="text-[10px] font-extrabold tracking-wider text-slate-500">
+                  HISTORIAL
+                </span>
+                <h2 className="mt-1 text-lg font-bold text-slate-900">
+                  Historial De Rangos
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  {rangeHistoryUser?.name || "Miembro"}
+                  {rangeHistoryUser?.doc
+                    ? ` · DNI ${rangeHistoryUser.doc}`
+                    : ""}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeRangeHistory}
+                disabled={rangeHistoryLoading}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-2xl leading-none text-slate-500 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-5">
+              {rangeHistoryLoading ? (
+                <div className="flex min-h-[180px] items-center justify-center text-sm font-semibold text-slate-500">
+                  Cargando historial...
+                </div>
+              ) : rangeHistory.length === 0 ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                  Este miembro todavía no tiene historial de rangos registrado.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {[...rangeHistory]
+                    .sort((a, b) =>
+                      new Date(a.startDate || 0) -
+                      new Date(b.startDate || 0)
+                    )
+                    .map((entry, index) => (
+                      <div
+                        key={`${entry._id || entry.startDate || index}-${index}`}
+                        className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-extrabold text-slate-800">
+                              {entry.range || "Sin rango"}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Desde {formatDate(entry.startDate)}
+                              {entry.endDate
+                                ? ` hasta ${formatDate(entry.endDate)}`
+                                : " · Actual"}
+                            </p>
+                          </div>
+
+                          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700">
+                            {entry.endDate ? "Histórico" : "Actual"}
+                          </span>
+                        </div>
+
+                        {entry.changedBy && (
+                          <p className="mt-3 border-t border-slate-100 pt-2 text-[10px] font-medium text-slate-400">
+                            Registrado por: {entry.changedBy}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
