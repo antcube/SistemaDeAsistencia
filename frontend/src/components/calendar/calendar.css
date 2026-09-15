@@ -1,28 +1,56 @@
+/* =========================================================
+   CÍRCULOS CONNECT
+   CALENDARIO
+   ESTÉTICA OFICIAL
+========================================================= */
+
 .calendar-page {
-  @apply w-full min-w-0;
+  width: 100%;
+  min-width: 0;
   min-height: calc(100vh - 123px);
-  background: linear-gradient(
-    135deg,
-    #050812 0%,
-    #0b1736 45%,
-    #102657 72%,
-    #050812 100%
-  );
+
+  background:
+    linear-gradient(
+      135deg,
+      #050812 0%,
+      #0b1736 45%,
+      #102657 72%,
+      #050812 100%
+    );
 }
 
+/* =========================================================
+   TOOLBAR
+========================================================= */
+
 .calendar-toolbar {
-  @apply box-border flex items-center;
   min-height: 74px;
+
+  box-sizing: border-box;
 }
 
 .calendar-actions {
-  @apply flex min-w-0 items-center justify-end gap-2;
+  min-width: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: flex-end;
+
+  gap: 8px;
+
   flex-wrap: nowrap;
 }
 
+/* =========================================================
+   MONTH SELECTOR
+========================================================= */
+
 .month-selector {
-  @apply grid items-center;
+  display: grid;
   grid-template-columns: 42px 240px 42px 48px;
+  align-items: center;
   column-gap: 8px;
   width: 396px;
   min-width: 396px;
@@ -30,120 +58,343 @@
 }
 
 .calendar-month-title {
-  @apply m-0 min-w-0 text-center font-sans text-lg font-extrabold capitalize leading-tight;
   width: 240px;
+  min-width: 0;
+  margin: 0;
   color: #172033;
+  text-align: center;
+  font-family: Inter, sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: capitalize;
   white-space: nowrap;
 }
 
+/* =========================================================
+   FLECHAS
+========================================================= */
+
 .calendar-nav-button {
-  @apply inline-flex h-[42px] min-h-[42px] w-[42px] min-w-[42px] cursor-pointer items-center justify-center rounded-full border-0 bg-black p-0 text-[30px] font-normal leading-none text-white;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
+  color: #ffffff;
   font-family: Arial, sans-serif;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
   transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .calendar-nav-button:hover {
-  @apply bg-[#111111];
+  background: #111111;
+
   transform: scale(1.04);
 }
 
+/* =========================================================
+   HOY
+========================================================= */
+
 .calendar-today-button {
-  @apply box-border h-[34px] min-h-[34px] w-[48px] min-w-[48px] cursor-pointer whitespace-nowrap rounded-lg border-0 bg-slate-100 px-2 text-[10px] font-extrabold text-[#52637a];
+  width: 48px;
+  min-width: 48px;
+  height: 34px;
+  min-height: 34px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: none;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #52637a;
   font-family: Inter, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .calendar-today-button:hover {
-  @apply bg-slate-200;
+  background: #e2e8f0;
 }
 
+/* =========================================================
+   SELECTOR CÍRCULO
+========================================================= */
+
 .calendar-location-select {
-  @apply h-9 w-[218px] min-w-[218px] rounded-lg border border-slate-300 bg-white px-3 text-[11px] font-bold text-[#344b68] outline-none;
+  height: 36px;
+
+  width: 218px;
+
+  min-width: 218px;
+
+  padding: 0 12px;
+
+  border: 1px solid #cbd5e1;
+
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  color: #344b68;
+
   font-family: Inter, sans-serif;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  outline: none;
 }
 
 .calendar-location-select:focus {
-  @apply border-[#2457c5];
-  box-shadow: 0 0 0 2px rgba(36, 87, 197, 0.12);
+  border-color: #2457c5;
+
+  box-shadow:
+    0 0 0 2px rgba(36, 87, 197, 0.12);
 }
+
+/* =========================================================
+   BOTONES
+========================================================= */
 
 .primary-button,
 .secondary-button,
 .calendar-button {
-  @apply h-9 min-h-9 shrink-0 cursor-pointer whitespace-nowrap rounded-lg px-[13px] text-[11px] font-extrabold;
+  height: 36px;
+
+  min-height: 36px;
+
+  flex-shrink: 0;
+
+  padding: 0 13px;
+
+  border-radius: 8px;
+
   font-family: Inter, sans-serif;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
+/* =========================================================
+   PROGRAMAR
+========================================================= */
+
 .primary-button {
-  @apply border border-[#183875] bg-[#102657] text-white;
-  background: linear-gradient(135deg, #2457c5, #102657);
-  box-shadow: 0 5px 13px rgba(16, 38, 87, 0.22);
+  border: 1px solid #183875;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2457c5,
+      #102657
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    0 5px 13px rgba(16, 38, 87, 0.22);
 }
 
 .primary-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 7px 16px rgba(16, 38, 87, 0.28);
+
+  box-shadow:
+    0 7px 16px rgba(16, 38, 87, 0.28);
 }
 
+/* =========================================================
+   RECURRENTE
+========================================================= */
+
 .secondary-button {
-  @apply border border-slate-300 bg-white text-[#183875];
+  border: 1px solid #cbd5e1;
+
+  background: #ffffff;
+
+  color: #183875;
 }
 
 .secondary-button:hover {
-  @apply bg-slate-50;
+  background: #f8fafc;
 }
 
+/* =========================================================
+   MASTERCLASS
+========================================================= */
+
 .masterclass-button {
-  @apply inline-flex h-9 min-h-9 shrink-0 cursor-pointer items-center justify-center gap-[5px] rounded-lg border border-blue-600 bg-blue-600 px-[13px] text-[11px] font-extrabold text-white;
+  height: 36px;
+
+  min-height: 36px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 5px;
+
+  flex-shrink: 0;
+
+  padding: 0 13px;
+
+  border: 1px solid #2563eb;
+
+  border-radius: 8px;
+
+  background: #2563eb;
+
+  color: #ffffff;
+
   font-family: Inter, sans-serif;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.18);
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 4px 10px rgba(37, 99, 235, 0.18);
 }
 
 .masterclass-button:hover {
-  @apply bg-blue-700;
+  background: #1d4ed8;
+
   transform: translateY(-1px);
 }
 
 .masterclass-button:disabled {
-  @apply cursor-not-allowed opacity-60;
-}
+  cursor: not-allowed;
 
-.calendar-delete-masterclass {
-  @apply h-9 min-h-9 shrink-0 cursor-pointer whitespace-nowrap rounded-lg border border-rose-200 bg-rose-50 px-[13px] text-[11px] font-extrabold text-rose-700;
-  font-family: Inter, sans-serif;
-}
-
-.calendar-delete-masterclass:hover {
-  @apply bg-rose-100;
+  opacity: 0.6;
 }
 
 /* =========================================================
-   TARJETA Y GRID
-   ========================================================= */
+   ELIMINAR MASTERCLASS
+========================================================= */
+
+.calendar-delete-masterclass {
+  height: 36px;
+
+  min-height: 36px;
+
+  flex-shrink: 0;
+
+  padding: 0 13px;
+
+  border: 1px solid #fecdd3;
+
+  border-radius: 8px;
+
+  background: #fff1f2;
+
+  color: #be123c;
+
+  font-family: Inter, sans-serif;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+}
+
+.calendar-delete-masterclass:hover {
+  background: #ffe4e6;
+}
+
+/* =========================================================
+   TARJETA PRINCIPAL
+========================================================= */
 
 .calendar-main-card {
-  @apply w-full min-w-0 overflow-hidden rounded-xl border bg-white;
-  border-color: #d8e1ec;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.20);
+  width: 100%;
+
+  min-width: 0;
+
+  overflow: hidden;
+
+  border: 1px solid #d8e1ec;
+
+  border-radius: 12px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.20);
 }
 
-.calendar-week-header,
-.calendar-grid {
-  @apply grid w-full;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-}
+/* =========================================================
+   CABECERA SEMANA
+========================================================= */
 
 .calendar-week-header {
-  @apply h-9 border-b;
+  display: grid;
+
+  grid-template-columns:
+    repeat(7, minmax(0, 1fr));
+
+  width: 100%;
+
+  height: 36px;
+
   background: #eef3f8;
-  border-color: #d8e0eb;
+
+  border-bottom: 1px solid #d8e0eb;
 }
 
 .calendar-weekday {
-  @apply flex h-9 min-w-0 items-center justify-center border-r text-[10px] font-extrabold uppercase;
-  border-color: #d8e0eb;
+  min-width: 0;
+
+  height: 36px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-right: 1px solid #d8e0eb;
+
   color: #53657d;
+
   font-family: Inter, sans-serif;
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  text-transform: uppercase;
+
   white-space: nowrap;
 }
 
@@ -151,144 +402,386 @@
   border-right: none;
 }
 
+/* =========================================================
+   GRID
+========================================================= */
+
 .calendar-grid {
-  @apply min-w-0 items-stretch bg-white;
+  display: grid;
+
+  grid-template-columns:
+    repeat(7, minmax(0, 1fr));
+
+  width: 100%;
+
+  min-width: 0;
+  align-items: stretch;
+  background: #ffffff;
 }
 
+/* =========================================================
+   DÍA
+========================================================= */
+
 .calendar-day {
-  @apply relative box-border min-w-0 overflow-visible border-b border-r bg-white p-[7px];
+  position: relative;
+
+  min-width: 0;
+
+  height: auto;
+
   min-height: 95px;
+
+  padding: 7px;
+
+  box-sizing: border-box;
+
+  overflow: visible;
+
+  border-right: 1px solid #dce3ed;
+
+  border-bottom: 1px solid #dce3ed;
+
+  background: #ffffff;
 }
 
 .calendar-day:nth-child(7n) {
   border-right: none;
 }
 
+/* =========================================================
+   FUERA DEL MES
+========================================================= */
+
 .calendar-day-muted {
-  @apply bg-slate-100 text-slate-400;
+  background: #edf2f7;
+
+  color: #b4c0cf;
 }
+
+/* =========================================================
+   HOY
+========================================================= */
 
 .calendar-day-today {
   background: #eef4ff;
-  box-shadow: inset 0 0 0 2px #3867dc;
+
+  box-shadow:
+    inset 0 0 0 2px #3867dc;
 }
 
-.calendar-day-today .calendar-day-number {
+.calendar-day-today
+.calendar-day-number {
   background: #2f5fd5;
-  color: white;
-  box-shadow: 0 3px 8px rgba(47, 95, 213, 0.25);
+
+  color: #ffffff;
+
+  box-shadow:
+    0 3px 8px rgba(47, 95, 213, 0.25);
 }
+
+/* =========================================================
+   NÚMERO
+========================================================= */
 
 .calendar-day-number {
-  @apply inline-flex h-[25px] w-[25px] items-center justify-center rounded-full text-[10px] font-extrabold;
+  width: 25px;
+
+  height: 25px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 9999px;
+
   color: #42546d;
+
   font-family: Inter, sans-serif;
+
+  font-size: 10px;
+
+  font-weight: 800;
 }
 
-.calendar-day-muted .calendar-day-number {
+.calendar-day-muted
+.calendar-day-number {
   color: #b9c5d3;
 }
 
 /* =========================================================
    REUNIONES
-   ========================================================= */
+========================================================= */
 
 .calendar-day-meetings {
-  @apply flex w-full min-w-0 flex-col gap-1;
+  width: 100%;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 4px;
+
   margin-top: 2px;
+
   overflow: visible;
 }
 
+/* =========================================================
+   REUNIÓN
+========================================================= */
+
 .meeting-card {
-  @apply box-border flex w-full min-w-0 cursor-pointer flex-col gap-0.5 overflow-hidden rounded-[5px] border p-[7px_8px] text-left;
-  border-color: transparent;
-  transition: transform 0.12s ease, filter 0.12s ease;
+  width: 100%;
+
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  padding: 7px 8px;
+
+  border: 1px solid transparent;
+
+  border-radius: 5px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 2px;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  overflow: hidden;
+
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease;
 }
 
 .meeting-card:hover {
   transform: translateY(-1px);
+
   filter: brightness(1.02);
 }
 
 .meeting-card-main {
-  @apply flex w-full min-w-0 flex-col gap-0.5;
+  width: 100%;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 2px;
 }
 
 .meeting-card strong {
-  @apply block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[9px] font-black leading-tight;
+  display: block;
+
+  width: 100%;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  font-size: 9px;
+
+  line-height: 1.15;
+
+  font-weight: 900;
 }
 
 .meeting-card span {
-  @apply whitespace-nowrap text-[9px] font-bold leading-tight;
+  font-size: 9px;
+
+  line-height: 1.15;
+
+  font-weight: 700;
+
+  white-space: nowrap;
 }
 
 .meeting-card small {
-  @apply block w-full overflow-hidden text-ellipsis whitespace-nowrap text-[8px] font-semibold leading-tight;
-}
+  display: block;
 
-/* Colores de categorías */
-.meeting-leadership {
-  @apply border text-blue-700;
-  background: #dbeafe;
-  border-color: #8fb7ff;
-}
+  width: 100%;
 
-.meeting-health {
-  @apply border text-cyan-700;
-  background: #cffafe;
-  border-color: #67e8f9;
-}
+  overflow: hidden;
 
-.meeting-mentoria {
-  @apply border text-purple-700;
-  background: #f3e8ff;
-  border-color: #d8b4fe;
-}
+  text-overflow: ellipsis;
 
-.meeting-masterclass {
-  @apply border bg-slate-200 text-slate-600;
-  border-color: #c1cedd;
-}
+  white-space: nowrap;
 
-.meeting-announcements {
-  @apply border text-white;
-  background: #0b1736;
-  border-color: #102657;
-}
+  font-size: 8px;
 
-.meeting-ordinary {
-  @apply border text-indigo-700;
-  background: #eef2ff;
-  border-color: #c7d2fe;
-}
+  line-height: 1.1;
 
-.meeting-card-actions {
-  @apply flex items-center gap-1;
-}
-
-.meeting-card-actions button {
-  @apply h-[22px] min-w-6 cursor-pointer rounded-[5px] border px-[5px] text-[8px] font-extrabold;
-  border-color: rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.55);
-  color: inherit;
+  font-weight: 600;
 }
 
 /* =========================================================
-   ESTADOS
-   ========================================================= */
+   COLORES
+========================================================= */
+
+.meeting-leadership {
+  background: #dbeafe;
+
+  border-color: #8fb7ff;
+
+  color: #1d4ed8;
+}
+
+.meeting-health {
+  background: #cffafe;
+
+  border-color: #67e8f9;
+
+  color: #0e7490;
+}
+
+.meeting-mentoria {
+  background: #f3e8ff;
+
+  border-color: #d8b4fe;
+
+  color: #7e22ce;
+}
+
+.meeting-masterclass {
+  background: #e2e8f0;
+
+  border-color: #c1cedd;
+
+  color: #475569;
+}
+
+.meeting-announcements {
+  background: #0b1736;
+
+  border-color: #102657;
+
+  color: #ffffff;
+}
+
+.meeting-ordinary {
+  background: #eef2ff;
+
+  border-color: #c7d2fe;
+
+  color: #3730a3;
+}
+
+/* =========================================================
+   ACCIONES DENTRO DE REUNIÓN
+========================================================= */
+
+.meeting-card-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 4px;
+}
+
+.meeting-card-actions button {
+  min-width: 24px;
+
+  height: 22px;
+
+  padding: 0 5px;
+
+  border: 1px solid rgba(15, 23, 42, 0.12);
+
+  border-radius: 5px;
+
+  background: rgba(255, 255, 255, 0.55);
+
+  color: inherit;
+
+  font-size: 8px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+/* =========================================================
+   ERROR
+========================================================= */
 
 .calendar-error {
-  @apply box-border mb-[14px] w-full rounded-[9px] border border-red-200 bg-rose-50 px-[14px] py-[11px] text-[11px] font-bold text-rose-800;
+  box-sizing: border-box;
+
+  width: 100%;
+
+  margin-bottom: 14px;
+
+  padding: 11px 14px;
+
+  border: 1px solid #fecaca;
+
+  border-radius: 9px;
+
+  background: #fff1f2;
+
+  color: #9f1239;
+
+  font-size: 11px;
+
+  font-weight: 700;
 }
 
+/* =========================================================
+   LOADING
+========================================================= */
+
 .calendar-loading {
-  @apply flex min-h-[500px] items-center justify-center text-xs font-bold text-slate-500;
+  min-height: 500px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: #64748b;
+
+  font-size: 12px;
+
+  font-weight: 700;
 }
+
+/* =========================================================
+   LISTAS
+========================================================= */
 
 .meeting-list,
 .schedule-list {
-  @apply mt-[14px] flex w-full flex-col gap-[10px];
+  width: 100%;
+
+  margin-top: 14px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
 }
+
+/*
+ * La lista inferior mantiene su funcionalidad,
+ * pero no compite visualmente con el calendario.
+ */
 
 .meeting-list {
   display: none;
@@ -296,56 +789,93 @@
 
 /* =========================================================
    PROGRAMACIONES
-   ========================================================= */
+========================================================= */
 
 .schedule-card {
-  @apply box-border w-full rounded-[10px] border p-[14px] text-white;
-  border-color: rgba(255, 255, 255, 0.18);
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 14px;
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  border-radius: 10px;
+
   background: rgba(255, 255, 255, 0.08);
+
+  color: #ffffff;
 }
 
 .schedule-card-content {
-  @apply flex items-start justify-between gap-5;
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 20px;
 }
 
 .schedule-card h3 {
-  @apply my-[5px] text-sm text-white;
+  margin: 5px 0;
+
+  color: #ffffff;
+
+  font-size: 14px;
 }
 
 .schedule-card p {
-  @apply m-0 text-[11px];
+  margin: 0;
+
   color: rgba(255, 255, 255, 0.65);
+
+  font-size: 11px;
 }
 
 .schedule-card-info {
-  @apply flex flex-wrap gap-x-[14px] gap-y-[7px] text-[10px];
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 7px 14px;
+
   color: rgba(255, 255, 255, 0.72);
+
+  font-size: 10px;
 }
 
 .schedule-card-actions {
-  @apply mt-[10px] flex justify-end gap-[7px];
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 7px;
+
+  margin-top: 10px;
 }
 
 /* =========================================================
-   REGLAS ESPECIALES QUE SE MANTIENEN EN CSS
-   =========================================================
-   Estas reglas no conviene convertirlas a Tailwind sin tocar
-   Calendar.jsx porque dependen de selectores estructurales.
-   ========================================================= */
+   RESPONSIVE
+========================================================= */
 
 @media (max-width: 1100px) {
   .calendar-toolbar {
-    max-width: calc(100% - 24px);
+    max-width:
+      calc(100% - 24px);
   }
 
   .calendar-month-title {
     width: 170px;
+
     min-width: 170px;
   }
 
   .calendar-actions {
     overflow-x: auto;
+
     justify-content: flex-start;
+
     scrollbar-width: thin;
   }
 }
@@ -353,6 +883,7 @@
 @media (max-width: 850px) {
   .calendar-toolbar {
     flex-direction: column;
+
     align-items: stretch;
   }
 
@@ -362,6 +893,7 @@
 
   .calendar-actions {
     width: 100%;
+
     justify-content: flex-start;
   }
 }
@@ -376,14 +908,22 @@
   }
 }
 
+
 .calendar-page {
   background: transparent !important;
 }
 
+/*
+ * El toolbar y el calendario permanecen como tarjetas
+ * blancas sobre el fondo azul general.
+ */
 .calendar-page .calendar-toolbar {
   background: #ffffff !important;
 }
 
+/* =========================================================
+   AJUSTE RESPONSIVE DEL SELECTOR DE MES
+   ========================================================= */
 @media (max-width: 760px) {
   .month-selector {
     grid-template-columns: 42px minmax(0, 1fr) 42px 48px;
