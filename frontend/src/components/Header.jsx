@@ -82,11 +82,6 @@ const Header = () => {
 
         </div>
 
-        <div className="cc-department-badge" aria-label="Departamento de Ventas Pariscorp">
-          <span className="cc-department-icon">▦</span>
-          <span>Departamento de Ventas Pariscorp</span>
-        </div>
-
         <div className="cc-header-right">
 
           <div className="cc-admin-info">
@@ -156,6 +151,21 @@ const Header = () => {
                         </span>
 
                         General
+                      </NavLink>
+                    )}
+
+                    {isMainAdmin && (
+                      <NavLink
+                        to="/dashboard"
+                        onClick={() =>
+                          setOpen(false)
+                        }
+                      >
+                        <span>
+                          ◫
+                        </span>
+
+                        Dashboard
                       </NavLink>
                     )}
 

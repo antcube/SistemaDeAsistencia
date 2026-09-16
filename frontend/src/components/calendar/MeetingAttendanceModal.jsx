@@ -54,6 +54,7 @@ const MeetingAttendanceModal = ({
   const [editingRow, setEditingRow] = useState(null);
   const [newStatus, setNewStatus] = useState("No asistió");
   const [note, setNote] = useState("");
+  const [justificationReason, setJustificationReason] = useState("");
   const [qrOpen, setQrOpen] = useState(false);
   const [qrLoading, setQrLoading] = useState(false);
   const [qrMeeting, setQrMeeting] = useState(meeting);
@@ -147,9 +148,11 @@ const MeetingAttendanceModal = ({
     : "";
 
   const openStatusEditor = (row) => {
+    const status = normalizeStatus(row.status);
     setEditingRow(row);
-    setNewStatus(normalizeStatus(row.status));
-    setNote(row.justificationReason || row.note || "");
+    setNewStatus(status);
+    setNote(row.note || "");
+    setJustificationReason(row.justificationReason || "");
     setError("");
   };
 
@@ -170,12 +173,13 @@ const MeetingAttendanceModal = ({
         userId,
         status: newStatus,
         note: note.trim(),
-        justificationReason: newStatus === "Justificado" ? note.trim() : "",
+        justificationReason: newStatus === "Justificado" ? justificationReason.trim() : "",
         source: "ADMIN",
         attendanceMode: newStatus === "Clase Presencial" ? "PRESENCIAL" : "MANUAL",
       });
       setEditingRow(null);
       setNote("");
+      setJustificationReason("");
       await loadAttendance();
       onRefresh?.();
     } catch (err) {
@@ -436,9 +440,44 @@ const MeetingAttendanceModal = ({
             <select value={newStatus} onChange={(event) => setNewStatus(event.target.value)} className="mb-4 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium outline-none focus:border-[#3f6fcb] focus:ring-2 focus:ring-[#2457c5]/15">
               {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
-            <label className="mb-1 block text-xs font-semibold text-slate-700">{newStatus === "Justificado" ? "Motivo / Sustento" : "Observación"}</label>
-            <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder={newStatus === "Justificado" ? "Ej. permiso laboral, descanso médico..." : "Observación opcional..."} rows={3} className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-xs outline-none focus:border-[#3f6fcb] focus:ring-2 focus:ring-[#2457c5]/15" />
-            <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setEditingRow(null)} className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700">Cancelar</button><button type="button" onClick={saveStatus} disabled={saving} className="rounded-lg bg-[#173b7a] px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{saving ? "Guardando..." : "Guardar Cambio"}</button></div>
+            {newStatus === "Justificado" ? (
+              <>
+                <label className="mb-1 block text-xs font-semibold text-slate-700">Tipo De Justificación</label>
+                <select
+                  value={justificationReason}
+                  onChange={(event) => setJustificationReason(event.target.value)}
+                  className="mb-4 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium outline-none focus:border-[#3f6fcb] focus:ring-2 focus:ring-[#2457c5]/15"
+                  required
+                >
+                  <option value="">Selecciona Una Justificación</option>
+                  <option value="Trabajo">Trabajo</option>
+                  <option value="Salud">Salud</option>
+                  <option value="Viaje Programado">Viaje Programado</option>
+                  <option value="Conexión Inestable">Conexión Inestable</option>
+                </select>
+
+                <label className="mb-1 block text-xs font-semibold text-slate-700">Observación / Sustento</label>
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="Observación opcional..."
+                  rows={3}
+                  className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-xs outline-none focus:border-[#3f6fcb] focus:ring-2 focus:ring-[#2457c5]/15"
+                />
+              </>
+            ) : (
+              <>
+                <label className="mb-1 block text-xs font-semibold text-slate-700">Observación</label>
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="Observación opcional..."
+                  rows={3}
+                  className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-xs outline-none focus:border-[#3f6fcb] focus:ring-2 focus:ring-[#2457c5]/15"
+                />
+              </>
+            )}
+            <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setEditingRow(null)} className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700">Cancelar</button><button type="button" onClick={saveStatus} disabled={saving || (newStatus === "Justificado" && !justificationReason.trim())} className="rounded-lg bg-[#173b7a] px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{saving ? "Guardando..." : "Guardar Cambio"}</button></div>
           </div>
         </div>
       )}
@@ -457,7 +496,7 @@ const MeetingAttendanceModal = ({
             <div className="mt-5 flex justify-end"><button type="button" onClick={() => setQrOpen(false)} className="rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-white">Cerrar</button></div>
           </div>
         </div>
-      )}
+      )} 
     </>
   );
 };

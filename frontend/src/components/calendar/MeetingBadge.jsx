@@ -56,3 +56,4 @@ const MeetingBadge = ({
 };
 
 export default MeetingBadge;
+
