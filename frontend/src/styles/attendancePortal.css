@@ -1,0 +1,444 @@
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #080F24;
+}
+
+.attendance-portal-login.attendance-history-login-view {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #080F24 !important;
+  border: none !important;
+  outline: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: auto !important;
+  z-index: 999999 !important;
+}
+
+.attendance-login-shell {
+  position: relative;
+  width: 100%;
+  max-width: 396px;
+  margin: auto;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.attendance-login-logo-space {
+  width: 100%;
+  height: 94px;
+  margin: 0 0 15px;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.attendance-login-logo {
+  display: block;
+  width: 180px;
+  max-width: 80%;
+  height: auto;
+  margin: 0 0 8px;
+  object-fit: contain;
+}
+
+.attendance-login-kicker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 21px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border: 1px solid rgba(76, 200, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(8, 15, 36, 0.25);
+  color: #4CC8FF;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.45px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.attendance-login-card {
+  width: 100%;
+  max-width: 396px;
+  min-height: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 46px 38px 46px;
+  border: 1px solid rgba(82, 146, 230, 0.28);
+  border-radius: 13px;
+  background:
+    radial-gradient(
+      ellipse 65% 55% at 100% 0%,
+      rgba(45, 80, 153, 0.72) 0%,
+      rgba(45, 80, 153, 0.42) 30%,
+      rgba(45, 80, 153, 0.12) 58%,
+      transparent 82%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 0% 100%,
+      rgba(45, 80, 153, 0.68) 0%,
+      rgba(45, 80, 153, 0.38) 32%,
+      rgba(45, 80, 153, 0.10) 60%,
+      transparent 84%
+    ),
+    radial-gradient(
+      ellipse 48% 42% at 100% 65%,
+      rgba(27, 58, 115, 0.48) 0%,
+      rgba(27, 58, 115, 0.20) 42%,
+      transparent 78%
+    ),
+    radial-gradient(
+      ellipse 48% 42% at 5% 10%,
+      rgba(14, 27, 58, 0.90) 0%,
+      rgba(14, 27, 58, 0.65) 42%,
+      transparent 82%
+    ),
+    #080F24;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  text-align: left;
+  overflow: hidden;
+}
+
+.attendance-login-header {
+  width: 100%;
+  margin: 0 0 27px;
+  padding: 0;
+  text-align: center;
+}
+
+.attendance-login-header h1 {
+  margin: 0;
+  padding: 0;
+  color: #FFFFFF;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+}
+
+.attendance-login-header h1 span {
+  color: #FFFFFF;
+}
+
+.attendance-login-header p {
+  width: 100%;
+  max-width: 300px;
+  margin: 10px auto 0;
+  padding: 0;
+  color: rgba(214, 225, 244, 0.67);
+  font-size: 9px;
+  line-height: 1.65;
+  font-weight: 400;
+  text-align: center;
+}
+
+.attendance-login-form {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.attendance-login-form label {
+  display: block;
+  margin: 0 0 8px;
+  color: rgba(211, 225, 248, 0.78);
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.attendance-login-input-wrap {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.attendance-login-input-icon {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.attendance-login-input-icon span {
+  color: #51C8FF;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.attendance-login-input-wrap input {
+  width: 100%;
+  height: 46px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 12px 0 39px;
+  border: 1px solid rgba(80, 140, 215, 0.20);
+  border-radius: 8px;
+  outline: none;
+  background: #020A1B;
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.attendance-login-input-wrap input::placeholder {
+  color: rgba(176, 197, 227, 0.42);
+}
+
+.attendance-login-input-wrap input:hover {
+  border-color: rgba(80, 140, 215, 0.32);
+}
+
+.attendance-login-input-wrap input:focus {
+  border-color: rgba(74, 187, 255, 0.65);
+  box-shadow:
+    0 0 0 3px rgba(74, 187, 255, 0.08);
+}
+
+.attendance-login-error {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 90, 105, 0.25);
+  background: rgba(150, 20, 40, 0.15);
+  color: #FFB2BA;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.attendance-login-submit {
+  position: relative;
+  width: 100%;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-sizing: border-box;
+
+  margin-top: 9px;
+  padding: 0 38px 0 15px;
+
+  border: 1px solid rgba(117, 218, 255, 0.72);
+  border-radius: 8px;
+
+  background:
+    radial-gradient(
+      ellipse 95% 85% at 50% 0%,
+      #FFFFFF 0%,
+      #F4FDFF 7%,
+      #C9F8FF 15%,
+      rgba(127, 232, 248, 0.98) 28%,
+      rgba(82, 198, 234, 0.98) 48%,
+      rgba(65, 157, 211, 0.98) 72%,
+      #438FCA 100%
+    ) !important;
+
+  color: #000000 !important;
+
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 0 0 1px rgba(79, 184, 230, 0.18),
+    0 0 8px rgba(91, 220, 250, 0.42),
+    0 5px 18px rgba(41, 157, 221, 0.25),
+    inset 0 1px 2px rgba(255, 255, 255, 0.82);
+
+  text-shadow: none;
+
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease;
+}
+
+.attendance-login-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.attendance-login-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.attendance-login-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.attendance-login-submit-arrow {
+  position: absolute;
+  right: 14px;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.attendance-login-footer {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 18px;
+  color: rgba(171, 192, 220, 0.45);
+  font-size: 8px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.attendance-login-footer-dot {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  border-radius: 50%;
+  background: #36B8FA;
+  box-shadow:
+    0 0 8px rgba(54, 184, 250, 0.75);
+}
+
+.attendance-portal-login.attendance-history-login-view,
+.attendance-portal-login.attendance-history-login-view::before,
+.attendance-portal-login.attendance-history-login-view::after {
+  border: none !important;
+  outline: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.attendance-portal-login.attendance-history-login-view * {
+  box-sizing: border-box;
+}
+
+.attendance-portal-login.attendance-history-login-view .attendance-login-shell {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+@media (max-width: 700px) {
+  .attendance-portal-login.attendance-history-login-view {
+    padding: 20px !important;
+  }
+
+  .attendance-login-shell {
+    width: 100%;
+    max-width: 396px;
+  }
+}
+
+@media (max-width: 480px) {
+  .attendance-portal-login.attendance-history-login-view {
+    padding: 14px !important;
+  }
+
+  .attendance-login-shell {
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .attendance-login-logo-space {
+    height: 82px;
+    margin-bottom: 13px;
+  }
+
+  .attendance-login-card {
+    width: 100%;
+    min-height: 350px;
+    padding: 34px 22px 25px;
+  }
+
+  .attendance-login-header {
+    margin-bottom: 23px;
+  }
+
+  .attendance-login-header h1 {
+    font-size: 21px;
+  }
+
+  .attendance-login-header p {
+    font-size: 9px;
+  }
+
+  .attendance-login-input-wrap input {
+    height: 44px;
+  }
+
+  .attendance-login-submit {
+    height: 41px;
+  }
+}
+
+@media (max-width: 360px) {
+  .attendance-portal-login.attendance-history-login-view {
+    padding: 10px !important;
+  }
+
+  .attendance-login-shell {
+    max-width: 100%;
+  }
+
+  .attendance-login-logo-space {
+    height: 72px;
+  }
+
+  .attendance-login-card {
+    padding: 30px 18px 22px;
+  }
+
+  .attendance-login-header h1 {
+    font-size: 19px;
+  }
+}

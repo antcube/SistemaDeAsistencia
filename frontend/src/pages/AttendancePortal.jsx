@@ -5,11 +5,13 @@ import {
   useState,
 } from "react";
 
+import seinfintyLogo from "../assets/seinfinty-logo.png";
 import attendanceService from "../services/attendanceService";
 import meetingService from "../services/meetingService";
 
 import "../styles/attendanceRegister.css";
 import "../styles/attendanceHistory.css";
+import "../styles/attendancePortal.css";
 
 const CATEGORY_ORDER = [
   "CIRCULO DE LIDERAZGO",
@@ -195,9 +197,15 @@ const AttendancePortal = () => {
   const [searched, setSearched] =
     useState(false);
 
-  // ============================================================
-  // MODO QR
-  // ============================================================
+  const [collapsedCategories, setCollapsedCategories] =
+    useState({});
+
+  const toggleCategory = (category) => {
+    setCollapsedCategories((current) => ({
+      ...current,
+      [category]: !current[category],
+    }));
+  };
 
   const [isQrMode, setIsQrMode] =
     useState(false);
@@ -223,10 +231,6 @@ const AttendancePortal = () => {
   const [qrNow, setQrNow] =
     useState(Date.now());
 
-  // ============================================================
-  // DETECTAR QR
-  // ============================================================
-
   useEffect(() => {
     const params =
       new URLSearchParams(
@@ -238,13 +242,7 @@ const AttendancePortal = () => {
         "asistencia_qr"
       );
 
-    /*
-     * Si existe asistencia_qr,
-     * este portal entra EXCLUSIVAMENTE
-     * en modo MARCAR ASISTENCIA.
-     *
-     * Nunca debe mostrar el historial.
-     */
+    
 
     if (!qrId) {
       setIsQrMode(false);
@@ -284,18 +282,7 @@ const AttendancePortal = () => {
             );
           }
 
-          /*
-           * IMPORTANTE:
-           *
-           * El backend puede devolver:
-           *
-           * _id
-           * id
-           *
-           * Normalizamos ambos para que
-           * el registro QR siempre tenga
-           * el ID correcto.
-           */
+          
 
           const normalizedMeeting = {
             ...rawMeeting,
@@ -355,10 +342,6 @@ const AttendancePortal = () => {
       );
     };
   }, []);
-
-  // ============================================================
-  // REGISTRAR ASISTENCIA MEDIANTE QR
-  // ============================================================
 
   const handleQrSubmit =
     async (event) => {
@@ -433,18 +416,7 @@ const AttendancePortal = () => {
         setQrError("");
         setQrSuccess("");
 
-        /*
-         * ESTE es el endpoint de MARCAR ASISTENCIA.
-         *
-         * NO usamos:
-         * getUserAttendance()
-         *
-         * NO usamos:
-         * getUserMonthlyAttendanceByDni()
-         *
-         * Aquí se registra directamente
-         * la asistencia mediante QR.
-         */
+        
 
         const response =
           await attendanceService.registerByQr(
@@ -476,10 +448,6 @@ const AttendancePortal = () => {
         setQrSubmitting(false);
       }
     };
-
-  // ============================================================
-  // TIEMPO RESTANTE QR
-  // ============================================================
 
   const qrRemainingMs =
     qrMeeting?.qrEndTimestamp
@@ -514,10 +482,6 @@ const AttendancePortal = () => {
         ).getTime() <=
           qrNow
     );
-
-  // ============================================================
-  // CONSULTAR HISTORIAL
-  // ============================================================
 
   const loadAttendance =
     useCallback(
@@ -622,10 +586,6 @@ const AttendancePortal = () => {
       );
     };
 
-  // ============================================================
-  // CAMBIAR MES
-  // ============================================================
-
   const moveMonth = (
     amount
   ) => {
@@ -694,10 +654,6 @@ const AttendancePortal = () => {
       }
     };
 
-  // ============================================================
-  // MES
-  // ============================================================
-
   const monthLabel =
     new Date(
       year,
@@ -712,10 +668,6 @@ const AttendancePortal = () => {
           "numeric",
       }
     );
-
-  // ============================================================
-  // APLICAR REGLAS DE JUSTIFICACIONES
-  // ============================================================
 
   const effectiveMeetings =
     useMemo(() => {
@@ -865,10 +817,6 @@ const AttendancePortal = () => {
       });
     }, [meetings]);
 
-  // ============================================================
-  // RESUMEN
-  // ============================================================
-
   const summary =
     useMemo(() => {
       let attended = 0;
@@ -895,9 +843,6 @@ const AttendancePortal = () => {
             presencial++;
           }
 
-          // Una J válida convalida como asistencia.
-          // Las J excedidas ya fueron convertidas a falta
-          // mediante justificationValidity === "extra".
           if (
             status ===
               "Justificado" &&
@@ -928,10 +873,6 @@ const AttendancePortal = () => {
       const total =
         effectiveMeetings.length;
 
-      // Para obtener el bono primero deben estar
-      // completadas todas las sesiones del mes.
-      // Una sesión pendiente/sin estado todavía no
-      // puede considerarse parte de un 100%.
       const completedSessions =
         effectiveMeetings.filter(
           (meeting) => {
@@ -953,11 +894,6 @@ const AttendancePortal = () => {
         total > 0 &&
         completedSessions === total;
 
-      // El bono se obtiene cuando todas las sesiones
-      // del mes están llenas y todas cuentan como
-      // asistencia efectiva. Las J válidas cuentan
-      // como asistencia; las J excedidas cuentan
-      // como falta.
       const bonus =
         allSessionsCompleted &&
         absent === 0 &&
@@ -974,10 +910,6 @@ const AttendancePortal = () => {
         bonus,
       };
     }, [effectiveMeetings]);
-
-  // ============================================================
-  // AGRUPAR REUNIONES
-  // ============================================================
 
   const groupedMeetings =
     useMemo(() => {
@@ -1043,10 +975,6 @@ const AttendancePortal = () => {
       effectiveMeetings,
     ]);
 
-  // ============================================================
-  // FORMATO FECHA
-  // ============================================================
-
   const formatDate = (
     value
   ) => {
@@ -1067,10 +995,6 @@ const AttendancePortal = () => {
 
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   };
-
-  // ============================================================
-  // CLASE ESTADO
-  // ============================================================
 
   const getCategoryBadgeClasses = (category) => {
     const value = String(category || "")
@@ -1141,13 +1065,57 @@ const AttendancePortal = () => {
       return "F";
     };
 
+  const attendedCount = effectiveMeetings.filter((meeting) => {
+    const status = normalizeStatus(meeting.status);
+    return status === "Asistió" || status === "Clase Presencial" ||
+      (status === "Justificado" && meeting.justificationValidity === "valid");
+  }).length;
+
+  const justifiedCount = effectiveMeetings.filter(
+    (meeting) => normalizeStatus(meeting.status) === "Justificado"
+  ).length;
+
+  const absentCount = effectiveMeetings.filter((meeting) => {
+    const status = normalizeStatus(meeting.status);
+    return status === "No asistió" ||
+      (status === "Justificado" && meeting.justificationValidity === "extra");
+  }).length;
+
+  const scheduledCount = effectiveMeetings.filter(
+    (meeting) => normalizeStatus(meeting.status) === "Pendiente"
+  ).length;
+
+  const completionBase = attendedCount + absentCount;
+  const attendancePercent = completionBase > 0
+    ? Math.round((attendedCount / completionBase) * 100)
+    : 0;
+
+  const timelineMeetings = useMemo(() => {
+    return [...effectiveMeetings].sort((a, b) =>
+      String(a.date || "").localeCompare(String(b.date || "")) ||
+      String(a.time || "").localeCompare(String(b.time || ""))
+    );
+  }, [effectiveMeetings]);
+
+  const getShortDay = (value) => {
+    if (!value) return "—";
+    const parts = String(value).split("-");
+    return parts.length === 3 ? parts[2] : String(value).slice(-2);
+  };
+
+  const getTimelineStatus = (meeting) => {
+    const status = normalizeStatus(meeting.status);
+    if (status === "Asistió" || status === "Clase Presencial") return "attended";
+    if (status === "Justificado" && meeting.justificationValidity !== "extra") return "justified";
+    if (status === "Pendiente") return "scheduled";
+    return "absent";
+  };
+
+
   return (
     <main className="attendance-portal-page">
 
-      {/* =====================================================
-          MODO QR
-          ESTE BLOQUE ES EXCLUSIVO PARA MARCAR ASISTENCIA
-      ===================================================== */}
+      {}
 
       {isQrMode && (
         <>
@@ -1320,561 +1288,274 @@ const AttendancePortal = () => {
         </>
       )}
 
-      {/* =====================================================
-          MODO NORMAL
-          CONSULTA DE HISTORIAL
-          
-          IMPORTANTE:
-          SOLO APARECE SI NO EXISTE asistencia_qr.
-      ===================================================== */}
+      {}
 
       {!isQrMode &&
         !member && (
           <section className="attendance-portal-login attendance-history-login-view">
 
-            <div className="attendance-portal-logo">
-              ⭐
+            <div className="attendance-login-shell">
+
+              <div className="attendance-login-logo-space">
+              <img
+              src={seinfintyLogo}
+              alt="SEINFINITY"
+              className="attendance-login-logo"
+              />
+
+            <div className="attendance-login-kicker">
+            CÍRCULOS CONNECT
+            </div>
             </div>
 
-            <span className="attendance-portal-kicker">
-              soy.embajador / portal
-            </span>
+              <div className="attendance-login-card">
 
-            <h1>
-              Portal del{" "}
-              <strong>
-                Embajador
-              </strong>
-            </h1>
+                <div className="attendance-login-header">
+                  <h1>
+                    Portal del <span>Embajador</span>
+                  </h1>
 
-            <p>
-              Ingresa con tu DNI para
-              consultar tu historial de
-              asistencias.
-            </p>
+                  <p>
+                    Ingresa con tu DNI para consultar tu historial de
+                    asistencias.
+                  </p>
+                </div>
 
-            <form
-              onSubmit={
-                handleSubmit
-              }
-              className="attendance-portal-form"
-            >
+                <form
+                  onSubmit={handleSubmit}
+                  className="attendance-portal-form attendance-login-form"
+                >
+                  <label htmlFor="attendance-dni">
+                    DNI / N° de documento
+                  </label>
 
-              <label>
-                DNI / N° de Documento
-              </label>
+                  <div className="attendance-login-input-wrap">
+                    <div className="attendance-login-input-icon">
+                      <span>▣</span>
+                    </div>
 
-              <div className="attendance-portal-input-wrap">
+                    <input
+                      id="attendance-dni"
+                      type="text"
+                      value={dni}
+                      onChange={(event) =>
+                        setDni(event.target.value)
+                      }
+                      placeholder="Ingresa tu DNI"
+                      maxLength={12}
+                      autoComplete="off"
+                      inputMode="numeric"
+                    />
+                  </div>
 
-                <span>
-                  🆔
-                </span>
+                  {error && (
+                    <div className="attendance-portal-error attendance-login-error">
+                      {error}
+                    </div>
+                  )}
 
-                <input
-                  type="text"
-                  value={
-                    dni
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setDni(
-                      event.target
-                        .value
-                    )
-                  }
-                  placeholder="Ej: 74839201"
-                  maxLength={12}
-                  autoComplete="off"
-                />
+                  <button
+                    type="submit"
+                    className="attendance-login-submit"
+                    disabled={loading}
+                  >
+                    <span>
+                      {loading
+                        ? "Consultando..."
+                        : "Consultar asistencia"}
+                    </span>
+                  </button>
+                </form>
+
+                <div className="attendance-login-footer">
+                  <span>Acceso exclusivo para embajadores registrados</span>
+                </div>
 
               </div>
 
-              {error && (
-                <div className="attendance-portal-error">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="attendance-portal-submit"
-                disabled={
-                  loading
-                }
-              >
-                {loading
-                  ? "Consultando..."
-                  : "Consultar asistencia"}
-              </button>
-
-            </form>
+            </div>
 
           </section>
         )}
 
-      {/* =====================================================
-          HISTORIAL
-          SOLO MODO NORMAL
-      ===================================================== */}
+      {}
 
-      {!isQrMode &&
-        member && (
-          <div className="attendance-portal-content attendance-history-view">
+      {!isQrMode && member && (
+        <div className="attendance-portal-content attendance-history-view">
+          <header className="portal-topbar">
+            <div className="portal-brand">
+              <img src={seinfintyLogo} alt="SEINFINITY" />
+            </div>
+            <div className="portal-connect">
+              <strong>Círculos Connect</strong>
+              <span>Portal del Embajador</span>
+            </div>
+            <button type="button" className="portal-exit" onClick={() => {
+              setMember(null);
+              setMeetings([]);
+              setSearched(false);
+              setError("");
+            }}>
+              <span>↪</span> Salir
+            </button>
+          </header>
 
-            <section className="attendance-portal-member">
+          <section className="portal-profile-bar">
+            <div className="portal-profile-main">
+              <div className="portal-avatar">
+                {String(member.name || member.nombre || "E").charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <span className="portal-eyebrow">Hola de nuevo</span>
+                <h1>{member.name || member.nombre || "Embajador"}</h1>
+                <p>DNI {searchedDni}</p>
+              </div>
+            </div>
 
-              <div className="attendance-portal-member-main">
+            <div className="portal-next-session">
+              <div>
+                <span>PRÓXIMA SESIÓN</span>
+                <strong>{timelineMeetings.find((meeting) => normalizeStatus(meeting.status) === "Pendiente")?.title || "Círculo de Liderazgo"}</strong>
+                <small>{timelineMeetings.find((meeting) => normalizeStatus(meeting.status) === "Pendiente")?.date || "Sin sesiones pendientes"}</small>
+              </div>
+              <b>›</b>
+            </div>
+          </section>
 
-                <div className="attendance-portal-avatar">
-                  {String(
-                    member.name ||
-                      member.nombre ||
-                      "E"
-                  )
-                    .charAt(0)
-                    .toUpperCase()}
+          {error && <div className="attendance-portal-error global">{error}</div>}
+
+          <section className="portal-overview-card">
+            <div className="portal-overview-head">
+              <span>HISTORIAL DE ASISTENCIA</span>
+              <div className="portal-month-controls">
+                <button type="button" onClick={() => moveMonth(-1)} aria-label="Mes anterior">‹</button>
+                <strong>{monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}</strong>
+                <button type="button" onClick={() => moveMonth(1)} aria-label="Mes siguiente">›</button>
+                <button type="button" className="portal-today" onClick={goToToday}>Hoy</button>
+              </div>
+              <small>Actualizado hoy</small>
+            </div>
+
+            <div className="portal-overview-body">
+              <div className="portal-percentage">
+                <div className="portal-ring" style={{ "--progress": `${attendancePercent * 3.6}deg` }}>
+                  <div>
+                    <strong>{attendancePercent}%</strong>
+                    <span>ASISTENCIA</span>
+                  </div>
                 </div>
-
-                <div>
-
-                  <span className="attendance-portal-kicker">
-                    PORTAL DEL EMBajador
-                  </span>
-
-                  <h1>
-                    {member.name ||
-                      member.nombre ||
-                      "Embajador"}
-                  </h1>
-
-                  <p>
-                    DNI:{" "}
-                    <strong>
-                      {searchedDni}
-                    </strong>
-                  </p>
-
+                <div className="portal-percentage-copy">
+                  <span>TU MES EN CURSO</span>
+                  <strong>{attendedCount} asistencias de {completionBase || effectiveMeetings.length} sesiones realizadas</strong>
+                  <small>Tu estado se actualiza según tus registros.</small>
                 </div>
-
               </div>
 
-              <div className="attendance-portal-member-actions">
-
-                <button
-                  type="button"
-                  className="attendance-portal-refresh"
-                  onClick={
-                    refresh
-                  }
-                  disabled={
-                    loading
-                  }
-                >
-                  🔄 Actualizar
-                </button>
-
-                <button
-                  type="button"
-                  className="attendance-portal-change"
-                  onClick={() => {
-                    setMember(
-                      null
-                    );
-
-                    setMeetings(
-                      []
-                    );
-
-                    setDni(
-                      searchedDni
-                    );
-
-                    setSearched(
-                      false
-                    );
-
-                    setError("");
-                  }}
-                >
-                  Cambiar DNI
-                </button>
-
+              <div className="portal-stat-grid">
+                <div className="portal-stat-card"><span>✓</span><small>Asistencias</small><strong>{attendedCount}</strong></div>
+                <div className="portal-stat-card justified"><span>J</span><small>Justificadas</small><strong>{justifiedCount}</strong></div>
+                <div className="portal-stat-card absent"><span>F</span><small>Faltas</small><strong>{absentCount}</strong></div>
+                <div className="portal-stat-card scheduled"><span>•</span><small>Programadas</small><strong>{scheduledCount}</strong></div>
               </div>
+            </div>
 
-            </section>
+            <div className="portal-timeline">
+              <div className="portal-timeline-line" />
+              {timelineMeetings.length ? timelineMeetings.map((meeting, index) => (
+                <div className="portal-timeline-item" key={meeting.meetingId || meeting._id || meeting.id || `${meeting.date}-${index}`}>
+                  <span className={`portal-timeline-dot ${getTimelineStatus(meeting)}`} />
+                  <small>{getShortDay(meeting.date)}</small>
+                </div>
+              )) : (
+                <div className="portal-timeline-empty">Sin sesiones para este mes</div>
+              )}
+            </div>
+          </section>
 
-            {error && (
-              <div className="attendance-portal-error global">
-                {error}
+          <section className="portal-sessions-section">
+            <div className="portal-section-heading">
+              <div>
+                <span>REGISTRO GENERAL</span>
+                <h2>Sesiones</h2>
+              </div>
+              <button type="button" onClick={refresh} disabled={loading}>Actualizar</button>
+            </div>
+
+            {loading ? (
+              <div className="portal-dark-empty">Cargando asistencia...</div>
+            ) : !searched ? (
+              <div className="portal-dark-empty">Ingresa tu DNI para consultar tu asistencia.</div>
+            ) : !meetings.length ? (
+              <div className="portal-dark-empty">No existen reuniones registradas para este mes.</div>
+            ) : (
+              <div className="portal-category-list">
+                {CATEGORY_ORDER.map((category) => {
+                  const categoryMeetings = groupedMeetings[category] || [];
+                  if (!categoryMeetings.length) return null;
+
+                  return (
+                    <section className="portal-dark-category" key={category}>
+                      <div className="portal-dark-category-head">
+                        <div className="portal-category-icon">{category === "ANUNCIOS CORPORATIVOS" ? "✚" : category === "MASTERCLASS" ? "✚" : category === "HEALTH" ? "✚" : category === "MENTORIA" ? "▤" : category === "MASTERCLASS" ? "▣" : "◈"}</div>
+                        <div>
+                          <strong>{CATEGORY_LABELS[category] || category}</strong>
+                          <span>{categoryMeetings.length} {categoryMeetings.length === 1 ? "sesión" : "sesiones"} este mes</span>
+                        </div>
+                        <div className="portal-category-summary">
+                          <i aria-hidden="true" />
+                          <i className="justified" aria-hidden="true" />
+                          <i className="absent" aria-hidden="true" />
+                          <button
+                            type="button"
+                            className="portal-category-toggle"
+                            onClick={() => toggleCategory(category)}
+                            aria-label={collapsedCategories[category] ? `Expandir ${CATEGORY_LABELS[category] || category}` : `Comprimir ${CATEGORY_LABELS[category] || category}`}
+                            aria-expanded={!collapsedCategories[category]}
+                          >
+                            {collapsedCategories[category] ? "⌄" : "⌃"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {!collapsedCategories[category] && (
+                      <div className="portal-dark-session-list">
+                        {categoryMeetings.map((meeting) => {
+                          const status = normalizeStatus(meeting.status);
+                          const displayStatus = meeting.justificationValidity === "extra" ? "No asistió" : status;
+
+                          return (
+                            <article className="portal-dark-session" key={meeting.meetingId || meeting._id || meeting.id}>
+                              <div className="portal-dark-date">
+                                <strong>{getShortDay(meeting.date)}</strong>
+                                <small>{String(meeting.date || "").split("-")[1] ? `${String(meeting.date).split("-")[2]}/${String(meeting.date).split("-")[1]}` : "—"}</small>
+                              </div>
+
+                              <div className="portal-dark-info">
+                                <strong>{meeting.time || "—"}{meeting.endTime ? ` - ${meeting.endTime}` : ""}</strong>
+                                <span>{meeting.title || CATEGORY_LABELS[category] || category}</span>
+                              </div>
+
+                              <div className="portal-dark-status-wrap">
+                                <span className={getStatusClass(status, meeting.justificationValidity)}>
+                                  <b>{getStatusSymbol(status)}</b>{displayStatus}
+                                </span>
+                                {meeting.note && <small className="portal-dark-note">{meeting.note}</small>}
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                      )}
+                    </section>
+                  );
+                })}
               </div>
             )}
-
-            <section className="attendance-portal-monthbar">
-
-              <button
-                type="button"
-                onClick={() =>
-                  moveMonth(-1)
-                }
-              >
-                ‹
-              </button>
-
-              <div>
-
-                <small>
-                  HISTORIAL DE ASISTENCIA
-                </small>
-
-                <strong>
-                  {monthLabel
-                    .charAt(0)
-                    .toUpperCase() +
-                    monthLabel.slice(
-                      1
-                    )}
-                </strong>
-
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  moveMonth(1)
-                }
-              >
-                ›
-              </button>
-
-              <button
-                type="button"
-                className="attendance-portal-today"
-                onClick={
-                  goToToday
-                }
-              >
-                Hoy
-              </button>
-
-            </section>
-
-            <section className="attendance-portal-summary">
-
-              <div className="portal-summary-card blue">
-
-                <span>
-                  📅
-                </span>
-
-                <div>
-
-                  <small>
-                    Reuniones
-                  </small>
-
-                  <strong>
-                    {summary.total}
-                  </strong>
-
-                </div>
-
-              </div>
-
-              <div className="portal-summary-card green">
-
-                <span>
-                  ✓
-                </span>
-
-                <div>
-
-                  <small>
-                    Asistencias
-                  </small>
-
-                  <strong>
-                    {summary.valid}
-                  </strong>
-
-                </div>
-
-              </div>
-
-              <div className="portal-summary-card red">
-
-                <span>
-                  ×
-                </span>
-
-                <div>
-
-                  <small>
-                    Faltas
-                  </small>
-
-                  <strong>
-                    {summary.absent}
-                  </strong>
-
-                </div>
-
-              </div>
-
-              <div
-                className={`portal-summary-card ${
-                  summary.bonus
-                    ? "bonus-earned"
-                    : "bonus-pending"
-                }`}
-              >
-
-                <span>
-                  🏆
-                </span>
-
-                <div>
-
-                  <small>
-                    Bono
-                  </small>
-
-                  <strong>
-                    {summary.bonus
-                      ? "Ganado"
-                      : "—"}
-                  </strong>
-
-                </div>
-
-              </div>
-
-            </section>
-
-            <section className="attendance-portal-report">
-
-              <div className="attendance-portal-report-head">
-
-                <div>
-
-                  <span>
-                    REGISTRO GENERAL
-                  </span>
-
-                  <h2>
-                    Mi asistencia
-                  </h2>
-
-                  <p>
-                    Consulta las sesiones
-                    registradas para tu círculo
-                    durante el mes seleccionado.
-                  </p>
-
-                </div>
-
-                <div className="attendance-portal-legend">
-
-                  <span>
-                    <b className="legend-dot attended">
-                      ✓
-                    </b>
-                    Asistió
-                  </span>
-
-                  <span>
-                    <b className="legend-dot justified">
-                      J
-                    </b>
-                    Justificado
-                  </span>
-
-                  <span>
-                    <b className="legend-dot absent">
-                      F
-                    </b>
-                    No asistió
-                  </span>
-
-                </div>
-
-              </div>
-
-              {loading ? (
-                <div className="attendance-portal-empty">
-                  Cargando asistencia...
-                </div>
-              ) : !searched ? (
-                <div className="attendance-portal-empty">
-                  Ingresa tu DNI para consultar tu asistencia.
-                </div>
-              ) : !meetings.length ? (
-                <div className="attendance-portal-empty">
-                  No existen reuniones registradas
-                  para este círculo durante el mes.
-                </div>
-              ) : (
-                <div className="attendance-portal-categories">
-
-                  {CATEGORY_ORDER.map(
-                    (
-                      category
-                    ) => {
-                      const categoryMeetings =
-                        groupedMeetings[
-                          category
-                        ] || [];
-
-                      if (
-                        !categoryMeetings.length
-                      ) {
-                        return null;
-                      }
-
-                      return (
-                        <div
-                          className="attendance-portal-category"
-                          key={
-                            category
-                          }
-                        >
-
-                          <div className="attendance-portal-category-title">
-
-                            <span>
-                              {CATEGORY_LABELS[
-                                category
-                              ] ||
-                                category}
-                            </span>
-
-                            <small>
-                              {
-                                categoryMeetings.length
-                              }{" "}
-                              {categoryMeetings.length ===
-                              1
-                                ? "sesión"
-                                : "sesiones"}
-                            </small>
-
-                          </div>
-
-                          <div className="attendance-portal-session-list">
-
-                            {categoryMeetings.map(
-                              (
-                                meeting
-                              ) => {
-                                const status =
-                                  normalizeStatus(
-                                    meeting.status
-                                  );
-
-                                                                const displayStatus =
-                                  meeting.justificationValidity === "extra"
-                                    ? "No asistió"
-                                    : status;
-
-                                return (
-                                  <article
-                                    className="attendance-portal-session grid grid-cols-1 gap-3 px-3 py-3 md:grid-cols-[120px_minmax(0,1fr)_270px] md:items-center md:gap-[14px] md:py-[11px]"
-                                    key={
-                                      meeting.meetingId
-                                    }
-                                  >
-
-                                    <div className="portal-session-date">
-
-                                      <strong>
-                                        {formatDate(
-                                          meeting.date
-                                        )}
-                                      </strong>
-
-                                      <small>
-                                        {meeting.time ||
-                                          ""}
-                                        {meeting.endTime
-                                          ? ` - ${meeting.endTime}`
-                                          : ""}
-                                      </small>
-
-                                    </div>
-
-                                    <div className="portal-session-info min-w-0">
-
-                                      <strong
-                                        className={`inline-flex w-fit max-w-full items-center rounded-md px-2.5 py-1.5 text-[8px] font-black uppercase tracking-[0.02em] leading-tight ${getCategoryBadgeClasses(
-                                          category
-                                        )}`}
-                                      >
-                                        {meeting.title ||
-                                          CATEGORY_LABELS[
-                                            category
-                                          ] ||
-                                          category}
-                                      </strong>
-
-                                    </div>
-
-                                    <div className="portal-session-status flex flex-wrap items-center justify-start gap-1.5 md:justify-end md:[grid-column:auto]">
-
-                                      <span
-                                        className={getStatusClass(
-                                          status,
-                                          meeting.justificationValidity
-                                        )}
-                                      >
-
-                                        <b>
-                                          {getStatusSymbol(
-                                            status
-                                          )}
-                                        </b>
-
-                                        {displayStatus}
-
-                                      </span>
-
-                                      {meeting.attendanceMode ===
-                                        "QR" && (
-                                        <small className="portal-qr-note">
-                                          QR
-                                        </small>
-                                      )}
-
-                                      {meeting.note && (
-                                        <small className="portal-session-note">
-                                          {meeting.note}
-                                        </small>
-                                      )}
-
-                                    </div>
-
-                                  </article>
-                                );
-                              }
-                            )}
-
-                          </div>
-
-                        </div>
-                      );
-                    }
-                  )}
-
-                </div>
-              )}
-
-            </section>
-
-            <footer className="attendance-portal-footer">
-              Círculos Connect · soy.embajador
-            </footer>
-
-          </div>
-        )}
+          </section>
+
+          <footer className="attendance-portal-footer">Círculos Connect · soy.embajador</footer>
+        </div>
+      )}
 
     </main>
   );

@@ -992,19 +992,84 @@ const MonthlyReport = () => {
         cell.value = header;
       });
 
-      sessionColumns.forEach(({ category, session }, index) => {
-        const col = baseHeaders.length + index + 1;
-        const categoryCell = worksheet.getCell(headerTopRow, col);
-        categoryCell.value = CATEGORY_LABELS[category] || category;
+      // ==========================================================
+// ENCABEZADO DE SESIONES
+// La categoría se muestra UNA SOLA VEZ y se combina
+// horizontalmente sobre todas sus fechas.
+// ==========================================================
 
-        const sessionCell = worksheet.getCell(headerBottomRow, col);
-        sessionCell.value = `${formatSessionHeader(session)}${
-          session.time
-            ? `\n${formatSessionTime(session.time)}`
-            : ""
-        }`;
-      });
+// Primero colocamos las fechas individuales.
+sessionColumns.forEach(({ session }, index) => {
+  const col = baseHeaders.length + index + 1;
 
+  const sessionCell = worksheet.getCell(
+    headerBottomRow,
+    col
+  );
+
+  sessionCell.value = `${formatSessionHeader(session)}${
+    session.time
+      ? `\n${formatSessionTime(session.time)}`
+      : ""
+  }`;
+});
+
+// Agrupamos las columnas consecutivas que pertenecen
+// a la misma categoría.
+let categoryStartIndex = 0;
+
+while (
+  categoryStartIndex <
+  sessionColumns.length
+) {
+  const currentCategory =
+    sessionColumns[categoryStartIndex].category;
+
+  let categoryEndIndex =
+    categoryStartIndex;
+
+  while (
+    categoryEndIndex + 1 <
+      sessionColumns.length &&
+    sessionColumns[
+      categoryEndIndex + 1
+    ].category === currentCategory
+  ) {
+    categoryEndIndex += 1;
+  }
+
+  const startCol =
+    baseHeaders.length +
+    categoryStartIndex +
+    1;
+
+  const endCol =
+    baseHeaders.length +
+    categoryEndIndex +
+    1;
+
+  if (endCol > startCol) {
+    worksheet.mergeCells(
+      headerTopRow,
+      startCol,
+      headerTopRow,
+      endCol
+    );
+  }
+
+  const categoryCell =
+    worksheet.getCell(
+      headerTopRow,
+      startCol
+    );
+
+  categoryCell.value =
+    CATEGORY_LABELS[currentCategory] ||
+    currentCategory;
+
+  categoryStartIndex =
+    categoryEndIndex + 1;
+}
       const summaryStart = baseHeaders.length + sessionColumns.length + 1;
       worksheet.mergeCells(
         headerTopRow,
@@ -1042,7 +1107,6 @@ const MonthlyReport = () => {
         }
       }
 
-      // Las sesiones tienen el mismo color de categoría que la web.
       sessionColumns.forEach(({ category }, index) => {
         const col = baseHeaders.length + index + 1;
         const categoryColor = categoryColors[category] || COLORS.night;
