@@ -1230,6 +1230,156 @@ const AttendancePortal = () => {
     );
   }, [effectiveMeetings]);
 
+  const [nextSessionTick, setNextSessionTick] = useState(0);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNextSessionTick((value) => value + 1);
+    }, 30000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const nextSession = useMemo(() => {
+    const now = new Date();
+
+    const getMeetingStart = (meeting) => {
+      const dateKey = String(meeting?.date || "").slice(0, 10);
+      const time = String(meeting?.time || "").slice(0, 5);
+
+      if (!dateKey || !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return null;
+
+      const [hours, minutes] = time
+        ? time.split(":").map(Number)
+        : [0, 0];
+
+      const date = new Date(`${dateKey}T00:00:00`);
+      date.setHours(
+        Number.isFinite(hours) ? hours : 0,
+        Number.isFinite(minutes) ? minutes : 0,
+        0,
+        0
+      );
+
+      return date;
+    };
+
+    const getMeetingEnd = (meeting, start) => {
+      const endTime = String(meeting?.endTime || "").slice(0, 5);
+      if (!endTime || !start) return start ? new Date(start.getTime() + 60 * 60 * 1000) : null;
+
+      const [hours, minutes] = endTime.split(":").map(Number);
+      const end = new Date(start);
+      end.setHours(
+        Number.isFinite(hours) ? hours : start.getHours() + 1,
+        Number.isFinite(minutes) ? minutes : start.getMinutes(),
+        0,
+        0
+      );
+
+      if (end <= start) {
+        end.setDate(end.getDate() + 1);
+      }
+
+      return end;
+    };
+
+    return effectiveMeetings
+      .map((meeting) => {
+        const start = getMeetingStart(meeting);
+        const end = getMeetingEnd(meeting, start);
+        return start ? { meeting, start, end } : null;
+      })
+      .filter(Boolean)
+      .filter(({ start, end }) => end >= now)
+      .sort((a, b) => a.start - b.start)[0]?.meeting || null;
+  }, [effectiveMeetings, nextSessionTick]);
+
+  const getNextSessionDayLabel = (meeting) => {
+    if (!meeting?.date) return "Sin Sesiones Pendientes";
+
+    const dateKey = String(meeting.date).slice(0, 10);
+    const [yearValue, monthValue, dayValue] = dateKey.split("-").map(Number);
+    const sessionDate = new Date(yearValue, monthValue - 1, dayValue);
+    const now = new Date();
+
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
+    const sessionStart = new Date(
+      sessionDate.getFullYear(),
+      sessionDate.getMonth(),
+      sessionDate.getDate()
+    );
+
+    const diffDays = Math.round(
+      (sessionStart - todayStart) / (24 * 60 * 60 * 1000)
+    );
+
+    const time = String(meeting?.time || "").slice(0, 5);
+    const [hours, minutes] = time ? time.split(":").map(Number) : [0, 0];
+    const startDateTime = new Date(sessionStart);
+    startDateTime.setHours(
+      Number.isFinite(hours) ? hours : 0,
+      Number.isFinite(minutes) ? minutes : 0,
+      0,
+      0
+    );
+
+    const endTime = String(meeting?.endTime || "").slice(0, 5);
+    const endDateTime = new Date(startDateTime);
+    if (endTime) {
+      const [endHours, endMinutes] = endTime.split(":").map(Number);
+      endDateTime.setHours(
+        Number.isFinite(endHours) ? endHours : startDateTime.getHours() + 1,
+        Number.isFinite(endMinutes) ? endMinutes : startDateTime.getMinutes(),
+        0,
+        0
+      );
+      if (endDateTime <= startDateTime) endDateTime.setDate(endDateTime.getDate() + 1);
+    } else {
+      endDateTime.setHours(endDateTime.getHours() + 1);
+    }
+
+    if (now >= startDateTime && now <= endDateTime) return "Ahora";
+
+    if (diffDays === 0) {
+      const diffMinutes = Math.max(0, Math.ceil((startDateTime - now) / 60000));
+
+      if (diffMinutes <= 0) return "Ahora";
+      if (diffMinutes < 60) {
+        return `En ${diffMinutes} ${diffMinutes === 1 ? "Minuto" : "Minutos"}`;
+      }
+
+      const diffHours = Math.floor(diffMinutes / 60);
+      return `En ${diffHours} ${diffHours === 1 ? "Hora" : "Horas"}`;
+    }
+
+    if (diffDays === 1) return "Mañana";
+
+    return sessionDate
+      .toLocaleDateString("es-PE", { weekday: "long" })
+      .replace(/^./, (letter) => letter.toUpperCase());
+  };
+
+  const getNextSessionDayNumber = (meeting) => {
+    if (!meeting?.date) return "—";
+    return String(meeting.date).slice(8, 10);
+  };
+
+  const getNextSessionMonthShort = (meeting) => {
+    if (!meeting?.date) return "";
+
+    const dateKey = String(meeting.date).slice(0, 10);
+    const [yearValue, monthValue] = dateKey.split("-").map(Number);
+    return new Date(yearValue, monthValue - 1, 1)
+      .toLocaleDateString("es-PE", { month: "short" })
+      .replace(".", "")
+      .toUpperCase();
+  };
+
   const getShortDay = (value) => {
     if (!value) return "—";
     const parts = String(value).split("-");
@@ -1800,30 +1950,47 @@ const AttendancePortal = () => {
             </div>
 
             <button
-            type="button"
-            className="portal-next-session"
-            style={{
-            backgroundImage: `url(${botonProximaSesion})`,
+              type="button"
+              className="portal-next-session"
+              style={{
+                backgroundImage: `url(${botonProximaSesion})`,
               }}
->
-  <div className="portal-next-session-content">
-    <span>PRÓXIMA SESIÓN</span>
+              onClick={() => {
+                if (nextSession) handleTimelineClick({ meeting: nextSession });
+              }}
+              disabled={!nextSession}
+              aria-label={
+                nextSession
+                  ? `Ir a la próxima sesión: ${nextSession.title || normalizeCategory(nextSession)}`
+                  : "No hay sesiones pendientes"
+              }
+            >
+              <div className="portal-next-session-date">
+                <strong>{getNextSessionDayNumber(nextSession)}</strong>
+                <span>{getNextSessionMonthShort(nextSession)}</span>
+              </div>
 
-    <strong>
-      {timelineMeetings.find(
-        (meeting) => normalizeStatus(meeting.status) === "Pendiente"
-      )?.title || "Círculo de Liderazgo"}
-    </strong>
+              <div className="portal-next-session-content">
+                <span>PRÓXIMA SESIÓN</span>
 
-    <small>
-      {timelineMeetings.find(
-        (meeting) => normalizeStatus(meeting.status) === "Pendiente"
-      )?.date || "Sin sesiones pendientes"}
-    </small>
-  </div>
+                <strong>
+                  {nextSession?.title ||
+                    (nextSession ? normalizeCategory(nextSession) : "Sin Sesiones Pendientes")}
+                </strong>
 
-  <b>›</b>
-</button>
+                <small>
+                  {nextSession
+                    ? `${getNextSessionDayLabel(nextSession)}${nextSession.time ? `, ${nextSession.time}${nextSession.endTime ? ` – ${nextSession.endTime}` : ""}` : ""}${nextSession.location ? ` en ${nextSession.location}` : ""}`
+                    : "Sin Sesiones Pendientes"}
+                </small>
+              </div>
+
+              <span className="portal-next-session-badge">
+                {getNextSessionDayLabel(nextSession)}
+              </span>
+
+              <b>›</b>
+            </button>
           </section>
 
           {error && <div className="attendance-portal-error global">{error}</div>}

@@ -872,177 +872,162 @@
 
 .portal-next-session {
   position: relative;
-
-  width: 205px;
-  min-width: 205px;
-  height: 64px;
-  min-height: 64px;
-
+  width: 247px;
+  min-width: 247px;
+  height: 70px;
+  min-height: 70px;
   box-sizing: border-box;
-
   display: flex;
   align-items: center;
-  justify-content: space-between;
-
   gap: 10px;
-
-  padding: 9px 12px;
-
+  padding: 7px 10px;
   overflow: hidden;
-
-  border: 1px solid rgba(73, 130, 204, 0.38);
+  border: 1px solid rgba(73, 130, 204, 0.42);
   border-radius: 8px;
-
-  /* IMAGEN ORIGINAL SIN MODIFICACIONES */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-
   background-color: transparent;
-
   color: #fff;
   text-align: left;
-
   cursor: pointer;
-
   appearance: none;
   -webkit-appearance: none;
-
-  box-shadow: none;
-
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease;
+  box-shadow: 0 7px 18px rgba(0, 0, 0, .16);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, filter .18s ease;
 }
 
+.portal-next-session:disabled {
+  cursor: default;
+  opacity: .72;
+}
 
-/* Contenido encima de la imagen */
+.portal-next-session-date {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 38px;
+  width: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.portal-next-session-date strong {
+  color: #eef7ff;
+  font-size: 20px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: -.35px;
+}
+
+.portal-next-session-date span {
+  margin-top: 3px;
+  color: #a9d5f5;
+  font-size: 6px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: .6px;
+}
+
 .portal-next-session-content {
   position: relative;
   z-index: 2;
-
   min-width: 0;
-
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-
-/* PRÓXIMA SESIÓN */
 .portal-next-session span {
   display: block;
   margin: 0;
-
   color: #78c9ff;
-
   font-size: 6px;
   line-height: 1.1;
-
   font-weight: 900;
-
   text-transform: uppercase;
 }
 
-
-/* Nombre */
-.portal-next-session strong {
+.portal-next-session-content strong {
   display: block;
-
   margin-top: 3px;
-
   color: #ffffff;
-
   font-size: 9px;
   line-height: 1.15;
-
   font-weight: 800;
-
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-
-/* Estado */
-.portal-next-session small {
+.portal-next-session-content small {
   display: block;
-
   margin-top: 3px;
-
-  color: rgba(180, 213, 244, 0.78);
-
+  color: rgba(226, 239, 255, .82);
   font-size: 6px;
   line-height: 1.15;
-
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.portal-next-session-badge {
+  position: absolute !important;
+  z-index: 3;
+  top: 7px;
+  right: 27px;
+  min-width: 38px;
+  max-width: 70px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: rgba(5, 28, 59, .78);
+  border: 1px solid rgba(116, 214, 255, .26);
+  color: #dff6ff !important;
+  font-size: 5px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  text-align: center;
+  text-transform: none !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-/* Flecha */
 .portal-next-session > b {
   position: relative;
   z-index: 3;
-
   flex: 0 0 auto;
-
-  color: #8dcfff;
-
+  margin-left: 2px;
+  color: #b7e3ff;
   font-size: 22px;
   line-height: 1;
-
   font-weight: 500;
-
-  transition: transform 0.18s ease;
+  transition: transform .18s ease, color .18s ease;
 }
 
-
-/* Hover */
-.portal-next-session:hover {
+.portal-next-session:hover:not(:disabled) {
   transform: translateY(-1px);
-
-  border-color: rgba(86, 174, 255, 0.65);
+  border-color: rgba(116, 202, 255, .72);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .22), 0 0 18px rgba(43, 157, 238, .16);
+  filter: brightness(1.04);
 }
 
-
-.portal-next-session:hover > b {
+.portal-next-session:hover:not(:disabled) > b {
+  color: #e3f7ff;
   transform: translateX(3px);
 }
 
-
-/* Click */
-.portal-next-session:active {
+.portal-next-session:active:not(:disabled) {
   transform: translateY(0);
 }
 
-
-/* Focus */
 .portal-next-session:focus-visible {
-  outline: 2px solid rgba(70, 190, 255, 0.65);
+  outline: 2px solid rgba(70, 190, 255, .65);
   outline-offset: 2px;
 }
-
-.portal-next-session-content {
-  position: relative;
-  z-index: 2;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.portal-next-session span,
-.portal-next-session strong,
-.portal-next-session small { display: block; }
-.portal-next-session span { color: #78c9ff; font-size: 6px; line-height: 1.1; font-weight: 900; text-transform: uppercase; }
-.portal-next-session strong { margin-top: 3px; color: #fff; font-size: 9px; line-height: 1.15; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.portal-next-session small { margin-top: 3px; color: rgba(180, 213, 244, .78); font-size: 6px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.portal-next-session > b { position: relative; z-index: 3; flex: 0 0 auto; color: #8dcfff; font-size: 22px; line-height: 1; font-weight: 500; transition: transform .18s ease, color .18s ease; }
-.portal-next-session:hover { transform: translateY(-1px); border-color: rgba(86, 174, 255, .65); box-shadow: 0 10px 25px rgba(0, 0, 0, .25), 0 0 18px rgba(43, 157, 238, .14); }
-.portal-next-session:hover > b { color: #b4e4ff; transform: translateX(3px); }
-.portal-next-session:active { transform: translateY(0); }
-.portal-next-session:focus-visible { outline: 2px solid rgba(70, 190, 255, .65); outline-offset: 2px; }
 
 .portal-overview-card {
   margin-top: 10px;
@@ -2272,10 +2257,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 58px;
-  padding: 0 0;
-  box-sizing: border-box;
-  transform: translateY(-15px);
+  min-height: 42px;
 }
 
 .attendance-history-view .portal-overview-head > .portal-month-controls {
