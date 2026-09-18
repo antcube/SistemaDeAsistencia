@@ -1,6 +1,7 @@
 const Attendance = require("../models/Attendance");
 const Meeting = require("../models/Meeting");
 const User = require("../models/User");
+const Admin = require("../models/Admin");
 
 const {
   createAuditLog,
@@ -70,6 +71,40 @@ const normalizeMeetingType = (type) => {
   };
 
   return aliases[normalized] || normalized;
+};
+
+const normalizeCircleForGestorLookup = (value) => {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase()
+    .replace(/[–—]+/g, "-")
+    .replace(/\s*-\s*/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/\s+/g, " ");
+};
+
+const findGestorWhatsappByCircle = async (circle) => {
+  const target = normalizeCircleForGestorLookup(circle);
+  if (!target) return "";
+
+  const gestores = await Admin.find({
+    role: "Gestor de Círculo",
+    active: true,
+  }).select("phone circleScope").lean();
+
+  const gestor = gestores.find((item) => {
+    const scopes = Array.isArray(item.circleScope)
+      ? item.circleScope
+      : item.circleScope ? [item.circleScope] : [];
+
+    return scopes.some(
+      (scope) => normalizeCircleForGestorLookup(scope) === target
+    );
+  });
+
+  return String(gestor?.phone || "").replace(/\D/g, "");
 };
 
 /**
@@ -1365,6 +1400,8 @@ const getUserMonthlyAttendanceByDni =
         });
       }
 
+      const gestorWhatsapp = await findGestorWhatsappByCircle(user.circle);
+
       const {
         firstDate,
         lastDate,
@@ -1444,6 +1481,8 @@ const getUserMonthlyAttendanceByDni =
 
           phone:
             user.phone,
+
+          gestorWhatsapp,
         },
 
         year:

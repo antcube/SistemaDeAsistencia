@@ -9,7 +9,7 @@ import circleService from "../services/circleService";
 
 const EMPTY_FORM = {
   adminId: "",
-  doc: "",
+  phone: "",
   name: "",
   email: "",
   password: "",
@@ -118,8 +118,8 @@ const AdminUsers = () => {
     setForm({
       adminId:
         admin.adminId || "",
-      doc:
-        admin.doc || "",
+      phone:
+        admin.phone || "",
       name:
         admin.name || "",
       email:
@@ -232,6 +232,16 @@ const AdminUsers = () => {
           );
         }
 
+        if (form.role === "Gestor de Círculo") {
+          const normalizedPhone = form.phone.replace(/\D/g, "");
+
+          if (!/^\d{10,15}$/.test(normalizedPhone)) {
+            throw new Error(
+              "El número de WhatsApp debe incluir el prefijo internacional, sin el signo +."
+            );
+          }
+        }
+
         if (
           !editingAdmin &&
           !form.password.trim()
@@ -241,11 +251,13 @@ const AdminUsers = () => {
           );
         }
 
+        const normalizedPhone = form.phone.replace(/\D/g, "");
+
         const data = {
           adminId:
             form.adminId.trim(),
-          doc:
-            form.doc.trim(),
+          phone:
+            normalizedPhone,
           name:
             form.name.trim(),
           email:
@@ -562,18 +574,23 @@ const AdminUsers = () => {
                 </label>
 
                 <label>
-                  DNI
+                  Teléfono / WhatsApp
                   <input
+                    type="tel"
+                    inputMode="numeric"
                     value={
-                      form.doc
+                      form.phone
                     }
                     onChange={(event) =>
                       updateField(
-                        "doc",
+                        "phone",
                         event.target
                           .value
+                          .replace(/[^0-9\s()-]/g, "")
                       )
                     }
+                    placeholder="Prefijo internacional + número"
+                    maxLength={15}
                     disabled={
                       saving
                     }

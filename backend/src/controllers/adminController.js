@@ -57,6 +57,25 @@ const normalizeCircleScope = (circleScope) => {
 };
 
 // ======================================================
+// NORMALIZAR TELÉFONO / WHATSAPP (PERÚ)
+// ======================================================
+
+const normalizePhone = (phone) => {
+  const digits = String(phone || "").replace(/\D/g, "");
+
+  if (!digits) {
+    return "";
+  }
+
+  // Número internacional completo, únicamente dígitos y sin "+".
+  if (!/^\d{10,15}$/.test(digits)) {
+    return null;
+  }
+
+  return digits;
+};
+
+// ======================================================
 // LOGIN
 // ======================================================
 
@@ -125,7 +144,7 @@ const login = async (req, res) => {
         id: admin._id,
         adminId:
           admin.adminId,
-        doc: admin.doc,
+        phone: admin.phone,
         name: admin.name,
         email: admin.email,
         role: admin.role,
@@ -257,7 +276,7 @@ const createAdmin =
     try {
       const {
         adminId,
-        doc,
+        phone,
         name,
         email,
         password,
@@ -323,6 +342,23 @@ const createAdmin =
         });
       }
 
+      const normalizedPhone =
+        normalizePhone(phone);
+
+      if (normalizedPhone === null) {
+        return res.status(400).json({
+          message:
+            "El número de WhatsApp debe incluir el prefijo internacional, sin el signo +.",
+        });
+      }
+
+      if (role === "Gestor de Círculo" && !normalizedPhone) {
+        return res.status(400).json({
+          message:
+            "El número de WhatsApp es obligatorio para un Gestor de Círculo.",
+        });
+      }
+
       let normalizedScope =
         normalizeCircleScope(
           circleScope
@@ -366,9 +402,7 @@ const createAdmin =
         await Admin.create({
           adminId:
             normalizedAdminId,
-          doc: doc
-            ? String(doc).trim()
-            : "",
+          phone: normalizedPhone,
           name:
             String(name).trim(),
           email:
@@ -390,7 +424,7 @@ const createAdmin =
         circle: admin.circleScope?.join(", ") || "",
         metadata: {
           adminId: admin.adminId,
-          doc: admin.doc,
+          phone: admin.phone,
           name: admin.name,
           email: admin.email,
           role: admin.role,
@@ -441,7 +475,7 @@ const updateAdmin =
 
       const {
         adminId,
-        doc,
+        phone,
         name,
         email,
         password,
@@ -452,7 +486,7 @@ const updateAdmin =
 
       const previousAdmin = {
         adminId: admin.adminId,
-        doc: admin.doc,
+        phone: admin.phone,
         name: admin.name,
         email: admin.email,
         role: admin.role,
@@ -520,14 +554,24 @@ const updateAdmin =
       }
 
       // ==================================================
-      // DNI / DOCUMENTO
+      // TELÉFONO / WHATSAPP
       // ==================================================
 
       if (
-        doc !== undefined
+        phone !== undefined
       ) {
-        admin.doc =
-          String(doc).trim();
+        const normalizedPhone =
+          normalizePhone(phone);
+
+        if (normalizedPhone === null) {
+          return res.status(400).json({
+            message:
+              "El número de WhatsApp debe incluir el prefijo internacional, sin el signo +.",
+          });
+        }
+
+        admin.phone =
+          normalizedPhone;
       }
 
       // ==================================================
@@ -620,6 +664,13 @@ const updateAdmin =
         });
       }
 
+      if (admin.role === "Gestor de Círculo" && !admin.phone) {
+        return res.status(400).json({
+          message:
+            "El número de WhatsApp es obligatorio para un Gestor de Círculo.",
+        });
+      }
+
       // ==================================================
       // CONTRASEÑA
       // ==================================================
@@ -684,7 +735,7 @@ const updateAdmin =
           previous: previousAdmin,
           current: {
             adminId: updatedAdmin.adminId,
-            doc: updatedAdmin.doc,
+            phone: updatedAdmin.phone,
             name: updatedAdmin.name,
             email: updatedAdmin.email,
             role: updatedAdmin.role,

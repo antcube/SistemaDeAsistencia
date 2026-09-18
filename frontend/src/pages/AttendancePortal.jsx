@@ -2,10 +2,12 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import seinfintyLogo from "../assets/seinfinty-logo.png";
+import botonProximaSesion from "../assets/boton.png";
 import attendanceService from "../services/attendanceService";
 import meetingService from "../services/meetingService";
 
@@ -191,6 +193,12 @@ const AttendancePortal = () => {
   const [loading, setLoading] =
     useState(false);
 
+  const [ringProgress, setRingProgress] =
+    useState(0);
+
+  const [lastUpdatedAt, setLastUpdatedAt] =
+    useState(null);
+
   const [error, setError] =
     useState("");
 
@@ -199,6 +207,21 @@ const AttendancePortal = () => {
 
   const [collapsedCategories, setCollapsedCategories] =
     useState({});
+
+  const [timelineCollapsed, setTimelineCollapsed] =
+    useState(false);
+
+  const [highlightedSessionId, setHighlightedSessionId] =
+    useState("");
+
+  const highlightTimerRef = useRef(null);
+  const goToTodayPendingRef = useRef(false);
+  const goToTodayTargetRef = useRef(null);
+
+  const [justificationMeeting, setJustificationMeeting] = useState(null);
+  const [justificationReason, setJustificationReason] = useState("");
+  const [justificationSending, setJustificationSending] = useState(false);
+  const [justificationError, setJustificationError] = useState("");
 
   const toggleCategory = (category) => {
     setCollapsedCategories((current) => ({
@@ -540,6 +563,10 @@ const AttendancePortal = () => {
             cleanDni
           );
 
+          // Cada carga exitosa representa la última actualización
+          // visible del historial. Se muestra la hora exacta de esta carga.
+          setLastUpdatedAt(new Date());
+
           setSearched(true);
         } catch (err) {
           console.error(
@@ -626,33 +653,83 @@ const AttendancePortal = () => {
     }
   };
 
-  const goToToday =
-    () => {
-      const current =
-        new Date();
+  const goToToday = async () => {
+    const current = new Date();
+    const todayKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
+    const currentYear = current.getFullYear();
+    const currentMonth = current.getMonth() + 1;
 
-      const nextYear =
-        current.getFullYear();
+    if (!searchedDni) return;
 
-      const nextMonth =
-        current.getMonth() + 1;
+    try {
+      setLoading(true);
+      setError("");
+      goToTodayPendingRef.current = true;
+      goToTodayTargetRef.current = null;
 
-      setYear(
-        nextYear
-      );
+      let target = null;
+      let targetYear = currentYear;
+      let targetMonth = currentMonth;
+      let targetData = null;
 
-      setMonth(
-        nextMonth
-      );
+      // Revisamos el mes actual y, si no hay una reunión hoy ni una
+      // anterior, retrocedemos mes a mes hasta encontrar la más cercana.
+      for (let offset = 0; offset <= 12 && !target; offset += 1) {
+        const date = new Date(currentYear, currentMonth - 1 - offset, 1);
+        const checkYear = date.getFullYear();
+        const checkMonth = date.getMonth() + 1;
 
-      if (searchedDni) {
-        loadAttendance(
+        const response = await attendanceService.getUserAttendance(
           searchedDni,
-          nextYear,
-          nextMonth
+          checkYear,
+          checkMonth
         );
+
+        const data = response?.data || response;
+        const monthMeetings = Array.isArray(data?.meetings) ? data.meetings : [];
+
+        const candidates = monthMeetings
+          .filter((meeting) => {
+            const dateKey = String(meeting?.date || "").slice(0, 10);
+            return dateKey && dateKey <= todayKey;
+          })
+          .sort((a, b) => {
+            const dateCompare = String(b?.date || "").localeCompare(String(a?.date || ""));
+            if (dateCompare !== 0) return dateCompare;
+            return String(b?.time || "").localeCompare(String(a?.time || ""));
+          });
+
+        target = candidates[0] || null;
+
+        if (target) {
+          targetYear = checkYear;
+          targetMonth = checkMonth;
+          targetData = data;
+        }
       }
-    };
+
+      if (!target || !targetData) {
+        goToTodayPendingRef.current = false;
+        setLoading(false);
+        setError("No se encontró una reunión de hoy ni una reunión anterior.");
+        return;
+      }
+
+      setMember(targetData?.user || null);
+      setMeetings(targetData?.meetings || []);
+      setYear(targetYear);
+      setMonth(targetMonth);
+      setSearched(true);
+      goToTodayTargetRef.current = target;
+    } catch (err) {
+      console.error("Error buscando la reunión para Ir a hoy:", err);
+      goToTodayPendingRef.current = false;
+      goToTodayTargetRef.current = null;
+      setError(err?.message || "No se pudo localizar la reunión correspondiente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const monthLabel =
     new Date(
@@ -1065,30 +1142,86 @@ const AttendancePortal = () => {
       return "F";
     };
 
+  // Regla central del historial: mientras la fecha de una sesión no haya
+  // llegado, esa sesión no tiene resultado y nunca debe contarse como falta.
+  function isFutureMeeting(meeting) {
+    const meetingDateKey = String(meeting?.date || "").slice(0, 10);
+    if (!meetingDateKey) return false;
+
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    return meetingDateKey > todayKey;
+  }
+
+  // La tarjeta "Asistencias" cuenta únicamente asistencias reales.
+  // Una J válida sigue siendo una justificación en su tarjeta,
+  // pero también cuenta como asistencia para el porcentaje del círculo.
   const attendedCount = effectiveMeetings.filter((meeting) => {
+    if (isFutureMeeting(meeting)) return false;
     const status = normalizeStatus(meeting.status);
-    return status === "Asistió" || status === "Clase Presencial" ||
-      (status === "Justificado" && meeting.justificationValidity === "valid");
+    return status === "Asistió" || status === "Clase Presencial";
   }).length;
 
-  const justifiedCount = effectiveMeetings.filter(
-    (meeting) => normalizeStatus(meeting.status) === "Justificado"
-  ).length;
+  const justifiedCount = effectiveMeetings.filter((meeting) => {
+    if (isFutureMeeting(meeting)) return false;
+    return normalizeStatus(meeting.status) === "Justificado";
+  }).length;
+
+  const validJustifiedCount = effectiveMeetings.filter((meeting) => {
+    if (isFutureMeeting(meeting)) return false;
+    return (
+      normalizeStatus(meeting.status) === "Justificado" &&
+      meeting.justificationValidity === "valid"
+    );
+  }).length;
 
   const absentCount = effectiveMeetings.filter((meeting) => {
+    if (isFutureMeeting(meeting)) return false;
     const status = normalizeStatus(meeting.status);
     return status === "No asistió" ||
       (status === "Justificado" && meeting.justificationValidity === "extra");
   }).length;
 
-  const scheduledCount = effectiveMeetings.filter(
-    (meeting) => normalizeStatus(meeting.status) === "Pendiente"
-  ).length;
+  // Este contador representa TODAS las sesiones existentes en el mes,
+  // igual que el cuadro "Sesiones" del Reporte Mensual.
+  const sessionCount = effectiveMeetings.length;
 
-  const completionBase = attendedCount + absentCount;
-  const attendancePercent = completionBase > 0
-    ? Math.round((attendedCount / completionBase) * 100)
+  // Para el porcentaje, una J válida cuenta como asistencia.
+  const attendanceEffectiveCount = attendedCount + validJustifiedCount;
+  // El porcentaje usa el total de sesiones existentes en el mes.
+  // Una J válida cuenta como asistencia para este indicador.
+  const attendancePercent = sessionCount > 0
+    ? Math.round((attendanceEffectiveCount / sessionCount) * 100)
     : 0;
+
+  useEffect(() => {
+    // Mientras se actualizan los datos, el aro vuelve a 0.
+    // Al terminar, se llena suavemente hasta el porcentaje real.
+    if (loading) {
+      setRingProgress(0);
+      return undefined;
+    }
+
+    const target = Math.max(0, Math.min(100, attendancePercent));
+    const duration = 900;
+    const startTime = performance.now();
+    let frameId;
+
+    const animate = (now) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setRingProgress(target * eased);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(animate);
+      }
+    };
+
+    frameId = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(frameId);
+  }, [loading, attendancePercent]);
 
   const timelineMeetings = useMemo(() => {
     return [...effectiveMeetings].sort((a, b) =>
@@ -1104,11 +1237,265 @@ const AttendancePortal = () => {
   };
 
   const getTimelineStatus = (meeting) => {
+    if (!meeting) return "empty";
+
+    // REGLA DEL HISTORIAL: una reunión cuya fecha todavía no ha llegado
+    // nunca puede mostrarse como falta, aunque el backend ya tenga un
+    // estado provisional o haya generado la sesión automáticamente.
+    // Hasta que llegue la fecha de la reunión, se representa como pendiente.
+    const meetingDateKey = String(meeting?.date || "").slice(0, 10);
+    if (meetingDateKey) {
+      const now = new Date();
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+      if (meetingDateKey > todayKey) {
+        return "scheduled";
+      }
+    }
+
     const status = normalizeStatus(meeting.status);
+
+    if (
+      status === "No asistió" ||
+      (status === "Justificado" && meeting.justificationValidity === "extra")
+    ) {
+      return "absent";
+    }
+
+    if (status === "Justificado") return "justified";
     if (status === "Asistió" || status === "Clase Presencial") return "attended";
-    if (status === "Justificado" && meeting.justificationValidity !== "extra") return "justified";
     if (status === "Pendiente") return "scheduled";
-    return "absent";
+
+    return "empty";
+  };
+
+  const getMeetingDomId = (meeting) => {
+    const key = String(
+      meeting?.meetingId ||
+        meeting?._id ||
+        meeting?.id ||
+        `${meeting?.date || ""}-${meeting?.time || ""}-${meeting?.title || ""}`
+    );
+
+    return `portal-session-${encodeURIComponent(key)}`;
+  };
+
+  useEffect(() => {
+    if (!goToTodayPendingRef.current || !goToTodayTargetRef.current) return;
+
+    const target = goToTodayTargetRef.current;
+    const targetId = getMeetingDomId(target);
+    const domTarget = document.getElementById(targetId);
+
+    // Esperamos un render adicional si la reunión todavía no existe en el DOM.
+    if (!domTarget) return;
+
+    goToTodayPendingRef.current = false;
+    goToTodayTargetRef.current = null;
+    handleTimelineClick({ meeting: target });
+  }, [timelineMeetings, searchedDni]);
+
+  const handleTimelineClick = (item) => {
+    if (!item?.meeting) return;
+
+    const category = normalizeCategory(item.meeting);
+    const sessionId = getMeetingDomId(item.meeting);
+
+    // Si la categoría está cerrada, la abrimos antes de desplazar la vista.
+    setCollapsedCategories((current) => ({
+      ...current,
+      [category]: false,
+    }));
+
+    // Si ya había una sesión resaltada, quitamos su temporizador para que
+    // cada nuevo click tenga su propia animación completa.
+    if (highlightTimerRef.current) {
+      window.clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = null;
+    }
+
+    setHighlightedSessionId("");
+
+    // Esperamos a que React pinte la categoría abierta y llevamos al usuario
+    // exactamente a la sesión correspondiente. Una vez localizada, la
+    // resaltamos durante unos segundos para que sea evidente cuál fue la sesión.
+    window.setTimeout(() => {
+      const target = document.getElementById(sessionId);
+
+      if (!target) return;
+
+      setHighlightedSessionId(sessionId);
+
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      highlightTimerRef.current = window.setTimeout(() => {
+        setHighlightedSessionId("");
+        highlightTimerRef.current = null;
+      }, 2400);
+    }, 140);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) {
+        window.clearTimeout(highlightTimerRef.current);
+      }
+    };
+  }, []);
+
+  const timelineDays = useMemo(() => {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const meetingsByDate = new Map();
+
+    const statusPriority = {
+      absent: 4,
+      justified: 3,
+      attended: 2,
+      scheduled: 1,
+      empty: 0,
+    };
+
+    timelineMeetings.forEach((meeting) => {
+      const dateKey = String(meeting?.date || "").slice(0, 10);
+      if (!dateKey) return;
+
+      const current = meetingsByDate.get(dateKey);
+      const nextStatus = getTimelineStatus(meeting);
+
+      if (!current || statusPriority[nextStatus] > statusPriority[current.status]) {
+        meetingsByDate.set(dateKey, {
+          meeting,
+          status: nextStatus,
+        });
+      }
+    });
+
+    const todayDate = new Date();
+    const todayKey = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, "0")}-${String(todayDate.getDate()).padStart(2, "0")}`;
+
+    const weekdayLabels = ["D", "L", "M", "X", "J", "V", "S"];
+
+    return Array.from({ length: daysInMonth }, (_, index) => {
+      const day = index + 1;
+      const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const entry = meetingsByDate.get(dateKey);
+
+      return {
+        day,
+        dateKey,
+        weekday: weekdayLabels[new Date(year, month - 1, day).getDay()],
+        meeting: entry?.meeting || null,
+        status: entry?.status || "empty",
+        isToday: dateKey === todayKey,
+      };
+    });
+  }, [timelineMeetings, year, month]);
+
+
+  const getAttendanceRecordTimestamp = (meeting) => {
+    const value =
+      meeting?.registeredAt ||
+      meeting?.absenceRecordedAt ||
+      null;
+
+    if (!value) return null;
+
+    const timestamp = new Date(value).getTime();
+    return Number.isFinite(timestamp) ? timestamp : null;
+  };
+
+  const addBusinessDays = (timestamp, businessDays) => {
+    const date = new Date(timestamp);
+    let remaining = businessDays;
+
+    while (remaining > 0) {
+      date.setTime(date.getTime() + 24 * 60 * 60 * 1000);
+      const day = date.getDay();
+
+      if (day !== 0 && day !== 6) {
+        remaining -= 1;
+      }
+    }
+
+    return date.getTime();
+  };
+
+  const canJustifyMeeting = (meeting) => {
+    if (!meeting || isFutureMeeting(meeting)) return false;
+    if (normalizeStatus(meeting.status) !== "No asistió") return false;
+    if (meeting.justificationValidity === "extra") return false;
+
+    const recordedAt = getAttendanceRecordTimestamp(meeting);
+    if (!recordedAt) return false;
+
+    return Date.now() <= addBusinessDays(recordedAt, 2);
+  };
+
+  const openJustification = (meeting) => {
+    setJustificationMeeting(meeting);
+    setJustificationReason("");
+    setJustificationError("");
+  };
+
+  const closeJustification = () => {
+    if (justificationSending) return;
+    setJustificationMeeting(null);
+    setJustificationReason("");
+    setJustificationError("");
+  };
+
+  const sendJustificationWhatsApp = async () => {
+    if (!justificationMeeting || !justificationReason) {
+      setJustificationError("Selecciona un motivo para continuar.");
+      return;
+    }
+
+    const gestorWhatsapp = String(member?.gestorWhatsapp || "").replace(/\D/g, "");
+
+    if (!gestorWhatsapp) {
+      setJustificationError(
+        "No se encontró un Gestor de Círculo con WhatsApp configurado para tu círculo."
+      );
+      return;
+    }
+
+    if (!canJustifyMeeting(justificationMeeting)) {
+      setJustificationError(
+        "El plazo de 2 días hábiles para justificar esta inasistencia ya finalizó."
+      );
+      return;
+    }
+
+    const category = normalizeCategory(justificationMeeting);
+    const classType = CATEGORY_LABELS[category] || justificationMeeting.title || category || "Sesión";
+    const sessionDate = formatDate(justificationMeeting.date);
+
+    const message =
+      `*Estimado equipo, solicito la justificación de mi inasistencia a la sesión de* ` +
+      `*${classType}* ` +
+      `*del día* *${sessionDate}* ` +
+      `*por motivos de* *${justificationReason}*.`;
+
+    try {
+      setJustificationSending(true);
+      setJustificationError("");
+
+      const whatsappUrl =
+        `https://wa.me/${gestorWhatsapp}?text=${encodeURIComponent(message)}`;
+
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+      setJustificationMeeting(null);
+      setJustificationReason("");
+      setJustificationError("");
+    } catch (err) {
+      console.error("Error abriendo WhatsApp:", err);
+      setJustificationError("No se pudo abrir WhatsApp.");
+    } finally {
+      setJustificationSending(false);
+    }
   };
 
 
@@ -1412,14 +1799,31 @@ const AttendancePortal = () => {
               </div>
             </div>
 
-            <div className="portal-next-session">
-              <div>
-                <span>PRÓXIMA SESIÓN</span>
-                <strong>{timelineMeetings.find((meeting) => normalizeStatus(meeting.status) === "Pendiente")?.title || "Círculo de Liderazgo"}</strong>
-                <small>{timelineMeetings.find((meeting) => normalizeStatus(meeting.status) === "Pendiente")?.date || "Sin sesiones pendientes"}</small>
-              </div>
-              <b>›</b>
-            </div>
+            <button
+            type="button"
+            className="portal-next-session"
+            style={{
+            backgroundImage: `url(${botonProximaSesion})`,
+              }}
+>
+  <div className="portal-next-session-content">
+    <span>PRÓXIMA SESIÓN</span>
+
+    <strong>
+      {timelineMeetings.find(
+        (meeting) => normalizeStatus(meeting.status) === "Pendiente"
+      )?.title || "Círculo de Liderazgo"}
+    </strong>
+
+    <small>
+      {timelineMeetings.find(
+        (meeting) => normalizeStatus(meeting.status) === "Pendiente"
+      )?.date || "Sin sesiones pendientes"}
+    </small>
+  </div>
+
+  <b>›</b>
+</button>
           </section>
 
           {error && <div className="attendance-portal-error global">{error}</div>}
@@ -1431,14 +1835,36 @@ const AttendancePortal = () => {
                 <button type="button" onClick={() => moveMonth(-1)} aria-label="Mes anterior">‹</button>
                 <strong>{monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}</strong>
                 <button type="button" onClick={() => moveMonth(1)} aria-label="Mes siguiente">›</button>
-                <button type="button" className="portal-today" onClick={goToToday}>Hoy</button>
               </div>
-              <small>Actualizado hoy</small>
+              <div className="portal-header-actions">
+                <small>
+                  Actualizado {
+                    lastUpdatedAt
+                      ? lastUpdatedAt.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })
+                      : "--:--"
+                  }
+                </small>
+                <button
+                  type="button"
+                  className={`portal-header-refresh ${loading ? "is-refreshing" : ""}`}
+                  onClick={refresh}
+                  disabled={loading}
+                  aria-label="Actualizar historial"
+                  title="Actualizar"
+                >
+                  ↻
+                </button>
+                <button type="button" className="portal-today" onClick={goToToday}>Ir a hoy</button>
+              </div>
             </div>
 
             <div className="portal-overview-body">
               <div className="portal-percentage">
-                <div className="portal-ring" style={{ "--progress": `${attendancePercent * 3.6}deg` }}>
+                <div className={`portal-ring ${loading ? "is-loading" : ""}`} style={{ "--progress": `${ringProgress * 3.6}deg` }}>
                   <div>
                     <strong>{attendancePercent}%</strong>
                     <span>ASISTENCIA</span>
@@ -1446,7 +1872,7 @@ const AttendancePortal = () => {
                 </div>
                 <div className="portal-percentage-copy">
                   <span>TU MES EN CURSO</span>
-                  <strong>{attendedCount} asistencias de {completionBase || effectiveMeetings.length} sesiones realizadas</strong>
+                  <strong>{attendanceEffectiveCount} asistencias de {sessionCount} sesiones del mes</strong>
                   <small>Tu estado se actualiza según tus registros.</small>
                 </div>
               </div>
@@ -1455,20 +1881,60 @@ const AttendancePortal = () => {
                 <div className="portal-stat-card"><span>✓</span><small>Asistencias</small><strong>{attendedCount}</strong></div>
                 <div className="portal-stat-card justified"><span>J</span><small>Justificadas</small><strong>{justifiedCount}</strong></div>
                 <div className="portal-stat-card absent"><span>F</span><small>Faltas</small><strong>{absentCount}</strong></div>
-                <div className="portal-stat-card scheduled"><span>•</span><small>Programadas</small><strong>{scheduledCount}</strong></div>
+                <div className="portal-stat-card scheduled"><span>◷</span><small>Sesiones</small><strong>{sessionCount}</strong></div>
               </div>
             </div>
 
-            <div className="portal-timeline">
-              <div className="portal-timeline-line" />
-              {timelineMeetings.length ? timelineMeetings.map((meeting, index) => (
-                <div className="portal-timeline-item" key={meeting.meetingId || meeting._id || meeting.id || `${meeting.date}-${index}`}>
-                  <span className={`portal-timeline-dot ${getTimelineStatus(meeting)}`} />
-                  <small>{getShortDay(meeting.date)}</small>
+            <div className={`portal-timeline-panel ${timelineCollapsed ? "is-collapsed" : "is-open"}`}>
+              <button
+                type="button"
+                className="portal-timeline-toggle"
+                onClick={() => setTimelineCollapsed((current) => !current)}
+                aria-label={timelineCollapsed ? "Mostrar línea de tiempo" : "Ocultar línea de tiempo"}
+                aria-expanded={!timelineCollapsed}
+              >
+                {timelineCollapsed ? "⌄" : "⌃"}
+              </button>
+
+              <div className="portal-timeline-collapse">
+                <div className="portal-timeline-scroll">
+                  <div
+                    className="portal-timeline"
+                    style={{ "--timeline-days": timelineDays.length }}
+                  >
+                    <div className="portal-timeline-line" />
+
+                    {timelineDays.map((item) => (
+                      <button
+                        type="button"
+                        className={`portal-timeline-item ${item.isToday ? "is-today" : ""} ${item.meeting ? "is-clickable" : ""}`}
+                        key={item.dateKey}
+                        onClick={() => handleTimelineClick(item)}
+                        disabled={!item.meeting}
+                        aria-label={
+                          item.meeting
+                            ? `Ir a la sesión del ${item.day} de ${monthLabel}`
+                            : `Día ${item.day}`
+                        }
+                        title={
+                          item.meeting
+                            ? `${item.meeting.title || normalizeCategory(item.meeting) || "Reunión"}${item.meeting.time ? ` · ${item.meeting.time}` : ""}`
+                            : `Día ${item.day}`
+                        }
+                      >
+                        {item.isToday && <span className="portal-timeline-today">HOY</span>}
+                        <span className={`portal-timeline-dot ${item.status}`}>
+                          {item.status === "attended" && "✓"}
+                          {item.status === "justified" && "J"}
+                          {item.status === "absent" && "×"}
+                        </span>
+                        <strong>{item.day}</strong>
+                        <small>{item.weekday}</small>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )) : (
-                <div className="portal-timeline-empty">Sin sesiones para este mes</div>
-              )}
+              </div>
             </div>
           </section>
 
@@ -1478,7 +1944,7 @@ const AttendancePortal = () => {
                 <span>REGISTRO GENERAL</span>
                 <h2>Sesiones</h2>
               </div>
-              <button type="button" onClick={refresh} disabled={loading}>Actualizar</button>
+
             </div>
 
             {loading ? (
@@ -1517,14 +1983,27 @@ const AttendancePortal = () => {
                         </div>
                       </div>
 
-                      {!collapsedCategories[category] && (
-                      <div className="portal-dark-session-list">
+                      <div
+                        className={`portal-dark-session-collapse ${
+                          collapsedCategories[category] ? "is-collapsed" : "is-open"
+                        }`}
+                      >
+                        <div className="portal-dark-session-list">
                         {categoryMeetings.map((meeting) => {
+                          const futureMeeting = isFutureMeeting(meeting);
                           const status = normalizeStatus(meeting.status);
                           const displayStatus = meeting.justificationValidity === "extra" ? "No asistió" : status;
 
                           return (
-                            <article className="portal-dark-session" key={meeting.meetingId || meeting._id || meeting.id}>
+                            <article
+                              className={`portal-dark-session ${
+                                highlightedSessionId === getMeetingDomId(meeting)
+                                  ? "is-highlighted"
+                                  : ""
+                              }`}
+                              id={getMeetingDomId(meeting)}
+                              key={meeting.meetingId || meeting._id || meeting.id}
+                            >
                               <div className="portal-dark-date">
                                 <strong>{getShortDay(meeting.date)}</strong>
                                 <small>{String(meeting.date || "").split("-")[1] ? `${String(meeting.date).split("-")[2]}/${String(meeting.date).split("-")[1]}` : "—"}</small>
@@ -1536,22 +2015,79 @@ const AttendancePortal = () => {
                               </div>
 
                               <div className="portal-dark-status-wrap">
-                                <span className={getStatusClass(status, meeting.justificationValidity)}>
-                                  <b>{getStatusSymbol(status)}</b>{displayStatus}
-                                </span>
-                                {meeting.note && <small className="portal-dark-note">{meeting.note}</small>}
+                                {!futureMeeting && (
+                                  <>
+                                    <span className={getStatusClass(status, meeting.justificationValidity)}>
+                                      <b>{getStatusSymbol(status)}</b>{displayStatus}
+                                    </span>
+                                    {meeting.note && <small className="portal-dark-note">{meeting.note}</small>}
+                                    {canJustifyMeeting(meeting) && (
+                                      <button
+                                        type="button"
+                                        className="portal-justify-button"
+                                        onClick={() => openJustification(meeting)}
+                                      >
+                                        Justificar
+                                      </button>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             </article>
                           );
                         })}
+                        </div>
                       </div>
-                      )}
                     </section>
                   );
                 })}
               </div>
             )}
           </section>
+
+          {justificationMeeting && (
+            <div className="portal-justification-overlay" role="dialog" aria-modal="true" aria-labelledby="portal-justification-title">
+              <div className="portal-justification-modal">
+                <div className="portal-justification-head">
+                  <div>
+                    <span>JUSTIFICACIÓN DE INASISTENCIA</span>
+                    <h3 id="portal-justification-title">Solicitar justificación</h3>
+                  </div>
+                  <button type="button" onClick={closeJustification} disabled={justificationSending} aria-label="Cerrar">×</button>
+                </div>
+
+                <div className="portal-justification-session">
+                  <strong>{CATEGORY_LABELS[normalizeCategory(justificationMeeting)] || justificationMeeting.title || "Sesión"}</strong>
+                  <span>{formatDate(justificationMeeting.date)}{justificationMeeting.time ? ` · ${justificationMeeting.time}` : ""}</span>
+                </div>
+
+                <label htmlFor="portal-justification-reason">Motivo</label>
+                <select
+                  id="portal-justification-reason"
+                  value={justificationReason}
+                  onChange={(event) => setJustificationReason(event.target.value)}
+                  disabled={justificationSending}
+                >
+                  <option value="">Selecciona un motivo</option>
+                  <option value="Salud">Salud</option>
+                  <option value="Trabajo">Trabajo</option>
+                  <option value="Viaje Programado">Viaje Programado</option>
+                  <option value="Conexion Inestable">Conexion Inestable</option>
+                </select>
+
+                {justificationError && (
+                  <div className="portal-justification-error">{justificationError}</div>
+                )}
+
+                <div className="portal-justification-actions">
+                  <button type="button" onClick={closeJustification} disabled={justificationSending}>Cancelar</button>
+                  <button type="button" onClick={sendJustificationWhatsApp} disabled={justificationSending || !justificationReason}>
+                    {justificationSending ? "Abriendo WhatsApp..." : "Enviar por WhatsApp"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <footer className="attendance-portal-footer">Círculos Connect · soy.embajador</footer>
         </div>
