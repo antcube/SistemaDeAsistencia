@@ -226,6 +226,7 @@ const AttendancePortal = () => {
   const [justificationReason, setJustificationReason] = useState("");
   const [justificationSending, setJustificationSending] = useState(false);
   const [justificationError, setJustificationError] = useState("");
+  const [justificationNow, setJustificationNow] = useState(Date.now());
 
   const toggleCategory = (category) => {
     setCollapsedCategories((current) => ({
@@ -750,6 +751,18 @@ const AttendancePortal = () => {
       }
     );
 
+  const previousMonthLabel =
+    new Date(
+      year,
+      month - 2,
+      1
+    ).toLocaleDateString(
+      "es-PE",
+      {
+        month: "long",
+      }
+    );
+
   const effectiveMeetings =
     useMemo(() => {
       const leadershipJustifications = [];
@@ -1055,6 +1068,30 @@ const AttendancePortal = () => {
     }, [
       effectiveMeetings,
     ]);
+
+  const visibleCategories = CATEGORY_ORDER.filter(
+    (category) => (groupedMeetings[category] || []).length > 0
+  );
+
+  const allCategoriesExpanded =
+    visibleCategories.length > 0 &&
+    visibleCategories.every((category) => !collapsedCategories[category]);
+
+  const toggleAllCategories = () => {
+    setCollapsedCategories((current) => {
+      const shouldCollapseAll = visibleCategories.some(
+        (category) => !current[category]
+      );
+
+      const next = { ...current };
+
+      visibleCategories.forEach((category) => {
+        next[category] = shouldCollapseAll;
+      });
+
+      return next;
+    });
+  };
 
   const formatDate = (
     value
@@ -1612,6 +1649,20 @@ const AttendancePortal = () => {
     return date.getTime();
   };
 
+  const getJustificationDeadline = (timestamp) => {
+    const date = new Date(timestamp);
+    const day = date.getDay();
+
+    if (day === 6 || day === 0) {
+      const daysToTuesday = day === 6 ? 3 : 2;
+      date.setDate(date.getDate() + daysToTuesday);
+      date.setHours(23, 59, 59, 999);
+      return date.getTime();
+    }
+
+    return addBusinessDays(timestamp, 2);
+  };
+
   const parseMeetingTime = (time) => {
     const raw = String(time || "").trim();
     if (!raw) return null;
@@ -1716,10 +1767,37 @@ const AttendancePortal = () => {
     if (!baseTimestamp) return false;
 
     // Todavía no terminó la sesión.
-    if (Date.now() < baseTimestamp) return false;
+    if (justificationNow < baseTimestamp) return false;
 
-    return Date.now() <= addBusinessDays(baseTimestamp, 2);
+    return justificationNow <= getJustificationDeadline(baseTimestamp);
   };
+
+  const getJustificationRemainingMs = (meeting) => {
+    const meetingTimestamp = getMeetingTimestamp(meeting);
+    const recordedAt = getAttendanceRecordTimestamp(meeting);
+    const baseTimestamp = meetingTimestamp || recordedAt;
+
+    if (!baseTimestamp) return 0;
+
+    return Math.max(0, getJustificationDeadline(baseTimestamp) - justificationNow);
+  };
+
+  const formatJustificationCountdown = (meeting) => {
+    const remainingMs = getJustificationRemainingMs(meeting);
+    const totalMinutes = Math.max(0, Math.floor(remainingMs / 60000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours} h ${String(minutes).padStart(2, "0")} min`;
+  };
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setJustificationNow(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   const openJustification = (meeting) => {
     setJustificationMeeting(meeting);
@@ -2138,7 +2216,7 @@ const AttendancePortal = () => {
 
           {error && <div className="attendance-portal-error global">{error}</div>}
 
-          <section className="portal-overview-card">
+          <section className={`portal-overview-card ${!loading && searched && !meetings.length ? "is-empty" : ""}`}>
             <div className="portal-overview-head">
               <span>HISTORIAL DE ASISTENCIA</span>
               <div className="portal-month-controls">
@@ -2172,6 +2250,27 @@ const AttendancePortal = () => {
               </div>
             </div>
 
+            {!loading && searched && !meetings.length ? (
+              <div className="portal-month-empty">
+                <div className="portal-month-empty-icon" aria-hidden="true">
+                  <span>▣</span>
+                </div>
+                <strong>Aún no hay sesiones en {monthLabel.split(" ")[0]}</strong>
+                <p>
+                  Cuando tus círculos programen fechas para este mes,
+                  <br />
+                  aparecerán aquí con su horario y lugar.
+                </p>
+                <button
+                  type="button"
+                  className="portal-month-empty-button"
+                  onClick={() => moveMonth(-1)}
+                >
+                  Volver a {previousMonthLabel}
+                </button>
+              </div>
+            ) : (
+              <>
             <div className="portal-overview-body">
               <div className="portal-percentage">
                 <div className={`portal-ring ${loading ? "is-loading" : ""}`} style={{ "--progress": `${ringProgress * 3.6}deg` }}>
@@ -2250,8 +2349,11 @@ const AttendancePortal = () => {
                 </div>
               </div>
             </div>
+              </>
+            )}
           </section>
 
+          {(!searched || loading || meetings.length > 0) && (
           <section className="portal-sessions-section">
             <div className="portal-section-heading">
               <div>
@@ -2259,6 +2361,16 @@ const AttendancePortal = () => {
                 <h2>Sesiones</h2>
               </div>
 
+              {searched && meetings.length > 0 && (
+                <button
+                  type="button"
+                  className="portal-category-global-toggle"
+                  onClick={toggleAllCategories}
+                  aria-label={allCategoriesExpanded ? "Ocultar todas las sesiones" : "Expandir todas las sesiones"}
+                >
+                  {allCategoriesExpanded ? "Ocultar Todo" : "Expandir Todo"}
+                </button>
+              )}
             </div>
 
             {loading ? (
@@ -2268,7 +2380,8 @@ const AttendancePortal = () => {
             ) : !meetings.length ? (
               <div className="portal-dark-empty">No existen reuniones registradas para este mes.</div>
             ) : (
-              <div className="portal-category-list">
+              <>
+                <div className="portal-category-list">
                 {CATEGORY_ORDER.map((category) => {
                   const categoryMeetings = groupedMeetings[category] || [];
                   if (!categoryMeetings.length) return null;
@@ -2346,7 +2459,8 @@ const AttendancePortal = () => {
                                     </span>
                                     {meeting.note && <small className="portal-dark-note">{meeting.note}</small>}
                                     {canJustifyMeeting(meeting) && (
-                                      <button
+                                      <>
+                                        <button
                                         type="button"
                                         className="portal-justify-button"
                                         onClick={() => openJustification(meeting)}
@@ -2358,6 +2472,14 @@ const AttendancePortal = () => {
                                         </span>
                                         <span>Justificar</span>
                                       </button>
+                                      <span
+                                        className="portal-justify-countdown"
+                                        title="Tiempo restante para justificar"
+                                        aria-label={`Tiempo restante para justificar: ${formatJustificationCountdown(meeting)}`}
+                                      >
+                                        {formatJustificationCountdown(meeting)}
+                                        </span>
+                                      </>
                                     )}
                                   </>
                                 )}
@@ -2370,9 +2492,11 @@ const AttendancePortal = () => {
                     </section>
                   );
                 })}
-              </div>
+                </div>
+              </>
             )}
           </section>
+          )}
 
           {justificationMeeting && (
             <div className="portal-justification-overlay" role="dialog" aria-modal="true" aria-labelledby="portal-justification-title">
@@ -2388,6 +2512,23 @@ const AttendancePortal = () => {
                 <div className="portal-justification-session">
                   <strong>{CATEGORY_LABELS[normalizeCategory(justificationMeeting)] || justificationMeeting.title || "Sesión"}</strong>
                   <span>{formatDate(justificationMeeting.date)}{justificationMeeting.time ? ` · ${justificationMeeting.time}` : ""}</span>
+                </div>
+
+                <div className="portal-justification-format">
+                  <div className="portal-justification-format-info">
+                    <span className="portal-justification-format-icon">📄</span>
+                    <div>
+                      <strong>Formato de justificación</strong>
+                      <span>Descarga el formato para imprimirlo y completarlo.</span>
+                    </div>
+                  </div>
+                  <a
+                    href="/formatodejustificacion.pdf"
+                    download="Formato_de_Justificacion.pdf"
+                    className="portal-justification-format-button"
+                  >
+                    Descargar formato
+                  </a>
                 </div>
 
                 <label htmlFor="portal-justification-reason">Motivo</label>
