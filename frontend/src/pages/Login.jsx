@@ -34,49 +34,51 @@ const Login = () => {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#050812] px-3 py-4 font-sans text-slate-900 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
+    <main className="min-h-screen overflow-hidden bg-[#080F24] px-3 py-4 font-sans text-white sm:px-5 sm:py-5 lg:px-6 lg:py-6">
+      {/* Luces de fondo ambientales */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -left-32 -top-32 h-96 w-96 animate-pulse rounded-full bg-blue-600/20 blur-3xl" />
-        <div className="absolute -bottom-40 -right-24 h-[32rem] w-[32rem] animate-pulse rounded-full bg-indigo-600/20 blur-3xl [animation-delay:1s]" />
-        <div className="absolute left-1/2 top-1/3 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="absolute -left-32 -top-32 h-96 w-96 animate-pulse rounded-full bg-[#2457c5]/20 blur-3xl" />
+        <div className="absolute -bottom-40 -right-24 h-[32rem] w-[32rem] animate-pulse rounded-full bg-[#4CC8FF]/15 blur-3xl [animation-delay:1s]" />
+        <div className="absolute left-1/2 top-1/3 h-72 w-72 -translate-x-1/2 rounded-full bg-[#4CC8FF]/10 blur-3xl" />
       </div>
 
       <div className="relative mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-[1120px] items-center justify-center">
-        <section className="login-shell grid w-full overflow-hidden rounded-[24px] border border-white/20 bg-white shadow-2xl shadow-black/40 lg:grid-cols-[1fr_0.92fr]">
-          {/* PANEL IZQUIERDO */}
-          <div className="relative hidden min-h-0 overflow-hidden bg-gradient-to-br from-[#172d6b] via-[#24459d] to-[#211d5e] p-7 text-white lg:flex lg:flex-col xl:p-9">
-            <div className="absolute -right-28 -top-28 h-80 w-80 rounded-full border border-white/10 bg-white/5" />
-            <div className="absolute -bottom-40 -left-32 h-96 w-96 rounded-full border border-white/10 bg-blue-400/10" />
-            <div className="absolute right-20 top-24 h-3 w-3 animate-ping rounded-full bg-cyan-300" />
+        <section className="login-shell grid w-full overflow-hidden rounded-[24px] border border-[rgba(82,146,230,0.28)] bg-[#0A1329] shadow-2xl shadow-black/80 lg:grid-cols-[1fr_0.92fr]">
+          
+          {/* PANEL IZQUIERDO (Branding & Features) */}
+          <div className="relative hidden min-h-0 overflow-hidden border-r border-[rgba(82,146,230,0.2)] bg-gradient-to-br from-[#020A1B] via-[#0A1329] to-[#080F24] p-7 text-white lg:flex lg:flex-col xl:p-9">
+            <div className="absolute -right-28 -top-28 h-80 w-80 rounded-full border border-[#4CC8FF]/10 bg-[#4CC8FF]/5" />
+            <div className="absolute -bottom-40 -left-32 h-96 w-96 rounded-full border border-[rgba(82,146,230,0.15)] bg-[#2457c5]/10" />
+            <div className="absolute right-20 top-24 h-3 w-3 animate-ping rounded-full bg-[#4CC8FF]" />
             <div className="absolute bottom-28 right-28 h-2 w-2 animate-pulse rounded-full bg-white/70" />
 
             <div className="relative z-10 flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-xl shadow-black/20 transition-transform duration-500 hover:rotate-6 hover:scale-105">
-                <svg viewBox="0 0 24 24" className="h-7 w-7 text-[#2457c5]" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(82,146,230,0.3)] bg-[#020A1B] shadow-xl shadow-black/50 transition-transform duration-500 hover:rotate-6 hover:scale-105">
+                <svg viewBox="0 0 24 24" className="h-7 w-7 text-[#4CC8FF]" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="5" y="5" width="14" height="14" rx="3" />
                   <path d="M9 12h6M12 9v6" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-extrabold tracking-tight">Sistema De Gestión</h1>
-                <p className="text-sm text-blue-100">Círculos Y Asistencia</p>
+                <h1 className="text-xl font-extrabold tracking-tight text-white">Sistema De Gestión</h1>
+                <p className="text-sm font-semibold text-[#4CC8FF]">Círculos Y Asistencia</p>
               </div>
             </div>
 
             <div className="relative z-10 mt-9 max-w-xl xl:mt-11">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-blue-100 backdrop-blur-md">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#4CC8FF]/30 bg-[#4CC8FF]/10 px-3 py-1.5 text-[11px] font-bold text-[#4CC8FF] backdrop-blur-md">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-[#4CC8FF] shadow-[0_0_8px_#4CC8FF]" />
                 Plataforma Administrativa
               </div>
 
               <h2 className="text-4xl font-black leading-[1.05] tracking-[-0.04em] xl:text-[40px]">
                 Todo El Control De Tus Círculos,
-                <span className="mt-2 block bg-gradient-to-r from-sky-300 via-blue-200 to-white bg-clip-text text-transparent">
+                <span className="mt-2 block bg-gradient-to-r from-[#4CC8FF] via-sky-200 to-white bg-clip-text text-transparent">
                   En Un Solo Lugar.
                 </span>
               </h2>
 
-              <p className="mt-4 max-w-md text-sm leading-5 text-blue-100/85 xl:text-[15px]">
+              <p className="mt-4 max-w-md text-sm leading-5 text-[#AAB9DA] xl:text-[15px]">
                 Reuniones, Asistencia, Miembros Y Reportes En Un Solo Espacio.
               </p>
             </div>
@@ -89,28 +91,28 @@ const Login = () => {
             </div>
           </div>
 
-          {/* PANEL DERECHO */}
-          <div className="relative flex min-h-0 items-center overflow-hidden bg-white px-6 py-8 sm:px-9 lg:px-10 xl:px-12">
-            <div className="absolute -right-32 -top-32 h-80 w-80 rounded-full bg-blue-50" />
-            <div className="absolute -bottom-40 -left-36 h-96 w-96 rounded-full bg-slate-50" />
-            <div className="absolute right-16 top-20 h-2 w-2 animate-bounce rounded-full bg-blue-500 [animation-delay:400ms]" />
+          {/* PANEL DERECHO (Formulario de Acceso) */}
+          <div className="relative flex min-h-0 items-center overflow-hidden bg-[#0A1329] px-6 py-8 sm:px-9 lg:px-10 xl:px-12">
+            <div className="absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#2457c5]/10 blur-2xl" />
+            <div className="absolute -bottom-40 -left-36 h-96 w-96 rounded-full bg-[#020A1B]" />
+            <div className="absolute right-16 top-20 h-2 w-2 animate-bounce rounded-full bg-[#4CC8FF] [animation-delay:400ms]" />
 
             <div className="relative z-10 mx-auto w-full max-w-[400px]">
               <div className="mb-7 animate-[fadeIn_.7s_ease-out]">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-bold text-blue-700">
-                  <span className="h-2 w-2 rounded-full bg-blue-600 shadow-[0_0_0_4px_rgba(37,87,197,0.12)]" />
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[rgba(82,146,230,0.3)] bg-[#020A1B] px-3 py-1.5 text-[11px] font-bold text-[#4CC8FF]">
+                  <span className="h-2 w-2 rounded-full bg-[#4CC8FF] shadow-[0_0_8px_rgba(76,200,255,0.8)]" />
                   Acceso Administrativo
                 </div>
 
-                <h2 className="text-3xl font-black tracking-[-0.035em] text-[#07142f] sm:text-4xl">Bienvenido</h2>
-                <p className="mt-2 text-sm leading-5 text-slate-500">Ingresa Tus Credenciales Para Acceder Al Sistema.</p>
+                <h2 className="text-3xl font-black tracking-[-0.035em] text-white sm:text-4xl">Bienvenido</h2>
+                <p className="mt-2 text-sm leading-5 text-[#AAB9DA]">Ingresa Tus Credenciales Para Acceder Al Sistema.</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="group">
-                  <label htmlFor="email" className="mb-1.5 block text-xs font-bold sm:text-sm text-slate-800">Correo Electrónico</label>
+                  <label htmlFor="email" className="mb-1.5 block text-xs font-bold sm:text-sm text-[#AAB9DA]">Correo Electrónico</label>
                   <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex w-12 items-center justify-center text-slate-400 transition-colors duration-200 group-focus-within:text-blue-600">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex w-12 items-center justify-center text-[#AAB9DA] transition-colors duration-200 group-focus-within:text-[#4CC8FF]">
                       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                         <rect x="3" y="5" width="18" height="14" rx="2" />
                         <path d="m4 7 8 6 8-6" />
@@ -125,15 +127,15 @@ const Login = () => {
                       placeholder="admin@empresa.com"
                       autoComplete="email"
                       required
-                      className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-12 pr-4 text-sm font-medium text-slate-800 outline-none transition-all duration-300 placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                      className="h-12 w-full rounded-xl border border-[rgba(82,146,230,0.28)] bg-[#020A1B] pl-12 pr-4 text-sm font-medium text-white outline-none transition-all duration-300 placeholder:text-[#AAB9DA]/40 hover:border-[rgba(82,146,230,0.5)] focus:border-[#4CC8FF] focus:bg-[#020A1B] focus:ring-4 focus:ring-[#4CC8FF]/10"
                     />
                   </div>
                 </div>
 
                 <div className="group">
-                  <label htmlFor="password" className="mb-1.5 block text-xs font-bold sm:text-sm text-slate-800">Contraseña</label>
+                  <label htmlFor="password" className="mb-1.5 block text-xs font-bold sm:text-sm text-[#AAB9DA]">Contraseña</label>
                   <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex w-12 items-center justify-center text-slate-400 transition-colors duration-200 group-focus-within:text-blue-600">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex w-12 items-center justify-center text-[#AAB9DA] transition-colors duration-200 group-focus-within:text-[#4CC8FF]">
                       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                         <rect x="5" y="10" width="14" height="10" rx="2" />
                         <path d="M8 10V7a4 4 0 0 1 8 0v3" />
@@ -148,12 +150,12 @@ const Login = () => {
                       placeholder="••••••••"
                       autoComplete="current-password"
                       required
-                      className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-12 pr-14 text-sm font-medium text-slate-800 outline-none transition-all duration-300 placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                      className="h-12 w-full rounded-xl border border-[rgba(82,146,230,0.28)] bg-[#020A1B] pl-12 pr-14 text-sm font-medium text-white outline-none transition-all duration-300 placeholder:text-[#AAB9DA]/40 hover:border-[rgba(82,146,230,0.5)] focus:border-[#4CC8FF] focus:bg-[#020A1B] focus:ring-4 focus:ring-[#4CC8FF]/10"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
-                      className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-slate-400 transition hover:text-blue-600"
+                      className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-[#AAB9DA] transition hover:text-[#4CC8FF]"
                       aria-label={showPassword ? "Ocultar Contraseña" : "Mostrar Contraseña"}
                     >
                       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -166,7 +168,7 @@ const Login = () => {
                 </div>
 
                 {error && (
-                  <div className="animate-[fadeIn_.25s_ease-out] rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+                  <div className="animate-[fadeIn_.25s_ease-out] rounded-2xl border border-rose-500/30 bg-rose-950/40 px-4 py-3 text-sm font-semibold text-rose-300">
                     {error}
                   </div>
                 )}
@@ -174,7 +176,7 @@ const Login = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="group relative mt-1 flex h-12 w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-6 text-sm font-extrabold text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/35 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="group relative mt-1 flex h-12 w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-[#2457c5] via-sky-600 to-[#4CC8FF] px-6 text-sm font-extrabold text-white shadow-lg shadow-[#2457c5]/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#4CC8FF]/30 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   <span className="absolute inset-y-0 -left-20 w-16 -skew-x-12 bg-white/30 transition-all duration-700 group-hover:left-[115%]" />
                   {loading ? (
@@ -198,17 +200,17 @@ const Login = () => {
 
               <div className="mt-7">
                 <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-slate-100" />
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <div className="h-px flex-1 bg-[rgba(82,146,230,0.2)]" />
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#AAB9DA]">
+                    <svg viewBox="0 0 24 24" className="h-4 w-4 text-[#4CC8FF]" fill="none" stroke="currentColor" strokeWidth="1.8">
                       <path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z" />
                       <path d="m9 12 2 2 4-4" />
                     </svg>
                     Acceso Seguro
                   </div>
-                  <div className="h-px flex-1 bg-slate-100" />
+                  <div className="h-px flex-1 bg-[rgba(82,146,230,0.2)]" />
                 </div>
-                <p className="mt-3 text-center text-[11px] font-medium text-slate-400">Sistema Administrativo · Acceso Autorizado</p>
+                <p className="mt-3 text-center text-[11px] font-medium text-[#AAB9DA]/60">Sistema Administrativo · Acceso Autorizado</p>
               </div>
             </div>
           </div>
@@ -249,12 +251,12 @@ const FeatureCard = ({ title, text, icon }) => {
   };
 
   return (
-    <div className="group rounded-xl border border-white/15 bg-white/10 p-3.5 xl:p-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:bg-white/15 hover:shadow-xl hover:shadow-black/10">
-      <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-cyan-200 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+    <div className="group rounded-xl border border-[rgba(82,146,230,0.2)] bg-[#020A1B]/70 p-3.5 xl:p-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[#4CC8FF]/50 hover:bg-[#020A1B] hover:shadow-xl hover:shadow-black/40">
+      <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-[#0A1329] text-[#4CC8FF] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">{icons[icon]}</svg>
       </div>
-      <h3 className="text-sm font-extrabold">{title}</h3>
-      <p className="mt-0.5 text-[10px] font-medium leading-4 text-blue-100/70">{text}</p>
+      <h3 className="text-sm font-extrabold text-white">{title}</h3>
+      <p className="mt-0.5 text-[10px] font-medium leading-4 text-[#AAB9DA]">{text}</p>
     </div>
   );
 };

@@ -6,11 +6,15 @@ import {
   useState,
 } from "react";
 
+import dniIcon from '../assets/dni.png';
 import seinfintyLogo from "../assets/seinfinty-logo.png";
 import botonProximaSesion from "../assets/boton.png";
+import botonLogin from "../assets/botonlogin.png";
 import attendanceService from "../services/attendanceService";
 import meetingService from "../services/meetingService";
-
+import healthImg from "../assets/health.png";
+import parisImg from "../assets/paris.png";
+import seinfinityImg from "../assets/seinfinty-logo.png";
 import "../styles/attendanceRegister.css";
 import "../styles/attendanceHistory.css";
 import "../styles/attendancePortal.css";
@@ -1419,6 +1423,20 @@ const AttendancePortal = () => {
     return "empty";
   };
 
+  const getCategoryStatusCounts = (categoryMeetings) => {
+    const counts = { attended: 0, justified: 0, absent: 0 };
+
+    (categoryMeetings || []).forEach((meeting) => {
+      const status = getTimelineStatus(meeting);
+
+      if (status === "attended") counts.attended += 1;
+      else if (status === "justified") counts.justified += 1;
+      else if (status === "absent") counts.absent += 1;
+    });
+
+    return counts;
+  };
+
   const getMeetingDomId = (meeting) => {
     const key = String(
       meeting?.meetingId ||
@@ -1545,6 +1563,27 @@ const AttendancePortal = () => {
   }, [timelineMeetings, year, month]);
 
 
+  const timelineProgress = useMemo(() => {
+    const todayDate = new Date();
+    const currentYear = todayDate.getFullYear();
+    const currentMonth = todayDate.getMonth() + 1;
+    const currentDay = todayDate.getDate();
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    if (year < currentYear || (year === currentYear && month < currentMonth)) {
+      return 100;
+    }
+
+    if (year > currentYear || (year === currentYear && month > currentMonth)) {
+      return 0;
+    }
+
+    if (daysInMonth <= 1) return 100;
+
+    return Math.max(0, Math.min(100, ((currentDay - 1) / (daysInMonth - 1)) * 100));
+  }, [year, month]);
+
+
   const getAttendanceRecordTimestamp = (meeting) => {
     const value =
       meeting?.registeredAt ||
@@ -1573,15 +1612,113 @@ const AttendancePortal = () => {
     return date.getTime();
   };
 
+  const parseMeetingTime = (time) => {
+    const raw = String(time || "").trim();
+    if (!raw) return null;
+
+    const match = raw.match(/^(\d{1,2})(?::(\d{2}))?(?:\s*([AaPp][Mm]))?/);
+    if (!match) return null;
+
+    let hour = Number(match[1]);
+    const minute = Number(match[2] || "0");
+    const meridiem = String(match[3] || "").toUpperCase();
+
+    if (!Number.isFinite(hour) || !Number.isFinite(minute) || minute < 0 || minute > 59) {
+      return null;
+    }
+
+    if (meridiem === "AM") {
+      if (hour === 12) hour = 0;
+    } else if (meridiem === "PM") {
+      if (hour < 12) hour += 12;
+    }
+
+    if (hour < 0 || hour > 23) return null;
+
+    return { hour, minute };
+  };
+
+  const formatTime12 = (time) => {
+    const raw = String(time || "").trim();
+    if (!raw) return "—";
+
+    // Si el calendario ya trae AM/PM, se conserva tal cual para no convertir
+    // accidentalmente horarios como "7:00 PM" en "7:00 AM".
+    const existingMeridiem = raw.match(/\b([AaPp][Mm])\b/);
+    if (existingMeridiem) {
+      const parsed = parseMeetingTime(raw);
+      if (!parsed) return raw;
+      const hour12 = parsed.hour % 12 || 12;
+      const minute = String(parsed.minute).padStart(2, "0");
+      return `${hour12}:${minute} ${existingMeridiem[1].toUpperCase()}`;
+    }
+
+    const parsed = parseMeetingTime(raw);
+    if (!parsed) return raw;
+
+    const suffix = parsed.hour >= 12 ? "PM" : "AM";
+    const hour12 = parsed.hour % 12 || 12;
+    const minute = String(parsed.minute).padStart(2, "0");
+    return `${hour12}:${minute} ${suffix}`;
+  };
+
+  const getMeetingTimestamp = (meeting) => {
+    const dateValue = String(meeting?.date || "").slice(0, 10);
+    if (!dateValue) return null;
+
+    const timeValue = String(
+      meeting?.endTime || meeting?.time || "00:00"
+    ).trim();
+    const parsedTime = parseMeetingTime(timeValue);
+
+    const [yearValue, monthValue, dayValue] = dateValue
+      .split("-")
+      .map(Number);
+
+    if (!yearValue || !monthValue || !dayValue || !parsedTime) return null;
+
+    // Se construye con la hora local del navegador para que el plazo coincida
+    // con la hora que ve el usuario en Lima y no con UTC.
+    const date = new Date(
+      yearValue,
+      monthValue - 1,
+      dayValue,
+      parsedTime.hour,
+      parsedTime.minute,
+      0,
+      0
+    );
+
+    const timestamp = date.getTime();
+    return Number.isFinite(timestamp) ? timestamp : null;
+  };
+
   const canJustifyMeeting = (meeting) => {
-    if (!meeting || isFutureMeeting(meeting)) return false;
-    if (normalizeStatus(meeting.status) !== "No asistió") return false;
-    if (meeting.justificationValidity === "extra") return false;
+    if (!meeting) return false;
 
+    const normalizedMeetingStatus = normalizeStatus(meeting.status);
+    const isAbsent =
+      normalizedMeetingStatus === "No asistió" ||
+      (normalizedMeetingStatus === "Justificado" && meeting.justificationValidity === "extra");
+
+    if (!isAbsent) return false;
+
+    // Una justificación marcada como "extra" se muestra como falta,
+    // por lo que conserva el derecho a solicitar justificación mientras
+    // la sesión siga dentro de su plazo de 2 días hábiles.
+
+    // El plazo empieza cuando termina la sesión según el Calendario.
+    // Cada sesión calcula su propio plazo de 2 días hábiles.
+    const meetingTimestamp = getMeetingTimestamp(meeting);
     const recordedAt = getAttendanceRecordTimestamp(meeting);
-    if (!recordedAt) return false;
+    const baseTimestamp = meetingTimestamp || recordedAt;
 
-    return Date.now() <= addBusinessDays(recordedAt, 2);
+    if (!baseTimestamp) return false;
+
+    // Todavía no terminó la sesión.
+    if (Date.now() < baseTimestamp) return false;
+
+    return Date.now() <= addBusinessDays(baseTimestamp, 2);
   };
 
   const openJustification = (meeting) => {
@@ -1868,7 +2005,7 @@ const AttendancePortal = () => {
 
                   <div className="attendance-login-input-wrap">
                     <div className="attendance-login-input-icon">
-                      <span>▣</span>
+                    <img src={dniIcon} alt="DNI Icon" className="attendance-dni-icon" />
                     </div>
 
                     <input
@@ -1896,6 +2033,12 @@ const AttendancePortal = () => {
                     className="attendance-login-submit"
                     disabled={loading}
                   >
+                    <img
+                      src={botonLogin}
+                      alt=""
+                      className="attendance-login-submit-image"
+                    />
+
                     <span>
                       {loading
                         ? "Consultando..."
@@ -1924,7 +2067,7 @@ const AttendancePortal = () => {
               <img src={seinfintyLogo} alt="SEINFINITY" />
             </div>
             <div className="portal-connect">
-              <strong>Círculos Connect</strong>
+              <strong>Círculos De Liderazgo</strong>
               <span>Portal del Embajador</span>
             </div>
             <button type="button" className="portal-exit" onClick={() => {
@@ -1980,7 +2123,7 @@ const AttendancePortal = () => {
 
                 <small>
                   {nextSession
-                    ? `${getNextSessionDayLabel(nextSession)}${nextSession.time ? `, ${nextSession.time}${nextSession.endTime ? ` – ${nextSession.endTime}` : ""}` : ""}${nextSession.location ? ` en ${nextSession.location}` : ""}`
+                    ? `${getNextSessionDayLabel(nextSession)}${nextSession.time ? `, ${formatTime12(nextSession.time)}${nextSession.endTime ? ` – ${formatTime12(nextSession.endTime)}` : ""}` : ""}${nextSession.location ? ` en ${nextSession.location}` : ""}`
                     : "Sin Sesiones Pendientes"}
                 </small>
               </div>
@@ -2060,7 +2203,7 @@ const AttendancePortal = () => {
                 aria-label={timelineCollapsed ? "Mostrar línea de tiempo" : "Ocultar línea de tiempo"}
                 aria-expanded={!timelineCollapsed}
               >
-                {timelineCollapsed ? "⌄" : "⌃"}
+                {timelineCollapsed ? "›" : "‹"}
               </button>
 
               <div className="portal-timeline-collapse">
@@ -2069,7 +2212,11 @@ const AttendancePortal = () => {
                     className="portal-timeline"
                     style={{ "--timeline-days": timelineDays.length }}
                   >
-                    <div className="portal-timeline-line" />
+                    <div
+                      key={`timeline-line-${year}-${month}-${timelineProgress}`}
+                      className="portal-timeline-line"
+                      style={{ "--timeline-progress": `${timelineProgress}%` }}
+                    />
 
                     {timelineDays.map((item) => (
                       <button
@@ -2085,7 +2232,7 @@ const AttendancePortal = () => {
                         }
                         title={
                           item.meeting
-                            ? `${item.meeting.title || normalizeCategory(item.meeting) || "Reunión"}${item.meeting.time ? ` · ${item.meeting.time}` : ""}`
+                            ? `${item.meeting.title || normalizeCategory(item.meeting) || "Reunión"}${item.meeting.time ? ` · ${formatTime12(item.meeting.time)}` : ""}`
                             : `Día ${item.day}`
                         }
                       >
@@ -2126,18 +2273,29 @@ const AttendancePortal = () => {
                   const categoryMeetings = groupedMeetings[category] || [];
                   if (!categoryMeetings.length) return null;
 
+                  const categoryCounts = getCategoryStatusCounts(categoryMeetings);
+
                   return (
                     <section className="portal-dark-category" key={category}>
                       <div className="portal-dark-category-head">
-                        <div className="portal-category-icon">{category === "ANUNCIOS CORPORATIVOS" ? "✚" : category === "MASTERCLASS" ? "✚" : category === "HEALTH" ? "✚" : category === "MENTORIA" ? "▤" : category === "MASTERCLASS" ? "▣" : "◈"}</div>
+                        <div className="portal-category-icon">{category?.toUpperCase() === "HEALTH" ? <img src={healthImg} alt="Health" /> : category?.toUpperCase() === "MASTERCLASS" ? <img src={seinfinityImg} alt="Masterclass" /> : <img src={parisImg} alt={category || "Categoría"} />}</div>
                         <div>
                           <strong>{CATEGORY_LABELS[category] || category}</strong>
                           <span>{categoryMeetings.length} {categoryMeetings.length === 1 ? "sesión" : "sesiones"} este mes</span>
                         </div>
                         <div className="portal-category-summary">
-                          <i aria-hidden="true" />
-                          <i className="justified" aria-hidden="true" />
-                          <i className="absent" aria-hidden="true" />
+                          <span className="portal-category-count attended-count" title="Asistencias">
+                            <i aria-hidden="true" />
+                            <b>{categoryCounts.attended}</b>
+                          </span>
+                          <span className="portal-category-count justified-count" title="Justificadas">
+                            <i className="justified" aria-hidden="true" />
+                            <b>{categoryCounts.justified}</b>
+                          </span>
+                          <span className="portal-category-count absent-count" title="Faltas">
+                            <i className="absent" aria-hidden="true" />
+                            <b>{categoryCounts.absent}</b>
+                          </span>
                           <button
                             type="button"
                             className="portal-category-toggle"
@@ -2145,7 +2303,6 @@ const AttendancePortal = () => {
                             aria-label={collapsedCategories[category] ? `Expandir ${CATEGORY_LABELS[category] || category}` : `Comprimir ${CATEGORY_LABELS[category] || category}`}
                             aria-expanded={!collapsedCategories[category]}
                           >
-                            {collapsedCategories[category] ? "⌄" : "⌃"}
                           </button>
                         </div>
                       </div>
@@ -2177,7 +2334,7 @@ const AttendancePortal = () => {
                               </div>
 
                               <div className="portal-dark-info">
-                                <strong>{meeting.time || "—"}{meeting.endTime ? ` - ${meeting.endTime}` : ""}</strong>
+                                <strong>{formatTime12(meeting.time)}{meeting.endTime ? ` - ${formatTime12(meeting.endTime)}` : ""}</strong>
                                 <span>{meeting.title || CATEGORY_LABELS[category] || category}</span>
                               </div>
 
@@ -2194,7 +2351,12 @@ const AttendancePortal = () => {
                                         className="portal-justify-button"
                                         onClick={() => openJustification(meeting)}
                                       >
-                                        Justificar
+                                        <span className="portal-justify-whatsapp-icon" aria-hidden="true">
+                                          <svg viewBox="0 0 24 24" focusable="false">
+                                            <path d="M20.5 3.5A11.92 11.92 0 0 0 12.02 0C5.43 0 .08 5.34.08 11.92c0 2.1.55 4.15 1.59 5.96L0 24l6.27-1.64a11.9 11.9 0 0 0 5.75 1.47h.01c6.58 0 11.93-5.34 11.93-11.91 0-3.18-1.24-6.17-3.46-8.42ZM12.03 21.8h-.01a9.86 9.86 0 0 1-5.03-1.38l-.36-.21-3.72.97.99-3.62-.24-.37a9.87 9.87 0 0 1-1.52-5.27C2.14 6.48 6.58 2.05 12.03 2.05c2.64 0 5.12 1.03 6.99 2.9a9.84 9.84 0 0 1 2.9 7c0 5.44-4.44 9.85-9.89 9.85Zm5.42-7.38c-.3-.15-1.78-.88-2.06-.98-.28-.1-.48-.15-.68.15-.2.3-.78.98-.96 1.18-.18.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.48-1.74-1.65-2.03-.17-.3-.02-.46.13-.61.14-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.08-.15-.68-1.64-.93-2.25-.24-.58-.49-.5-.68-.51h-.58c-.2 0-.52.07-.8.37-.27.3-1.03 1.01-1.03 2.47s1.05 2.86 1.2 3.06c.15.2 2.06 3.15 4.98 4.41.7.3 1.25.48 1.68.61.7.22 1.33.19 1.83.12.56-.08 1.78-.73 2.03-1.43.25-.7.25-1.3.17-1.43-.07-.12-.27-.2-.56-.35Z" />
+                                          </svg>
+                                        </span>
+                                        <span>Justificar</span>
                                       </button>
                                     )}
                                   </>
