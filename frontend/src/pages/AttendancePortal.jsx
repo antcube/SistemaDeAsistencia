@@ -2274,11 +2274,11 @@ const AttendancePortal = () => {
                 <div className="portal-month-empty-icon" aria-hidden="true">
                   <span>▣</span>
                 </div>
-                <strong>Aún no hay sesiones en {monthLabel.split(" ")[0]}</strong>
+                <strong>Aún No Hay Sesiones En {monthLabel.split(" ")[0]}</strong>
                 <p>
-                  Cuando tus círculos programen fechas para este mes,
+                  Cuando Tus Círculos Programen Fechas Para Este Mes,
                   <br />
-                  aparecerán aquí con su horario y lugar.
+                  Aparecerán Aquí Con Su Horario y Lugar.
                 </p>
                 <button
                   type="button"
