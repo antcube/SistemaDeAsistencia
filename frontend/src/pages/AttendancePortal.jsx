@@ -15,6 +15,8 @@ import meetingService from "../services/meetingService";
 import healthImg from "../assets/health.png";
 import parisImg from "../assets/paris.png";
 import seinfinityImg from "../assets/seinfinty-logo.png";
+import masterclassImg from "../assets/masterclass.png";
+import mentoriaImg from "../assets/mentoria.png";
 import "../styles/attendanceRegister.css";
 import "../styles/attendanceHistory.css";
 import "../styles/attendancePortal.css";
@@ -1772,6 +1774,23 @@ const AttendancePortal = () => {
     return justificationNow <= getJustificationDeadline(baseTimestamp);
   };
 
+  // Resumen del mes mostrado debajo del círculo de asistencia.
+  // Una sesión se considera realizada cuando su fecha ya llegó (incluye hoy).
+  const sessionsRealizedCount = effectiveMeetings.filter(
+    (meeting) => !isFutureMeeting(meeting)
+  ).length;
+
+  // Sesiones que todavía faltan por realizarse en el mes.
+  const sessionsRemainingCount = Math.max(
+    sessionCount - sessionsRealizedCount,
+    0
+  );
+
+  // Solo cuenta faltas que todavía conservan un plazo abierto para justificar.
+  const pendingJustificationCount = effectiveMeetings.filter(
+    (meeting) => canJustifyMeeting(meeting)
+  ).length;
+
   const getJustificationRemainingMs = (meeting) => {
     const meetingTimestamp = getMeetingTimestamp(meeting);
     const recordedAt = getAttendanceRecordTimestamp(meeting);
@@ -2281,8 +2300,8 @@ const AttendancePortal = () => {
                 </div>
                 <div className="portal-percentage-copy">
                   <span>TU MES EN CURSO</span>
-                  <strong>{attendanceEffectiveCount} asistencias de {sessionCount} sesiones del mes</strong>
-                  <small>Tu estado se actualiza según tus registros.</small>
+                  <strong>Asististe a <b>{attendanceEffectiveCount}</b> de <b>{sessionsRealizedCount}</b> sesiones realizadas</strong>
+                  <small>Te quedan <b>{sessionsRemainingCount}</b> sesiones este mes. Tienes <b>{pendingJustificationCount}</b> falta por justificar.</small>
                 </div>
               </div>
 
@@ -2391,7 +2410,17 @@ const AttendancePortal = () => {
                   return (
                     <section className="portal-dark-category" key={category}>
                       <div className="portal-dark-category-head">
-                        <div className="portal-category-icon">{category?.toUpperCase() === "HEALTH" ? <img src={healthImg} alt="Health" /> : category?.toUpperCase() === "MASTERCLASS" ? <img src={seinfinityImg} alt="Masterclass" /> : <img src={parisImg} alt={category || "Categoría"} />}</div>
+                        <div className="portal-category-icon">
+                          {category?.toUpperCase() === "HEALTH" ? (
+                            <img src={healthImg} alt="Health" />
+                          ) : category?.toUpperCase() === "MASTERCLASS" ? (
+                            <img src={masterclassImg} alt="MasterClass" />
+                          ) : category?.toUpperCase() === "MENTORIA" ? (
+                            <img src={mentoriaImg} alt="Mentoría" />
+                          ) : (
+                            <img src={parisImg} alt={category || "Categoría"} />
+                          )}
+                        </div>
                         <div>
                           <strong>{CATEGORY_LABELS[category] || category}</strong>
                           <span>{categoryMeetings.length} {categoryMeetings.length === 1 ? "sesión" : "sesiones"} este mes</span>
@@ -2443,7 +2472,15 @@ const AttendancePortal = () => {
                             >
                               <div className="portal-dark-date">
                                 <strong>{getShortDay(meeting.date)}</strong>
-                                <small>{String(meeting.date || "").split("-")[1] ? `${String(meeting.date).split("-")[2]}/${String(meeting.date).split("-")[1]}` : "—"}</small>
+                                <small>
+                                  {(() => {
+                                    const date = new Date(`${String(meeting.date || "").slice(0, 10)}T12:00:00`);
+                                    if (Number.isNaN(date.getTime())) return "—";
+
+                                    const days = ["DOM", "LUN", "MAR", "MIE", "JUE", "VIE", "SAB"];
+                                    return days[date.getDay()];
+                                  })()}
+                                </small>
                               </div>
 
                               <div className="portal-dark-info">
