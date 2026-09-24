@@ -6,17 +6,18 @@ import {
   useState,
 } from "react";
 
+import { RefreshCw } from "lucide-react";
+import { LogOut } from "lucide-react";
 import dniIcon from '../assets/dni.png';
 import seinfintyLogo from "../assets/seinfinty-logo.png";
 import botonProximaSesion from "../assets/boton.png";
-import botonLogin from "../assets/botonlogin.png";
 import attendanceService from "../services/attendanceService";
 import meetingService from "../services/meetingService";
 import healthImg from "../assets/health.png";
 import parisImg from "../assets/paris.png";
 import seinfinityImg from "../assets/seinfinty-logo.png";
 import masterclassImg from "../assets/masterclass.png";
-import mentoriaImg from "../assets/mentoria.png";
+import mentoriaImg from "../assets/se.svg";
 import "../styles/attendanceRegister.css";
 import "../styles/attendanceHistory.css";
 import "../styles/attendancePortal.css";
@@ -207,6 +208,9 @@ const AttendancePortal = () => {
 
   const [error, setError] =
     useState("");
+
+  const [loginButtonError, setLoginButtonError] =
+    useState(false);
 
   const [searched, setSearched] =
     useState(false);
@@ -530,6 +534,8 @@ const AttendancePortal = () => {
           setError(
             "Ingresa tu DNI para consultar tu asistencia."
           );
+          setLoginButtonError(true);
+          window.setTimeout(() => setLoginButtonError(false), 650);
 
           setMember(null);
           setMeetings([]);
@@ -541,6 +547,7 @@ const AttendancePortal = () => {
         try {
           setLoading(true);
           setError("");
+          setLoginButtonError(false);
 
           const response =
             await attendanceService.getUserAttendance(
@@ -583,12 +590,14 @@ const AttendancePortal = () => {
 
           setMember(null);
           setMeetings([]);
-          setSearched(true);
+          setSearched(false);
 
           setError(
             err?.message ||
               "No se pudo consultar la asistencia."
           );
+          setLoginButtonError(true);
+          window.setTimeout(() => setLoginButtonError(false), 650);
         } finally {
           setLoading(false);
         }
@@ -2119,27 +2128,60 @@ const AttendancePortal = () => {
                     />
                   </div>
 
-                  {error && (
-                    <div className="attendance-portal-error attendance-login-error">
-                      {error}
-                    </div>
-                  )}
-
                   <button
                     type="submit"
-                    className="attendance-login-submit"
                     disabled={loading}
+                    className={`
+                      relative
+                      flex
+                      w-full
+                      h-[46px]
+                      max-[520px]:h-[44px]
+                      mt-0
+                      ml-0
+                      mr-0
+                      self-stretch
+                      attendance-login-tailwind-button
+                      ${loginButtonError ? "attendance-login-button-invalid" : ""}
+                      items-center
+                      justify-center
+                      overflow-hidden
+                      rounded-[8px]
+                      border
+                      border-[rgba(107,217,255,0.50)]
+                      px-4
+                      text-[14px]
+                      font-semibold
+                      tracking-[-0.2px]
+                      text-[#080F24]
+                      cursor-pointer
+                      transition-all
+                      duration-200
+                      hover:brightness-105
+                      active:brightness-95
+                      disabled:cursor-not-allowed
+                      disabled:opacity-60
+                      shadow-[0_8px_18px_rgba(0,0,0,0.12)]
+                      bg-[radial-gradient(ellipse_45%_55%_at_78%_8%,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0.65)_14%,rgba(255,255,255,0.25)_32%,rgba(255,255,255,0)_65%),linear-gradient(90deg,#3F77B2_0%,#6BD9FF_71%,#6BD9FF_100%)]
+                    `}
+                    style={{
+                      background: `radial-gradient(ellipse 45% 55% at 78% 8%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.65) 14%, rgba(255,255,255,0.25) 32%, rgba(255,255,255,0) 65%), linear-gradient(90deg, #3F77B2 0%, #6BD9FF 71%, #6BD9FF 100%)`,
+                      border: '1px solid rgba(107,217,255,0.50)',
+                      boxShadow: '0 8px 18px rgba(0,0,0,0.12)',
+                      width: '100%',
+                      height: '46px',
+                      minHeight: '46px',
+                      margin: '12px 0 0 0',
+                      borderRadius: '8px',
+                      color: '#080F24',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      letterSpacing: '-0.2px',
+                      lineHeight: 1,
+                    }}
                   >
-                    <img
-                      src={botonLogin}
-                      alt=""
-                      className="attendance-login-submit-image"
-                    />
-
-                    <span>
-                      {loading
-                        ? "Consultando..."
-                        : "Consultar asistencia"}
+                    <span className="relative z-10 whitespace-nowrap text-center leading-none text-[#06152B]">
+                      {loading ? "Consultando..." : "Consultar asistencia"}
                     </span>
                   </button>
                 </form>
@@ -2173,7 +2215,7 @@ const AttendancePortal = () => {
               setSearched(false);
               setError("");
             }}>
-              <span>↪</span> Salir
+              <LogOut size={16} /> Salir
             </button>
           </header>
 
@@ -2256,16 +2298,23 @@ const AttendancePortal = () => {
                   }
                 </small>
                 <button
-                  type="button"
-                  className={`portal-header-refresh ${loading ? "is-refreshing" : ""}`}
-                  onClick={refresh}
-                  disabled={loading}
-                  aria-label="Actualizar historial"
-                  title="Actualizar"
+                type="button"
+                className={`portal-header-refresh ${loading ? "is-refreshing" : ""}`}
+                onClick={refresh}
+                disabled={loading}
+                aria-label="Actualizar historial"
+                title="Actualizar"
                 >
-                  ↻
+                <RefreshCw size={15} strokeWidth={2} />
                 </button>
-                <button type="button" className="portal-today" onClick={goToToday}>Ir a hoy</button>
+
+                <button
+                type="button"
+                className="portal-today"
+                onClick={goToToday}
+                >
+                Ir a hoy
+              </button>
               </div>
             </div>
 
@@ -2485,7 +2534,6 @@ const AttendancePortal = () => {
 
                               <div className="portal-dark-info">
                                 <strong>{formatTime12(meeting.time)}{meeting.endTime ? ` - ${formatTime12(meeting.endTime)}` : ""}</strong>
-                                <span>{meeting.title || CATEGORY_LABELS[category] || category}</span>
                               </div>
 
                               <div className="portal-dark-status-wrap">

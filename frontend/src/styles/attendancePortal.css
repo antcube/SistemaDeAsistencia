@@ -95,10 +95,10 @@ body,
 }
 
 .attendance-login-card {
-  width: 380px;
-  max-width: 400px;
-  height: 350px;
-  min-height: 350px;
+  width: 440px;
+  max-width: 440px;
+  height: 380px;
+  min-height: 380px;
   box-sizing: border-box;
   margin: 0;
   padding: 46px 38px 46px;
@@ -141,7 +141,7 @@ body,
 
 .attendance-login-header {
   width: 100%;
-  margin: 0 0 27px;
+  margin: 0 0 12px;
   padding: 0;
   text-align: center;
 }
@@ -150,9 +150,10 @@ body,
   margin: 0;
   padding: 0;
   color: #FFFFFF;
-  font-size: 24px;
+  font-size: 29px;
   line-height: 1.2;
-  font-weight: 400;
+  font-weight: 500;
+  font-family: 'Syne', sans-serif;
   letter-spacing: -0.5px;
 }
 
@@ -162,9 +163,10 @@ body,
   margin: 10px auto 0;
   padding: 0;
   color: #AAB9DA;
-  font-size: 12px;
+  font-family: 'Montserrat', sans-serif; /*[cite: 2] */
+  font-size: 14px; /*[cite: 2] */
   line-height: 1.65;
-  font-weight: 200;
+  font-weight: 400; /* Regular[cite: 2] */
   text-align: center;
 }
 
@@ -172,6 +174,9 @@ body,
   width: 100%;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .attendance-login-form label {
@@ -186,8 +191,10 @@ body,
 .attendance-login-input-wrap {
   position: relative;
   width: 100%;
-  margin: 0 0 -20px;
+  margin: 0;
   padding: 0;
+  box-sizing: border-box;
+  flex: 0 0 auto;
 }
 
 .attendance-login-input-icon {
@@ -221,7 +228,7 @@ body,
   background: #020A1B;
   color: #FFFFFF;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 500;
 }
 
@@ -250,82 +257,6 @@ body,
   color: #FFB2BA;
   font-size: 9px;
   line-height: 1.4;
-}
-
-.attendance-login-submit {
-  position: relative;
-  width: 100%;
-  max-width: none;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  margin-top: 8px;
-  padding: 0 15px;
-  border: none;
-  border-radius: 8px;
-  background: transparent !important;
-  color: #000000;
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: none !important;
-  text-shadow: none;
-  overflow: hidden;
-  transition:
-    transform 0.18s ease,
-    filter 0.18s ease;
-}
-
-.attendance-login-submit-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: fill;
-  object-position: center;
-  margin: 0;
-  padding: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.attendance-login-submit > span {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 1;
-  transform: translate(-50%, -50%);
-  color: #000000;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-  text-align: center;
-}
-
-.attendance-login-submit:hover:not(:disabled) {
-  transform: translateY(-1px);
-  filter: brightness(1.05);
-}
-
-.attendance-login-submit:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.attendance-login-submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.attendance-login-submit-arrow {
-  position: absolute;
-  right: 14px;
-  font-size: 17px;
-  line-height: 1;
 }
 
 .attendance-login-footer {
@@ -408,15 +339,6 @@ body,
     font-size: 9px;
   }
 
-  .attendance-login-input-wrap input {
-    height: 44px;
-  }
-
-  .attendance-login-submit {
-    height: 42px;
-  }
-
-  
 }
 
 @media (max-width: 360px) {
@@ -462,11 +384,146 @@ body,
     padding: 28px 20px 22px !important;
   }
   .attendance-login-input-wrap {
-    margin-bottom: 16px !important;
+    margin-bottom: 12px !important;
   }
 
-  .attendance-login-submit {
-    height: 46px !important;
+  .attendance-login-input-wrap input {
+    height: 44px;
+  }
+
+  .attendance-login-tailwind-button {
+    width: 100% !important;
+    height: 44px !important;
+    min-height: 44px !important;
     margin-top: 12px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+}
+/* El botón de Consultar asistencia se controla directamente en AttendancePortal.jsx. */
+
+
+/* Layout limpio: el campo DNI y el botón ocupan exactamente el mismo ancho y nunca se superponen. */
+.attendance-login-form .attendance-login-tailwind-button {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 12px 0 0 0;
+  flex: 0 0 auto;
+  transform: none;
+}
+
+.attendance-login-form .attendance-login-tailwind-button:hover {
+  transform: none;
+}
+
+.attendance-login-form .attendance-login-input-wrap input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+/* Error de DNI: en lugar de mostrar un aviso que desplaza el formulario,
+   el botón se vuelve rojo, sacude y luego recupera su apariencia normal. */
+.attendance-login-form .attendance-login-button-invalid {
+  background: #D92D20 !important;
+  color: #FFFFFF !important;
+  border-color: #D92D20 !important;
+  animation: attendance-login-button-shake 0.58s ease-in-out;
+}
+
+.attendance-login-form .attendance-login-button-invalid span {
+  color: #FFFFFF !important;
+}
+
+@keyframes attendance-login-button-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-7px); }
+  30% { transform: translateX(7px); }
+  45% { transform: translateX(-6px); }
+  60% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+  90% { transform: translateX(3px); }
+}
+
+/* =========================================================
+   CORRECCIÓN FINAL — BOTÓN CONSULTAR ASISTENCIA
+   No modifica el resto del portal.
+   ========================================================= */
+.attendance-login-form .attendance-login-tailwind-button {
+  position: relative;
+  width: 100%;
+  height: 46px;
+  min-height: 46px;
+  margin: 12px 0 0 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(107, 217, 255, 0.50);
+  background:
+    radial-gradient(
+      ellipse 45% 55% at 78% 8%,
+      rgba(255,255,255,0.95) 0%,
+      rgba(255,255,255,0.65) 14%,
+      rgba(255,255,255,0.25) 32%,
+      rgba(255,255,255,0) 65%
+    ),
+    linear-gradient(90deg, #3F77B2 0%, #6BD9FF 71%, #6BD9FF 100%);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+  color: #080F24;
+  cursor: pointer;
+  transition: filter 200ms ease, opacity 200ms ease;
+}
+
+.attendance-login-form .attendance-login-tailwind-button:hover {
+  filter: brightness(1.05);
+}
+
+.attendance-login-form .attendance-login-tailwind-button:active {
+  filter: brightness(0.95);
+}
+
+.attendance-login-form .attendance-login-tailwind-button span {
+  position: relative;
+  z-index: 2;
+  color: #080F24 !important;
+}
+
+.attendance-login-form .attendance-login-tailwind-button.attendance-login-button-invalid {
+  background: #D92D20 !important;
+  background-image: none !important;
+  border-color: #D92D20 !important;
+  color: #FFFFFF !important;
+  animation: attendance-login-button-shake 0.58s ease-in-out 1;
+}
+
+.attendance-login-form .attendance-login-tailwind-button.attendance-login-button-invalid span {
+  color: #FFFFFF !important;
+}
+
+@keyframes attendance-login-button-shake {
+  0% { transform: translateX(0); }
+  12% { transform: translateX(-8px); }
+  24% { transform: translateX(8px); }
+  36% { transform: translateX(-7px); }
+  48% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  72% { transform: translateX(5px); }
+  84% { transform: translateX(-2px); }
+  92% { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
+
+@media (max-width: 520px) {
+  .attendance-login-form .attendance-login-tailwind-button {
+    width: 100% !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    margin: 12px 0 0 0 !important;
   }
 }
