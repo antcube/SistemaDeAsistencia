@@ -1,0 +1,8 @@
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Dependencias y sistema
+node_modules
+.DS_Store
