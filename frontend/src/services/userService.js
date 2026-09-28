@@ -7,8 +7,7 @@ const userService = {
     page = 1,
     limit = 50,
   } = {}) {
-    const params =
-      new URLSearchParams();
+    const params = new URLSearchParams();
 
     params.set(
       "page",
@@ -45,6 +44,12 @@ const userService = {
     );
   },
 
+  async getRangeHistory(id) {
+    return api.get(
+      `/users/${id}/range-history`
+    );
+  },
+
   async createUser(data) {
     return api.post(
       "/users",
@@ -65,6 +70,15 @@ const userService = {
   async deleteUser(id) {
     return api.delete(
       `/users/${id}`
+    );
+  },
+
+  // ============================================================
+  // ELIMINAR TODOS LOS MIEMBROS DE UN CÍRCULO
+  // ============================================================
+  async deleteUsersByCircle(circle) {
+    return api.delete(
+      `/users/circle/${encodeURIComponent(circle)}/all`
     );
   },
 };

@@ -27,6 +27,49 @@ const attendanceSchema = new mongoose.Schema(
       index: true,
     },
 
+    /* Soft delete: conserva el registro para una futura restauración. */
+    active: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+
+    deletedBy: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    /*
+     * ============================================================
+     * SOFT DELETE
+     * ============================================================
+     * El registro no se elimina físicamente de MongoDB.
+     * active=false lo oculta de las consultas normales y permite
+     * restaurarlo si la misma asistencia vuelve a registrarse.
+     */
+    active: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+
+    deletedBy: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     /*
      * Datos históricos del miembro.
      *

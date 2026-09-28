@@ -285,6 +285,46 @@ const createMeeting = async (req, res) => {
       });
     }
 
+    const deletedMeeting = await Meeting.findOne({
+      circle: String(circle).trim(),
+      type,
+      date,
+      time,
+      active: false,
+      deletedBySchedule: { $ne: true },
+      deletedByScheduleChange: { $ne: true },
+    }).sort({ deletedAt: -1, updatedAt: -1 });
+
+    if (deletedMeeting) {
+      deletedMeeting.title = title;
+      deletedMeeting.type = type;
+      deletedMeeting.circle = circle;
+      deletedMeeting.host = host;
+      deletedMeeting.date = date;
+      deletedMeeting.time = time;
+      deletedMeeting.endTime = endTime;
+      deletedMeeting.location = location;
+      deletedMeeting.active = true;
+      deletedMeeting.deletedAt = null;
+      deletedMeeting.deletedBy = "";
+      deletedMeeting.deletedBySchedule = false;
+      deletedMeeting.deletedByScheduleChange = false;
+      deletedMeeting.replacementScheduleId = null;
+      deletedMeeting.manuallyRescheduled = false;
+      deletedMeeting.originalScheduleDate = "";
+      deletedMeeting.originalScheduleTime = "";
+      deletedMeeting.qrActive = false;
+      deletedMeeting.qrStartTimestamp = null;
+      deletedMeeting.qrEndTimestamp = null;
+      await deletedMeeting.save();
+
+      return res.status(200).json({
+        message: "La reunión eliminada anteriormente fue restaurada conservando sus datos.",
+        restored: true,
+        meeting: deletedMeeting,
+      });
+    }
+
     const meeting = await Meeting.create({
       title,
       type,
@@ -294,16 +334,14 @@ const createMeeting = async (req, res) => {
       time,
       endTime,
       location,
-
       scheduleId: null,
-
       active: true,
-
       createdBy: req.user.adminId,
     });
 
     return res.status(201).json({
       message: "Reunión creada correctamente.",
+      restored: false,
       meeting,
     });
   } catch (error) {
@@ -517,6 +555,79 @@ const restoreMeeting = async (req, res) => {
 
 /**
  * ============================================================
+ * CAMBIAR DÍA Y HORA DE UNA REUNIÓN
+ * ============================================================
+ */
+const moveMeeting = async (req, res) => {
+  try {
+    const meeting = await Meeting.findById(req.params.id);
+
+    if (!meeting) {
+      return res.status(404).json({ message: "Reunión no encontrada." });
+    }
+
+    if (!meeting.active) {
+      return res.status(400).json({ message: "No se puede cambiar de día una reunión eliminada." });
+    }
+
+    if (!hasCirclePermission(req, meeting.circle)) {
+      return res.status(403).json({ message: "No tienes permisos para esta reunión." });
+    }
+
+    const { date, time = "", endTime = "" } = req.body;
+
+    if (!date || !isValidDate(date)) {
+      return res.status(400).json({ message: "La nueva fecha no es válida." });
+    }
+
+    if (!time) {
+      return res.status(400).json({ message: "La nueva hora es obligatoria." });
+    }
+
+    if (endTime && endTime <= time) {
+      return res.status(400).json({ message: "La hora de finalización debe ser posterior a la hora de inicio." });
+    }
+
+    const duplicate = await Meeting.findOne({
+      _id: { $ne: meeting._id },
+      circle: meeting.circle,
+      type: meeting.type,
+      date,
+      time,
+      active: true,
+    });
+
+    if (duplicate) {
+      return res.status(409).json({ message: "Ya existe una reunión de este tipo, círculo, fecha y hora." });
+    }
+
+    if (meeting.scheduleId && !meeting.manuallyRescheduled) {
+      meeting.originalScheduleDate = meeting.date;
+      meeting.originalScheduleTime = meeting.time || "";
+      meeting.manuallyRescheduled = true;
+    }
+
+    meeting.date = date;
+    meeting.time = time;
+    meeting.endTime = endTime;
+    meeting.qrActive = false;
+    meeting.qrStartTimestamp = null;
+    meeting.qrEndTimestamp = null;
+
+    await meeting.save();
+
+    return res.json({
+      message: "La sesión fue cambiada de día y horario correctamente.",
+      meeting,
+    });
+  } catch (error) {
+    console.error("Error cambiando día de reunión:", error);
+    return res.status(500).json({ message: "Error cambiando día de reunión." });
+  }
+};
+
+/**
+ * ============================================================
  * ACTIVAR QR
  * ============================================================
  *
@@ -642,6 +753,7 @@ module.exports = {
   updateMeeting,
   deleteMeeting,
   restoreMeeting,
+  moveMeeting,
   activateQr,
   deactivateQr,
 };

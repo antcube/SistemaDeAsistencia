@@ -27,7 +27,7 @@ const seedAdmin = async () => {
     await Admin.create({
       adminId: "ADM-001",
 
-      doc: "00000000",
+      phone: "",
 
       name: "Administrador Principal",
 

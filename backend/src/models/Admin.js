@@ -1,79 +1,79 @@
 const mongoose = require("mongoose");
 
-const adminSchema = new mongoose.Schema(
-  {
-    // ID administrativo del sistema.
-    // El Administrador Principal utiliza ADM-001.
-    adminId: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
+const adminSchema =
+  new mongoose.Schema(
+    {
+      adminId: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+      },
 
-    // DNI/documento del administrador
-    doc: {
-      type: String,
-      trim: true,
-      default: "",
-    },
 
-    // Nombre completo
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+      phone: {
+        type: String,
+        trim: true,
+        default: "",
+      },
 
-    // Correo utilizado para identificar al administrador
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-    },
+      // Nombre completo
+      name: {
+        type: String,
+        required: true,
+        trim: true,
+      },
 
-    // Contraseña/PIN almacenado de forma segura.
-    // Aquí NO guardaremos el PIN en texto plano.
-    passwordHash: {
-      type: String,
-      required: true,
-    },
+      email: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true,
+      },
 
-    // Roles del sistema
-    role: {
-      type: String,
-      required: true,
-      enum: [
-        "Administrador General",
-        "Gestor de Círculo",
-        "Administrador de Círculos",
-        "Sub Administrador",
-        "Moderador",
-      ],
-      default: "Gestor de Círculo",
-    },
+      passwordHash: {
+        type: String,
+        required: true,
+      },
 
-    circleScope: {
-      type: [String],
-      default: [],
-    },
+      // Roles del sistema
+      role: {
+        type: String,
+        required: true,
+        enum: [
+          "Administrador General",
+          "Gestor de Círculo",
+          "Administrador de Círculos",
+          "Sub Administrador",
+          "Moderador",
+        ],
+        default:
+          "Gestor de Círculo",
+      },
 
-    // Permite desactivar una cuenta sin eliminarla
-    active: {
-      type: Boolean,
-      default: true,
-    },
+      circleScope: {
+        type: [String],
+        default: [],
+      },
 
-    lastLoginAt: {
-      type: Date,
-      default: null,
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
+      active: {
+        type: Boolean,
+        default: true,
+      },
 
-module.exports = mongoose.model("Admin", adminSchema);
+      lastLoginAt: {
+        type: Date,
+        default: null,
+      },
+    },
+    {
+      timestamps: true,
+    }
+  );
+
+module.exports =
+  mongoose.model(
+    "Admin",
+    adminSchema
+  );

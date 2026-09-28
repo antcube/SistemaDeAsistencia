@@ -22,6 +22,65 @@ const typeClass = (type) => {
   }
 };
 
+// Convierte una hora de 24 horas a formato de 12 horas
+// sin modificar el valor original almacenado en MongoDB.
+const formatMeetingTime = (value) => {
+  if (!value) {
+    return "--:--";
+  }
+
+  const raw = String(value)
+    .trim()
+    .toUpperCase();
+
+  // Si ya viene en formato AM/PM, solamente
+  // normalizamos su presentación.
+  const amPmMatch = raw.match(
+    /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/
+  );
+
+  if (amPmMatch) {
+    const hour = Number(amPmMatch[1]);
+    const minutes = amPmMatch[2];
+    const period = amPmMatch[3];
+
+    if (hour >= 1 && hour <= 12) {
+      return `${hour}:${minutes} ${period}`;
+    }
+
+    return raw;
+  }
+
+  // Si viene en formato 24 horas, lo convertimos.
+  const timeMatch = raw.match(
+    /^(\d{1,2}):(\d{2})(?::\d{2})?$/
+  );
+
+  if (timeMatch) {
+    const hour24 = Number(timeMatch[1]);
+    const minutes = timeMatch[2];
+
+    if (
+      hour24 >= 0 &&
+      hour24 <= 23
+    ) {
+      const period =
+        hour24 >= 12
+          ? "PM"
+          : "AM";
+
+      const hour12 =
+        hour24 % 12 || 12;
+
+      return `${hour12}:${minutes} ${period}`;
+    }
+  }
+
+  // Si el valor no coincide con ningún formato
+  // conocido, conservamos el valor original.
+  return raw;
+};
+
 const MeetingCard = ({
   meeting,
   onEdit,
@@ -61,9 +120,14 @@ const MeetingCard = ({
         </strong>
 
         <span>
-          {meeting.time || "--:--"}
+          {formatMeetingTime(
+            meeting.time
+          )}
+
           {meeting.endTime
-            ? ` - ${meeting.endTime}`
+            ? ` - ${formatMeetingTime(
+                meeting.endTime
+              )}`
             : ""}
         </span>
       </div>

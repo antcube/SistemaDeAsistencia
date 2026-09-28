@@ -1,6 +1,7 @@
 const Attendance = require("../models/Attendance");
 const Meeting = require("../models/Meeting");
 const User = require("../models/User");
+const Admin = require("../models/Admin");
 
 const {
   createAuditLog,
@@ -70,6 +71,40 @@ const normalizeMeetingType = (type) => {
   };
 
   return aliases[normalized] || normalized;
+};
+
+const normalizeCircleForGestorLookup = (value) => {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase()
+    .replace(/[–—]+/g, "-")
+    .replace(/\s*-\s*/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/\s+/g, " ");
+};
+
+const findGestorWhatsappByCircle = async (circle) => {
+  const target = normalizeCircleForGestorLookup(circle);
+  if (!target) return "";
+
+  const gestores = await Admin.find({
+    role: "Gestor de Círculo",
+    active: true,
+  }).select("phone circleScope").lean();
+
+  const gestor = gestores.find((item) => {
+    const scopes = Array.isArray(item.circleScope)
+      ? item.circleScope
+      : item.circleScope ? [item.circleScope] : [];
+
+    return scopes.some(
+      (scope) => normalizeCircleForGestorLookup(scope) === target
+    );
+  });
+
+  return String(gestor?.phone || "").replace(/\D/g, "");
 };
 
 /**
@@ -211,6 +246,7 @@ const countMonthlyJustificationsInternal = async ({
     status: {
       $in: ["Justificado"],
     },
+    active: true,
   };
 
   if (excludeAttendanceId) {
@@ -326,6 +362,12 @@ const setAttendance = async (req, res) => {
       : "";
 
     const isNewAttendance = !attendance;
+
+    if (attendance && attendance.active === false) {
+      attendance.active = true;
+      attendance.deletedAt = null;
+      attendance.deletedBy = "";
+    }
 
     /**
      * --------------------------------------------------------
@@ -666,6 +708,7 @@ const getMeetingAttendance = async (
 
       Attendance.find({
         meeting: meeting._id,
+        active: true,
       })
         .populate(
           "user",
@@ -963,6 +1006,7 @@ const getMonthAttendance = async (
         user: {
           $in: userIds,
         },
+        active: true,
       }).populate(
         "user",
         "doc name username circle job email phone"
@@ -1197,6 +1241,7 @@ const getUserMonthlyAttendance = async (
                     meeting._id
                 ),
             },
+            active: true,
           })
         : [];
 
@@ -1355,6 +1400,8 @@ const getUserMonthlyAttendanceByDni =
         });
       }
 
+      const gestorWhatsapp = await findGestorWhatsappByCircle(user.circle);
+
       const {
         firstDate,
         lastDate,
@@ -1393,6 +1440,7 @@ const getUserMonthlyAttendanceByDni =
                       meeting._id
                   ),
               },
+              active: true,
             })
           : [];
 
@@ -1433,6 +1481,8 @@ const getUserMonthlyAttendanceByDni =
 
           phone:
             user.phone,
+
+          gestorWhatsapp,
         },
 
         year:
@@ -1690,6 +1740,12 @@ const registerAttendanceByQr =
       const isNewAttendance =
         !attendance;
 
+      if (attendance && attendance.active === false) {
+        attendance.active = true;
+        attendance.deletedAt = null;
+        attendance.deletedBy = "";
+      }
+
       if (!attendance) {
         attendance =
           new Attendance({
@@ -1893,10 +1949,14 @@ const deleteAttendance =
           attendance.user
         );
 
-      await Attendance.deleteOne({
-        _id:
-          attendance._id,
-      });
+      attendance.active = false;
+      attendance.deletedAt = new Date();
+      attendance.deletedBy =
+        req.user?.adminId ||
+        req.user?.name ||
+        "";
+
+      await attendance.save();
 
       if (
         user &&

@@ -14,6 +14,7 @@ import Members from "./pages/Members.jsx";
 import AdminUsers from "./pages/AdminUsers.jsx";
 import Programaciones from "./pages/Programaciones.jsx";
 import Audit from "./pages/Audit.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AdminLayout from "./components/AdminLayout.jsx";
@@ -25,35 +26,23 @@ const App = () => {
   return (
     <Routes>
 
-      {/* =====================================================
-          PORTAL PÚBLICO
-      ===================================================== */}
 
       <Route
         path="/asistencia"
         element={<AttendancePortal />}
       />
 
-      {/* =====================================================
-          LOGIN ADMINISTRATIVO
-      ===================================================== */}
-
+     
       <Route
         path="/login"
         element={<Login />}
       />
 
-      {/* =====================================================
-          SISTEMA ADMINISTRATIVO
-      ===================================================== */}
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AdminLayout />}>
 
-          {/* =================================================
-              MÓDULOS DISPONIBLES PARA ADMINISTRADOR Y GESTOR
-              ================================================= */}
-
+        
           <Route
             path="/calendar"
             element={<Calendar />}
@@ -74,21 +63,20 @@ const App = () => {
             element={<Members />}
           />
 
-          {/*
-            Esta ruta se mantiene porque la asistencia puede abrirse
-            desde los módulos correspondientes. No se muestra como
-            opción independiente en el menú del Gestor de Círculo.
-          */}
+        
           <Route
             path="/attendance"
             element={<Attendance />}
           />
 
-          {/* =================================================
-              MÓDULOS EXCLUSIVOS DEL ADMINISTRADOR PRINCIPAL
-              ================================================= */}
+        
 
           <Route element={<AdminOnlyRoute />}>
+
+            <Route
+              path="/dashboard"
+              element={<Dashboard />}
+            />
 
             <Route
               path="/admins"
@@ -107,11 +95,7 @@ const App = () => {
 
           </Route>
 
-          {/*
-            Ya NO existe Dashboard como pantalla de inicio.
-            Al entrar a / se lleva directamente al Calendario,
-            que es el primer módulo real del sistema.
-          */}
+         
           <Route
             path="/"
             element={<Navigate to="/calendar" replace />}
@@ -119,10 +103,6 @@ const App = () => {
 
         </Route>
       </Route>
-
-      {/* =====================================================
-          RUTA NO ENCONTRADA
-      ===================================================== */}
 
       <Route
         path="*"

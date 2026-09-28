@@ -361,6 +361,7 @@ const getMonthlyCircleReport =
             user: {
               $in: userIds,
             },
+            active: true,
           }).sort({
             registeredAt: 1,
             _id: 1,
@@ -950,6 +951,7 @@ const getMonthlyCircleReport =
             circle:
               user.circle,
             job: user.job,
+            rangeChangeDate: user.rangeChangeDate || null,
             email: user.email || "",
             phone: user.phone || "",
             rank: user.job || "",

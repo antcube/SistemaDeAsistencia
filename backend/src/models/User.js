@@ -4,14 +4,15 @@ const userSchema = new mongoose.Schema(
   {
     doc: {
       type: String,
-      required: true,
+      required: false,
       unique: true,
+      sparse: true,
       trim: true,
     },
 
     name: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
 
@@ -31,6 +32,36 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
+    },
+
+    rangeChangeDate: {
+      type: Date,
+      default: null,
+    },
+
+    rangeHistory: {
+      type: [
+        {
+          range: {
+            type: String,
+            trim: true,
+          },
+          startDate: {
+            type: Date,
+            default: null,
+          },
+          endDate: {
+            type: Date,
+            default: null,
+          },
+          changedBy: {
+            type: String,
+            trim: true,
+            default: "",
+          },
+        },
+      ],
+      default: [],
     },
 
     email: {

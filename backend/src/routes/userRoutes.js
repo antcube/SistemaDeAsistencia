@@ -3,6 +3,7 @@ const express = require("express");
 const {
   getUsers,
   getUserById,
+  getRangeHistory,
   createUser,
   updateUser,
   deleteUser,
@@ -25,6 +26,13 @@ router.get(
   "/",
   authMiddleware,
   getUsers
+);
+
+// Obtener historial de rangos
+router.get(
+  "/:id/range-history",
+  authMiddleware,
+  getRangeHistory
 );
 
 // Obtener uno

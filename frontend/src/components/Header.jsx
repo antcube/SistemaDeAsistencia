@@ -156,6 +156,21 @@ const Header = () => {
 
                     {isMainAdmin && (
                       <NavLink
+                        to="/dashboard"
+                        onClick={() =>
+                          setOpen(false)
+                        }
+                      >
+                        <span>
+                          ◫
+                        </span>
+
+                        Dashboard
+                      </NavLink>
+                    )}
+
+                    {isMainAdmin && (
+                      <NavLink
                         to="/admins"
                         onClick={() =>
                           setOpen(false)

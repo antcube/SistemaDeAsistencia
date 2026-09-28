@@ -78,6 +78,13 @@ const meetingService = {
     );
   },
 
+  async moveMeeting(id, data) {
+    return api.patch(
+      `/meetings/${id}/move`,
+      data
+    );
+  },
+
   async restoreMeeting(id) {
     return api.post(
       `/meetings/${id}/restore`,

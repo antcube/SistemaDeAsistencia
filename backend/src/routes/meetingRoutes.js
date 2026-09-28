@@ -7,6 +7,7 @@ const {
   updateMeeting,
   deleteMeeting,
   restoreMeeting,
+  moveMeeting,
   getPublicQrMeeting,
   activateQr,
   deactivateQr,
@@ -20,19 +21,11 @@ const {
 
 const router = express.Router();
 
-// Consulta pública utilizada por los QR de asistencia.
-// Debe declararse antes del middleware de autenticación.
 router.get(
   "/qr/:id",
   getPublicQrMeeting
 );
 
-// ============================================================
-// CONSULTAS
-// ============================================================
-
-// Administrador: todas las reuniones.
-// Gestor: solamente las reuniones de sus círculos.
 router.get(
   "/",
   authMiddleware,
@@ -45,11 +38,6 @@ router.get(
   getMeetingById
 );
 
-// ============================================================
-// ADMINISTRACIÓN DE REUNIONES
-// ============================================================
-// Solamente Administrador Principal.
-// El Gestor puede ver/compartir sesiones, pero no modificarlas.
 
 router.post(
   "/",
@@ -63,6 +51,13 @@ router.put(
   authMiddleware,
   requireGlobalAdministrator,
   updateMeeting
+);
+
+router.patch(
+  "/:id/move",
+  authMiddleware,
+  requireGlobalAdministrator,
+  moveMeeting
 );
 
 router.delete(
@@ -79,9 +74,7 @@ router.post(
   restoreMeeting
 );
 
-// El QR puede ser activado/desactivado por el Administrador Principal
-// o por un Gestor de Círculo que tenga acceso al círculo de la reunión.
-// El controlador valida el alcance del círculo.
+
 router.post(
   "/:id/qr/activate",
   authMiddleware,

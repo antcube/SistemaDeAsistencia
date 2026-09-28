@@ -1,821 +1,529 @@
-.attendance-portal-page {
-  min-height: 100vh;
-  padding: 24px 20px 40px;
-  background:
-    linear-gradient(
-      135deg,
-      #f4f7fb 0%,
-      #eef4fc 55%,
-      #e9f0fb 100%
-    );
-  color: #142b49;
-}
-
-.attendance-portal-login {
+html,
+body,
+#root {
   width: 100%;
-  max-width: 430px;
-  margin: 7vh auto 0;
-  padding: 34px;
-  border: 1px solid #dce5f0;
-  border-radius: 20px;
-  background: #ffffff;
-  box-shadow:
-    0 20px 55px
-    rgba(23, 51, 87, 0.12);
-  text-align: center;
-}
-
-.attendance-portal-logo {
-  width: 55px;
-  height: 55px;
-  margin: 0 auto 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 15px;
-  background:
-    linear-gradient(
-      135deg,
-      #1769e0,
-      #243d78
-    );
-  color: white;
-  font-size: 23px;
-  box-shadow:
-    0 9px 22px
-    rgba(23, 105, 224, 0.22);
-}
-
-.attendance-portal-kicker {
-  display: inline-block;
-  margin-bottom: 8px;
-  padding: 5px 9px;
-  border: 1px solid #dce4ff;
-  border-radius: 6px;
-  background: #f1f4ff;
-  color: #4b57a8;
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-}
-
-.attendance-portal-login h1 {
+  min-width: 100%;
+  min-height: 100%;
   margin: 0;
-  color: #102744;
-  font-size: 24px;
-  font-weight: 900;
+  padding: 0;
+  background: #080F24;
 }
 
-.attendance-portal-login h1 strong {
-  color: #1769e0;
+.attendance-portal-login.attendance-history-login-view {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #080F24 !important;
+  border: none !important;
+  outline: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: auto !important;
+  z-index: 999999 !important;
 }
 
-.attendance-portal-login > p {
-  margin: 8px 0 25px;
-  color: #718198;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.attendance-portal-form {
-  text-align: left;
-}
-
-.attendance-portal-form label {
-  display: block;
-  margin-bottom: 6px;
-  color: #425a75;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.attendance-portal-input-wrap {
+.attendance-login-shell {
   position: relative;
-}
-
-.attendance-portal-input-wrap > span {
-  position: absolute;
-  left: 13px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #8a9ab0;
-}
-
-.attendance-portal-input-wrap input {
+  width: 100%;
+  max-width: 440px;
+  margin: auto;
+  padding: 0;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  transform: scale(1.1);
+  transform-origin: center center;
+}
+
+.attendance-login-logo-space {
   width: 100%;
-  height: 46px;
-  border: 1px solid #d5dfeb;
-  border-radius: 10px;
-  padding: 0 13px 0 40px;
-  outline: none;
-  background: #f9fbfd;
-  color: #203c5b;
-  font-family: monospace;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
-.attendance-portal-input-wrap input:focus {
-  border-color: #6194da;
-  background: white;
-  box-shadow:
-    0 0 0 3px #eaf2ff;
-}
-
-.attendance-portal-form button {
-  width: 100%;
-  height: 45px;
-  margin-top: 13px;
-  border: 0;
-  border-radius: 10px;
-  background:
-    linear-gradient(
-      135deg,
-      #1769e0,
-      #2745a1
-    );
-  color: white;
-  font-size: 11px;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow:
-    0 8px 20px
-    rgba(23, 105, 224, 0.2);
-}
-
-.attendance-portal-form button span {
-  margin-left: 7px;
-  font-size: 15px;
-}
-
-.attendance-portal-form button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.attendance-portal-error {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border: 1px solid #efcccc;
-  border-radius: 8px;
-  background: #fff5f5;
-  color: #a63f3f;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.attendance-portal-error.global {
-  max-width: 1220px;
-  margin: 15px auto;
-}
-
-/* ==========================================================
-   CONTENIDO DEL PORTAL
-========================================================== */
-
-.attendance-portal-content {
-  width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
-}
-
-.attendance-portal-header {
+  height: 94px;
+  margin: 0 0 15px;
+  padding: 0;
+  box-sizing: border-box;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 20px;
-  border-radius: 17px;
-  background:
-    linear-gradient(
-      135deg,
-      #164d9c,
-      #293c7c 55%,
-      #18243e
-    );
-  color: white;
-  box-shadow:
-    0 15px 35px
-    rgba(23, 51, 87, 0.18);
-}
-
-.attendance-portal-member {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.attendance-portal-avatar {
-  width: 58px;
-  height: 58px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(
-    255,
-    255,
-    255,
-    0.2
-  );
-  border-radius: 15px;
-  background: rgba(
-    255,
-    255,
-    255,
-    0.1
-  );
-  font-size: 24px;
-}
-
-.attendance-portal-name-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.attendance-portal-name-row h1 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 900;
-}
-
-.attendance-portal-name-row span {
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: rgba(
-    255,
-    255,
-    255,
-    0.13
-  );
-  font-size: 9px;
-  font-weight: 800;
-}
-
-.attendance-portal-member p {
-  margin: 5px 0 0;
-  color: #d4e0f7;
-  font-size: 10px;
-}
-
-.attendance-portal-member p strong {
-  color: white;
-}
-
-.attendance-portal-actions {
-  display: flex;
-  gap: 7px;
-}
-
-.attendance-portal-actions button {
-  height: 36px;
-  padding: 0 12px;
-  border: 1px solid rgba(
-    255,
-    255,
-    255,
-    0.2
-  );
-  border-radius: 8px;
-  background: rgba(
-    255,
-    255,
-    255,
-    0.1
-  );
-  color: white;
-  font-size: 10px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.attendance-portal-actions button:hover {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.18
-  );
-}
-
-.attendance-portal-actions button:disabled {
-  opacity: 0.55;
-}
-
-/* ==========================================================
-   MES
-========================================================== */
-
-.attendance-portal-monthbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 16px;
-  padding: 13px;
-  border: 1px solid #dce4ee;
-  border-radius: 13px;
-  background: white;
-  box-shadow:
-    0 4px 16px
-    rgba(25, 52, 86, 0.04);
-}
-
-.attendance-portal-monthbar > button {
-  width: 37px;
-  height: 37px;
-  border: 1px solid #d7e1ec;
-  border-radius: 9px;
-  background: white;
-  color: #2c4c6f;
-  font-size: 23px;
-  cursor: pointer;
-}
-
-.attendance-portal-monthbar > button:hover {
-  background: #f4f8fd;
-}
-
-.attendance-portal-monthbar > div {
-  min-width: 220px;
-  text-align: center;
-}
-
-.attendance-portal-monthbar small {
-  display: block;
-  color: #7890aa;
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-}
-
-.attendance-portal-monthbar strong {
-  display: block;
-  margin-top: 2px;
-  color: #173656;
-  font-size: 17px;
-  font-weight: 900;
-  text-transform: capitalize;
-}
-
-.attendance-portal-monthbar .attendance-portal-today {
-  width: auto;
-  padding: 0 12px;
-  color: #1769e0;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-/* ==========================================================
-   RESUMEN
-========================================================== */
-
-.attendance-portal-summary {
-  display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-  gap: 11px;
-  margin-top: 14px;
-}
-
-.portal-summary-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 72px;
-  padding: 12px 14px;
-  border: 1px solid;
-  border-radius: 12px;
-  background: white;
-}
-
-.portal-summary-card > span {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9px;
-  font-size: 15px;
-  font-weight: 900;
-}
-
-.portal-summary-card small {
-  display: block;
-  color: #718198;
-  font-size: 9px;
-  font-weight: 800;
-}
-
-.portal-summary-card strong {
-  display: block;
-  margin-top: 2px;
-  color: #173656;
-  font-size: 20px;
-  font-weight: 900;
-}
-
-.portal-summary-card.blue {
-  border-color: #c7d9f5;
-}
-
-.portal-summary-card.blue > span {
-  background: #edf4ff;
-  color: #1769e0;
-}
-
-.portal-summary-card.green {
-  border-color: #c8e7d4;
-}
-
-.portal-summary-card.green > span {
-  background: #effaf3;
-  color: #26734d;
-}
-
-.portal-summary-card.orange {
-  border-color: #f1dfb5;
-}
-
-.portal-summary-card.orange > span {
-  background: #fff9e9;
-  color: #967221;
-}
-
-.portal-summary-card.red {
-  border-color: #efcccc;
-}
-
-.portal-summary-card.red > span {
-  background: #fff5f5;
-  color: #a63f3f;
-}
-
-/* ==========================================================
-   REPORTE
-========================================================== */
-
-.attendance-portal-report {
-  margin-top: 15px;
-  overflow: hidden;
-  border: 1px solid #dce4ee;
-  border-radius: 15px;
-  background: white;
-  box-shadow:
-    0 5px 22px
-    rgba(24, 51, 84, 0.05);
-}
-
-.attendance-portal-report-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 19px 20px;
-  border-bottom: 1px solid #e3e9f0;
-}
-
-.attendance-portal-report-head > div:first-child > span {
-  color: #1769e0;
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-}
-
-.attendance-portal-report-head h2 {
-  margin: 4px 0 0;
-  color: #183858;
-  font-size: 17px;
-  font-weight: 900;
-}
-
-.attendance-portal-report-head p {
-  margin: 5px 0 0;
-  color: #718198;
-  font-size: 10px;
-}
-
-.attendance-portal-legend {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.attendance-portal-legend > span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #65758b;
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.legend-dot {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.legend-dot.attended {
-  background: #e9f8ef;
-  color: #26734d;
-}
-
-.legend-dot.justified {
-  background: #fff7df;
-  color: #967221;
-}
-
-.legend-dot.absent {
-  background: #fff0f0;
-  color: #a63f3f;
-}
-
-.attendance-portal-categories {
-  padding: 14px;
-}
-
-.attendance-portal-category {
-  margin-bottom: 12px;
-  overflow: hidden;
-  border: 1px solid #e0e7ef;
-  border-radius: 11px;
-}
-
-.attendance-portal-category:last-child {
-  margin-bottom: 0;
-}
-
-.attendance-portal-category-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 13px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f7f9fc;
-}
-
-.attendance-portal-category-title span {
-  color: #274664;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.attendance-portal-category-title small {
-  color: #8392a5;
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.attendance-portal-session-list {
-  background: white;
-}
-
-.attendance-portal-session {
-  display: grid;
-  grid-template-columns:
-    120px
-    minmax(0, 1fr)
-    270px;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 13px;
-  border-bottom: 1px solid #edf1f5;
-}
-
-.attendance-portal-session:last-child {
-  border-bottom: 0;
-}
-
-.attendance-portal-session:hover {
-  background: #fbfdff;
-}
-
-.portal-session-date strong,
-.portal-session-date small,
-.portal-session-info strong,
-.portal-session-info span {
-  display: block;
-}
-
-.portal-session-date strong {
-  color: #284663;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.portal-session-date small {
-  margin-top: 3px;
-  color: #8492a5;
-  font-size: 9px;
-}
-
-.portal-session-info strong {
-  color: #284663;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.portal-session-info span {
-  margin-top: 3px;
-  color: #8492a5;
-  font-size: 9px;
-}
-
-.portal-session-status {
-  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 6px;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
-.portal-status {
-  display: inline-flex;
+.attendance-login-logo {
+  display: block;
+  width: 220px;
+  max-width: 80%;
+  height: auto;
+  margin: 0 0 8px;
+  object-fit: contain;
+}
+
+.attendance-login-kicker {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  min-width: 105px;
-  padding: 6px 8px;
-  border-radius: 7px;
-  font-size: 9px;
-  font-weight: 900;
+  justify-content: center;
+  height: 21px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border: 1px solid rgba(76, 200, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(8, 15, 36, 0.25);
+  color: #4CC8FF;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.45px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.portal-status b {
+.attendance-login-card {
+  width: 440px;
+  max-width: 440px;
+  height: 380px;
+  min-height: 380px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 46px 38px 46px;
+  border: 1px solid rgba(82, 146, 230, 0.28);
+  border-radius: 13px;
+  background:
+    radial-gradient(
+      ellipse 65% 55% at 100% 0%,
+      rgba(45, 80, 153, 0.72) 0%,
+      rgba(45, 80, 153, 0.42) 30%,
+      rgba(45, 80, 153, 0.12) 58%,
+      transparent 82%
+    ),
+    radial-gradient(
+      ellipse 62% 58% at 0% 100%,
+      rgba(45, 80, 153, 0.68) 0%,
+      rgba(45, 80, 153, 0.38) 32%,
+      rgba(45, 80, 153, 0.10) 60%,
+      transparent 84%
+    ),
+    radial-gradient(
+      ellipse 48% 42% at 100% 65%,
+      rgba(27, 58, 115, 0.48) 0%,
+      rgba(27, 58, 115, 0.20) 42%,
+      transparent 78%
+    ),
+    radial-gradient(
+      ellipse 48% 42% at 5% 10%,
+      rgba(14, 27, 58, 0.90) 0%,
+      rgba(14, 27, 58, 0.65) 42%,
+      transparent 82%
+    ),
+    #080F24;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  text-align: left;
+  overflow: hidden;
+}
+
+.attendance-login-header {
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 0;
+  text-align: center;
+}
+
+.attendance-login-header h1 {
+  margin: 0;
+  padding: 0;
+  color: #FFFFFF;
+  font-size: 29px;
+  line-height: 1.2;
+  font-weight: 500;
+  font-family: 'Syne', sans-serif;
+  letter-spacing: -0.5px;
+}
+
+.attendance-login-header p {
+  width: 100%;
+  max-width: 300px;
+  margin: 10px auto 0;
+  padding: 0;
+  color: #AAB9DA;
+  font-family: 'Montserrat', sans-serif; /*[cite: 2] */
+  font-size: 14px; /*[cite: 2] */
+  line-height: 1.65;
+  font-weight: 400; /* Regular[cite: 2] */
+  text-align: center;
+}
+
+.attendance-login-form {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.attendance-login-form label {
+  display: block;
+  margin: 0 0 8px;
+  color: rgba(211, 225, 248, 0.78);
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.attendance-login-input-wrap {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+.attendance-login-input-icon {
+  position: absolute;
+  top: 50%;
+  left: 13px;
   width: 18px;
   height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 5px;
-  font-size: 9px;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
-.portal-status.attended {
-  border: 1px solid #c8e7d4;
-  background: #effaf3;
-  color: #26734d;
-}
-
-.portal-status.attended b {
-  background: #d9f2e2;
-}
-
-.portal-status.presencial {
-  border: 1px solid #c7d9f5;
-  background: #eff5ff;
-  color: #37669a;
-}
-
-.portal-status.presencial b {
-  background: #dce9fb;
-}
-
-.portal-status.justified {
-  border: 1px solid #ead9ae;
-  background: #fffaf0;
-  color: #896c24;
-}
-
-.portal-status.justified b {
-  background: #f9edc9;
-}
-
-.portal-status.absent {
-  border: 1px solid #efcccc;
-  background: #fff5f5;
-  color: #a63f3f;
-}
-
-.portal-status.absent b {
-  background: #f8dddd;
-}
-
-.portal-qr-note {
-  padding: 4px 6px;
-  border-radius: 5px;
-  background: #edf4ff;
-  color: #1769e0;
-  font-size: 8px;
-  font-weight: 900;
-}
-
-.portal-session-note {
-  max-width: 170px;
-  color: #7b8798;
-  font-size: 8px;
-  text-align: right;
-}
-
-.attendance-portal-empty {
-  padding: 45px 20px;
-  color: #8290a2;
+.attendance-login-input-icon span {
+  color: #51C8FF;
   font-size: 11px;
-  text-align: center;
+  line-height: 1;
 }
 
-.attendance-portal-footer {
-  padding: 18px;
-  color: #8290a2;
+.attendance-login-input-wrap input {
+  width: 100%;
+  height: 46px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 12px 0 39px;
+  border: 1px solid rgba(80, 140, 215, 0.20);
+  border-radius: 8px;
+  outline: none;
+  background: #020A1B;
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.attendance-login-input-wrap input::placeholder {
+  color: rgba(176, 197, 227, 0.42);
+}
+
+.attendance-login-input-wrap input:hover {
+  border-color: rgba(80, 140, 215, 0.32);
+}
+
+.attendance-login-input-wrap input:focus {
+  border-color: rgba(74, 187, 255, 0.65);
+  box-shadow:
+    0 0 0 3px rgba(74, 187, 255, 0.08);
+}
+
+.attendance-login-error {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 90, 105, 0.25);
+  background: rgba(150, 20, 40, 0.15);
+  color: #FFB2BA;
   font-size: 9px;
+  line-height: 1.4;
+}
+
+.attendance-login-footer {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 18px;
+  color: #8896B0;
+  font-size: 11px;
+  line-height: 1.3;
   text-align: center;
 }
 
-/* ==========================================================
-   RESPONSIVE
-========================================================== */
+.attendance-login-footer-dot {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  border-radius: 50%;
+  background: #36B8FA;
+  box-shadow:
+    0 0 8px rgba(54, 184, 250, 0.75);
+}
 
-@media (
-  max-width: 850px
-) {
-  .attendance-portal-header {
-    align-items: flex-start;
-    flex-direction: column;
+.attendance-portal-login.attendance-history-login-view * {
+  box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+  .attendance-portal-login.attendance-history-login-view {
+    padding: 20px !important;
   }
 
-  .attendance-portal-actions {
+  .attendance-login-shell {
     width: 100%;
+    max-width: 360px;
   }
 
-  .attendance-portal-actions button {
-    flex: 1;
-  }
-
-  .attendance-portal-summary {
-    grid-template-columns:
-      repeat(2, 1fr);
-  }
-
-  .attendance-portal-session {
-    grid-template-columns: 1fr;
-  }
-
-  .portal-session-status {
-    justify-content: flex-start;
-  }
-
-  .portal-session-note {
-    max-width: none;
-    text-align: left;
+  .attendance-login-card {
+    width: 360px;
+    max-width: 360px;
+    height: 360px;
+    min-height: 360px;
   }
 }
 
-@media (
-  max-width: 560px
-) {
-  .attendance-portal-page {
-    padding: 15px 10px 35px;
+@media (max-width: 480px) {
+  .attendance-portal-login.attendance-history-login-view {
+    padding: 14px !important;
   }
 
-  .attendance-portal-login {
-    margin-top: 25px;
-    padding: 25px 20px;
+  .attendance-login-shell {
+    width: 100%;
+    max-width: 360px;
   }
 
-  .attendance-portal-member {
-    align-items: flex-start;
+  .attendance-login-logo-space {
+    height: 82px;
+    margin-bottom: 13px;
   }
 
-  .attendance-portal-avatar {
-    width: 45px;
-    height: 45px;
+  .attendance-login-card {
+    width: 360px;
+    max-width: 100%;
+    height: 360px;
+    min-height: 360px;
+    padding: 34px 22px 25px;
+  }
+
+  .attendance-login-header {
+    margin-bottom: 23px;
+  }
+
+  .attendance-login-header h1 {
+    font-size: 21px;
+  }
+
+  .attendance-login-header p {
+    font-size: 9px;
+  }
+
+}
+
+@media (max-width: 360px) {
+  .attendance-portal-login.attendance-history-login-view {
+    padding: 10px !important;
+  }
+
+  .attendance-login-shell {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .attendance-login-logo-space {
+    height: 72px;
+  }
+
+  .attendance-login-card {
+    width: 100%;
+    max-width: 100%;
+    height: 360px;
+    min-height: 360px;
+    padding: 30px 18px 22px;
+  }
+
+  .attendance-login-header h1 {
     font-size: 19px;
   }
+}
 
-  .attendance-portal-name-row h1 {
-    font-size: 16px;
+
+@media (max-width: 520px) {
+ 
+  .attendance-login-shell {
+    transform: scale(1) !important;
+    max-width: 100% !important;
   }
 
-  .attendance-portal-actions {
-    flex-direction: column;
+  .attendance-login-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    padding: 28px 20px 22px !important;
+  }
+  .attendance-login-input-wrap {
+    margin-bottom: 12px !important;
   }
 
-  .attendance-portal-summary {
-    grid-template-columns: 1fr;
+  .attendance-login-input-wrap input {
+    height: 44px;
   }
 
-  .attendance-portal-monthbar {
-    gap: 6px;
+  .attendance-login-tailwind-button {
+    width: 100% !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    margin-top: 12px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 
-  .attendance-portal-monthbar > div {
-    min-width: 145px;
-  }
+}
+/* El botón de Consultar asistencia se controla directamente en AttendancePortal.jsx. */
 
-  .attendance-portal-report-head {
-    flex-direction: column;
-  }
 
-  .attendance-portal-legend {
-    flex-wrap: wrap;
+/* Layout limpio: el campo DNI y el botón ocupan exactamente el mismo ancho y nunca se superponen. */
+.attendance-login-form .attendance-login-tailwind-button {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 12px 0 0 0;
+  flex: 0 0 auto;
+  transform: none;
+}
+
+.attendance-login-form .attendance-login-tailwind-button:hover {
+  transform: none;
+}
+
+.attendance-login-form .attendance-login-input-wrap input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+/* Error de DNI: en lugar de mostrar un aviso que desplaza el formulario,
+   el botón se vuelve rojo, sacude y luego recupera su apariencia normal. */
+.attendance-login-form .attendance-login-button-invalid {
+  background: #D92D20 !important;
+  color: #FFFFFF !important;
+  border-color: #D92D20 !important;
+  animation: attendance-login-button-shake 0.58s ease-in-out;
+}
+
+.attendance-login-form .attendance-login-button-invalid span {
+  color: #FFFFFF !important;
+}
+
+@keyframes attendance-login-button-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-7px); }
+  30% { transform: translateX(7px); }
+  45% { transform: translateX(-6px); }
+  60% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+  90% { transform: translateX(3px); }
+}
+
+/* =========================================================
+   CORRECCIÓN FINAL — BOTÓN CONSULTAR ASISTENCIA
+   No modifica el resto del portal.
+   ========================================================= */
+.attendance-login-form .attendance-login-tailwind-button {
+  position: relative;
+  width: 100%;
+  height: 46px;
+  min-height: 46px;
+  margin: 12px 0 0 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(107, 217, 255, 0.50);
+  background:
+    radial-gradient(
+      ellipse 45% 55% at 78% 8%,
+      rgba(255,255,255,0.95) 0%,
+      rgba(255,255,255,0.65) 14%,
+      rgba(255,255,255,0.25) 32%,
+      rgba(255,255,255,0) 65%
+    ),
+    linear-gradient(90deg, #3F77B2 0%, #6BD9FF 71%, #6BD9FF 100%);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+  color: #080F24;
+  cursor: pointer;
+  transition: filter 200ms ease, opacity 200ms ease;
+}
+
+.attendance-login-form .attendance-login-tailwind-button:hover {
+  filter: brightness(1.05);
+}
+
+.attendance-login-form .attendance-login-tailwind-button:active {
+  filter: brightness(0.95);
+}
+
+.attendance-login-form .attendance-login-tailwind-button span {
+  position: relative;
+  z-index: 2;
+  color: #080F24 !important;
+}
+
+.attendance-login-form .attendance-login-tailwind-button.attendance-login-button-invalid {
+  background: #D92D20 !important;
+  background-image: none !important;
+  border-color: #D92D20 !important;
+  color: #FFFFFF !important;
+  animation: attendance-login-button-shake 0.58s ease-in-out 1;
+}
+
+.attendance-login-form .attendance-login-tailwind-button.attendance-login-button-invalid span {
+  color: #FFFFFF !important;
+}
+
+@keyframes attendance-login-button-shake {
+  0% { transform: translateX(0); }
+  12% { transform: translateX(-8px); }
+  24% { transform: translateX(8px); }
+  36% { transform: translateX(-7px); }
+  48% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  72% { transform: translateX(5px); }
+  84% { transform: translateX(-2px); }
+  92% { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
+
+@media (max-width: 520px) {
+  .attendance-login-form .attendance-login-tailwind-button {
+    width: 100% !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    margin: 12px 0 0 0 !important;
   }
 }

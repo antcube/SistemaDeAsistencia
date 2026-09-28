@@ -172,7 +172,41 @@ const createCircle = async (
         },
       });
 
+    /*
+     * Si ya existe un círculo con ese nombre pero está
+     * inactivo, lo reactivamos en lugar de crear un segundo
+     * documento con el mismo nombre.
+     *
+     * Esto permite eliminar/desactivar un círculo y después
+     * volver a crear uno con el mismo nombre sin romper el
+     * índice unique de MongoDB ni duplicar referencias.
+     */
     if (existingCircle) {
+      if (!existingCircle.active) {
+        existingCircle.active = true;
+
+        const circle =
+          await existingCircle.save();
+
+        try {
+          await ensureDefaultSchedules([
+            normalizedName,
+          ]);
+        } catch (scheduleError) {
+          console.error(
+            "Error asegurando programaciones predeterminadas al reactivar el círculo:",
+            scheduleError
+          );
+        }
+
+        return res.status(200).json({
+          ...circle.toObject(),
+          reactivated: true,
+          message:
+            `Círculo "${normalizedName}" reactivado correctamente.`,
+        });
+      }
+
       return res.status(409).json({
         message:
           "Ya existe un círculo con ese nombre",

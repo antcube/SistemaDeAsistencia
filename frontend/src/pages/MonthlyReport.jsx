@@ -1,4 +1,3 @@
-
 import {
   useCallback,
   useEffect,
@@ -156,6 +155,51 @@ const formatSessionHeader = (
   return date;
 };
 
+
+const formatSessionTime = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  const raw = String(value).trim().toUpperCase();
+
+  // Ya viene con AM/PM: normalizamos el formato.
+  const meridiemMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/);
+  if (meridiemMatch) {
+    let hour = Number(meridiemMatch[1]);
+    const minutes = meridiemMatch[2];
+    const meridiem = meridiemMatch[3];
+
+    if (!Number.isFinite(hour) || hour < 1 || hour > 12) {
+      return raw;
+    }
+
+    return `${hour}:${minutes} ${meridiem}`;
+  }
+
+  // Formato 24 horas: HH:mm o H:mm.
+  const timeMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (timeMatch) {
+    const hour24 = Number(timeMatch[1]);
+    const minutes = timeMatch[2];
+
+    if (
+      !Number.isFinite(hour24) ||
+      hour24 < 0 ||
+      hour24 > 23
+    ) {
+      return raw;
+    }
+
+    const meridiem = hour24 >= 12 ? "PM" : "AM";
+    const hour12 = hour24 % 12 || 12;
+
+    return `${hour12}:${minutes} ${meridiem}`;
+  }
+
+  return raw;
+};
+
 const MonthlyReport = () => {
   const today = new Date();
   const { admin } = useAuth();
@@ -186,6 +230,12 @@ const MonthlyReport = () => {
   const [availableCircles, setAvailableCircles] =
     useState([]);
 
+  // Evita que la primera consulta del reporte se haga con
+  // circle="" y termine cargando todos los círculos antes de
+  // seleccionar automáticamente el primero correspondiente.
+  const [circlesReady, setCirclesReady] =
+    useState(false);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -214,7 +264,7 @@ const MonthlyReport = () => {
             ? response.data
             : [];
 
-        const names = [
+        const apiNames = [
           ...new Set(
             list
               .map((item) =>
@@ -231,14 +281,59 @@ const MonthlyReport = () => {
 
         if (cancelled) return;
 
+        /*
+         * Para un Gestor de Círculo respetamos EXACTAMENTE el orden
+         * de circleScope. De esta forma, el primer círculo asignado
+         * al gestor es también el primero que se carga al entrar.
+         *
+         * Para el Administrador Principal usamos el orden de círculos
+         * que entrega el backend y también seleccionamos el primero.
+         */
+        const normalizeCircleName = (value) =>
+          String(value || "")
+            .trim()
+            .toUpperCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+
+        let names = apiNames;
+
+        if (isCircleManager) {
+          const scope = Array.isArray(admin?.circleScope)
+            ? admin.circleScope
+                .map((item) => String(item || "").trim())
+                .filter(Boolean)
+            : admin?.circleScope
+            ? [String(admin.circleScope).trim()]
+            : [];
+
+          const apiByNormalizedName = new Map(
+            apiNames.map((name) => [
+              normalizeCircleName(name),
+              name,
+            ])
+          );
+
+          names = [
+            ...new Set(
+              scope
+                .map((scopeName) =>
+                  apiByNormalizedName.get(
+                    normalizeCircleName(scopeName)
+                  )
+                )
+                .filter(Boolean)
+            ),
+          ];
+        }
+
         setAvailableCircles(names);
 
         // ======================================================
         // CÍRCULO INICIAL
         // ======================================================
-        // La primera carga NUNCA debe quedar en "Todos los círculos".
-        // Se toma el primer círculo en el mismo orden en que el backend
-        // entrega los círculos disponibles para el usuario.
+        // La primera carga NUNCA debe consultar todos los círculos.
+        // Siempre seleccionamos primero el círculo correspondiente.
         // Si el usuario ya estaba en un círculo válido, lo conservamos.
         setCircle((current) => {
           const currentName =
@@ -246,13 +341,19 @@ const MonthlyReport = () => {
 
           if (
             currentName &&
-            names.includes(currentName)
+            names.some(
+              (name) =>
+                normalizeCircleName(name) ===
+                normalizeCircleName(currentName)
+            )
           ) {
             return currentName;
           }
 
           return names[0] || "";
         });
+
+        setCirclesReady(true);
       } catch (err) {
         console.error(
           "Error cargando círculos del reporte:",
@@ -261,6 +362,8 @@ const MonthlyReport = () => {
 
         if (!cancelled) {
           setAvailableCircles([]);
+          setCircle("");
+          setCirclesReady(true);
         }
       }
     };
@@ -276,15 +379,27 @@ const MonthlyReport = () => {
     useCallback(
       async () => {
         /*
-         * Un Gestor de Círculo necesita un círculo
-         * seleccionado. Evitamos enviar una consulta
-         * vacía que el backend rechaza correctamente.
+         * IMPORTANTE:
+         *
+         * No hacemos la primera consulta mientras todavía estamos
+         * cargando los círculos y determinando el círculo inicial.
+         *
+         * Antes esto provocaba exactamente el problema de la captura:
+         * el primer request salía con circle="" y el backend del
+         * Administrador Principal interpretaba eso como "todos los
+         * círculos". Después llegaba el círculo inicial y se hacía
+         * una segunda consulta.
+         *
+         * Ahora el reporte espera hasta tener seleccionado el primer
+         * círculo y solamente entonces hace la consulta.
          */
-        if (
-          isCircleManager &&
-          !String(circle || "").trim()
-        ) {
+        if (!circlesReady) {
+          return;
+        }
+
+        if (!String(circle || "").trim()) {
           setLoading(false);
+          setReport(null);
           return;
         }
 
@@ -323,6 +438,7 @@ const MonthlyReport = () => {
         month,
         circle,
         isCircleManager,
+        circlesReady,
       ]
     );
 
@@ -706,7 +822,6 @@ const MonthlyReport = () => {
         properties: { defaultRowHeight: 20 },
       });
 
-      worksheet.sheetView.showGridLines = false;
 
       const sessionColumns = [];
       visibleCategories.forEach((category) => {
@@ -721,6 +836,7 @@ const MonthlyReport = () => {
         "USUARIO",
         "CÍRCULO",
         "RANGO / CARGO",
+        "FECHA CAMBIO RANGO",
         "CORREO",
         "TELÉFONO",
       ];
@@ -876,17 +992,84 @@ const MonthlyReport = () => {
         cell.value = header;
       });
 
-      sessionColumns.forEach(({ category, session }, index) => {
-        const col = baseHeaders.length + index + 1;
-        const categoryCell = worksheet.getCell(headerTopRow, col);
-        categoryCell.value = CATEGORY_LABELS[category] || category;
+      // ==========================================================
+// ENCABEZADO DE SESIONES
+// La categoría se muestra UNA SOLA VEZ y se combina
+// horizontalmente sobre todas sus fechas.
+// ==========================================================
 
-        const sessionCell = worksheet.getCell(headerBottomRow, col);
-        sessionCell.value = `${formatSessionHeader(session)}${
-          session.time ? `\n${session.time}` : ""
-        }`;
-      });
+// Primero colocamos las fechas individuales.
+sessionColumns.forEach(({ session }, index) => {
+  const col = baseHeaders.length + index + 1;
 
+  const sessionCell = worksheet.getCell(
+    headerBottomRow,
+    col
+  );
+
+  sessionCell.value = `${formatSessionHeader(session)}${
+    session.time
+      ? `\n${formatSessionTime(session.time)}`
+      : ""
+  }`;
+});
+
+// Agrupamos las columnas consecutivas que pertenecen
+// a la misma categoría.
+let categoryStartIndex = 0;
+
+while (
+  categoryStartIndex <
+  sessionColumns.length
+) {
+  const currentCategory =
+    sessionColumns[categoryStartIndex].category;
+
+  let categoryEndIndex =
+    categoryStartIndex;
+
+  while (
+    categoryEndIndex + 1 <
+      sessionColumns.length &&
+    sessionColumns[
+      categoryEndIndex + 1
+    ].category === currentCategory
+  ) {
+    categoryEndIndex += 1;
+  }
+
+  const startCol =
+    baseHeaders.length +
+    categoryStartIndex +
+    1;
+
+  const endCol =
+    baseHeaders.length +
+    categoryEndIndex +
+    1;
+
+  if (endCol > startCol) {
+    worksheet.mergeCells(
+      headerTopRow,
+      startCol,
+      headerTopRow,
+      endCol
+    );
+  }
+
+  const categoryCell =
+    worksheet.getCell(
+      headerTopRow,
+      startCol
+    );
+
+  categoryCell.value =
+    CATEGORY_LABELS[currentCategory] ||
+    currentCategory;
+
+  categoryStartIndex =
+    categoryEndIndex + 1;
+}
       const summaryStart = baseHeaders.length + sessionColumns.length + 1;
       worksheet.mergeCells(
         headerTopRow,
@@ -924,7 +1107,6 @@ const MonthlyReport = () => {
         }
       }
 
-      // Las sesiones tienen el mismo color de categoría que la web.
       sessionColumns.forEach(({ category }, index) => {
         const col = baseHeaders.length + index + 1;
         const categoryColor = categoryColors[category] || COLORS.night;
@@ -987,6 +1169,7 @@ const MonthlyReport = () => {
           directory?.username || "",
           member?.circle || directory?.circle || "",
           directory?.rank || directory?.job || "",
+          directory?.rangeChangeDate || member?.rangeChangeDate || "",
           directory?.email || "",
           directory?.phone || "",
         ];
@@ -994,6 +1177,13 @@ const MonthlyReport = () => {
         values.forEach((value, index) => {
           const cell = worksheet.getCell(row, index + 1);
           cell.value = value;
+          if (index === 5 && value) {
+            const parsedDate = value instanceof Date ? value : new Date(value);
+            if (!Number.isNaN(parsedDate.getTime())) {
+              cell.value = parsedDate;
+              cell.numFmt = "dd/mm/yyyy";
+            }
+          }
           cell.font = {
             name: FONT,
             size: 9,
@@ -1131,6 +1321,7 @@ const MonthlyReport = () => {
         18, // USUARIO
         20, // CÍRCULO
         20, // RANGO / CARGO
+        18, // FECHA CAMBIO RANGO
         30, // CORREO
         17, // TELÉFONO
       ];
@@ -1203,7 +1394,6 @@ const MonthlyReport = () => {
       const winnerSheet = workbook.addWorksheet("Ganadores del Bono", {
         views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
       });
-      winnerSheet.sheetView.showGridLines = false;
 
       const winnerHeaders = [
         "DNI",
@@ -1211,6 +1401,7 @@ const MonthlyReport = () => {
         "USUARIO",
         "CÍRCULO",
         "RANGO / CARGO",
+        "FECHA CAMBIO RANGO",
         "CORREO",
         "TELÉFONO",
         "ASISTENCIAS",
@@ -1292,6 +1483,7 @@ const MonthlyReport = () => {
           directory?.username || "",
           member?.circle || directory?.circle || "",
           directory?.rank || directory?.job || "",
+          directory?.rangeChangeDate || member?.rangeChangeDate || "",
           directory?.email || "",
           directory?.phone || "",
           totals.attended,
@@ -1303,6 +1495,13 @@ const MonthlyReport = () => {
         values.forEach((value, colIndex) => {
           const cell = winnerSheet.getCell(row, colIndex + 1);
           cell.value = value;
+          if (colIndex === 5 && value) {
+            const parsedDate = value instanceof Date ? value : new Date(value);
+            if (!Number.isNaN(parsedDate.getTime())) {
+              cell.value = parsedDate;
+              cell.numFmt = "dd/mm/yyyy";
+            }
+          }
           cell.font = {
             name: FONT,
             size: 9,
@@ -1348,7 +1547,7 @@ const MonthlyReport = () => {
         };
       });
 
-      [12, 34, 18, 20, 20, 30, 17, 13, 10, 15, 14].forEach(
+      [12, 34, 18, 20, 20, 18, 30, 17, 13, 10, 15, 14].forEach(
         (width, index) => {
           winnerSheet.getColumn(index + 1).width = width;
         }
@@ -1732,7 +1931,9 @@ const MonthlyReport = () => {
                           className="report-session-header"
                           title={`${session.title || ""}${
                             session.time
-                              ? ` · ${session.time}`
+                              ? ` · ${formatSessionTime(
+                                  session.time
+                                )}`
                               : ""
                           }${
                             session.circle
@@ -1749,7 +1950,9 @@ const MonthlyReport = () => {
                           {session.time && (
                             <small>
                               {
-                                session.time
+                                formatSessionTime(
+                                  session.time
+                                )
                               }
                             </small>
                           )}

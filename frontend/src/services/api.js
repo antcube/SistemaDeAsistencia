@@ -57,6 +57,12 @@ const api = {
       body: JSON.stringify(body),
     }),
 
+  patch: (endpoint, body) =>
+    request(endpoint, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
   delete: (endpoint) =>
     request(endpoint, {
       method: "DELETE",

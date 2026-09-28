@@ -22,11 +22,123 @@ const hasCirclePermission = (req, circle) => {
   return canManageCircle(req.user, circle);
 };
 
-/**
- * ============================================================
- * LISTAR MIEMBROS
- * ============================================================
- */
+const parseDateOnly = (value) => {
+  if (!value) return null;
+
+  const text = String(value).trim();
+  if (!text) return null;
+
+  const date = new Date(`${text}T00:00:00.000Z`);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
+};
+
+const getAdminName = (req) => {
+  const admin = req.user || req.admin;
+  return String(
+    admin?.name ||
+    admin?.adminId ||
+    "Sistema"
+  ).trim();
+};
+
+const applyRangeHistoryChange = ({
+  user,
+  previousRange,
+  previousRangeChangeDate,
+  newRange,
+  newRangeChangeDate,
+  changedBy,
+  isCreate = false,
+}) => {
+  const normalizedPrevious = String(previousRange || "").trim();
+  const normalizedNew = String(newRange || "").trim();
+
+  if (!normalizedNew) {
+    user.rangeChangeDate = null;
+    if (isCreate) {
+      user.rangeHistory = [];
+    }
+    return;
+  }
+
+  let effectiveDate = newRangeChangeDate
+    ? parseDateOnly(newRangeChangeDate)
+    : null;
+
+  if (!effectiveDate) {
+    effectiveDate = previousRangeChangeDate || new Date();
+  }
+
+  if (!Array.isArray(user.rangeHistory)) {
+    user.rangeHistory = [];
+  }
+
+  if (isCreate) {
+    user.rangeChangeDate = effectiveDate;
+    user.rangeHistory = [
+      {
+        range: normalizedNew,
+        startDate: effectiveDate,
+        endDate: null,
+        changedBy,
+      },
+    ];
+    return;
+  }
+
+  const rangeChanged =
+    normalizedPrevious !== normalizedNew;
+
+  if (!rangeChanged) {
+    user.rangeChangeDate = effectiveDate;
+
+    const currentEntry =
+      user.rangeHistory
+        .slice()
+        .reverse()
+        .find((entry) => !entry.endDate);
+
+    if (currentEntry) {
+      currentEntry.range = normalizedNew;
+      currentEntry.startDate = effectiveDate;
+      currentEntry.changedBy = changedBy || currentEntry.changedBy || "";
+    } else {
+      user.rangeHistory.push({
+        range: normalizedNew,
+        startDate: effectiveDate,
+        endDate: null,
+        changedBy,
+      });
+    }
+
+    return;
+  }
+
+  const currentEntry =
+    user.rangeHistory
+      .slice()
+      .reverse()
+      .find((entry) => !entry.endDate);
+
+  if (currentEntry) {
+    currentEntry.endDate = effectiveDate;
+  }
+
+  user.rangeHistory.push({
+    range: normalizedNew,
+    startDate: effectiveDate,
+    endDate: null,
+    changedBy,
+  });
+
+  user.rangeChangeDate = effectiveDate;
+};
+
 const getUsers = async (req, res) => {
   try {
     const {
@@ -148,11 +260,6 @@ const getUsers = async (req, res) => {
   }
 };
 
-/**
- * ============================================================
- * OBTENER MIEMBRO POR ID
- * ============================================================
- */
 const getUserById = async (req, res) => {
   try {
     const user =
@@ -193,11 +300,51 @@ const getUserById = async (req, res) => {
   }
 };
 
-/**
- * ============================================================
- * CREAR MIEMBRO
- * ============================================================
- */
+const getRangeHistory = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select(
+      "_id doc name circle job rangeChangeDate rangeHistory"
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Miembro no encontrado.",
+      });
+    }
+
+    if (!hasCirclePermission(req, user.circle)) {
+      return res.status(403).json({
+        message: "No tienes permisos para consultar este miembro.",
+      });
+    }
+
+    const history = Array.isArray(user.rangeHistory)
+      ? user.rangeHistory
+      : [];
+
+    return res.json({
+      user: {
+        _id: user._id,
+        doc: user.doc,
+        name: user.name,
+        circle: user.circle,
+        job: user.job,
+        rangeChangeDate: user.rangeChangeDate,
+      },
+      history,
+    });
+  } catch (error) {
+    console.error(
+      "Error obteniendo historial de rangos:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Error obteniendo el historial de rangos.",
+    });
+  }
+};
+
 const createUser = async (req, res) => {
   try {
     const {
@@ -206,6 +353,7 @@ const createUser = async (req, res) => {
       username = "",
       circle,
       job = "",
+      rangeChangeDate = "",
       email = "",
       phone = "",
     } = req.body;
@@ -268,6 +416,18 @@ const createUser = async (req, res) => {
         phone: phone.trim(),
       });
 
+    applyRangeHistoryChange({
+      user,
+      previousRange: "",
+      previousRangeChangeDate: null,
+      newRange: user.job,
+      newRangeChangeDate: rangeChangeDate,
+      changedBy: getAdminName(req),
+      isCreate: true,
+    });
+
+    await user.save();
+
     await createAuditLog({
       admin: req.user || req.admin,
       action: "CREATE_MEMBER",
@@ -300,10 +460,6 @@ const createUser = async (req, res) => {
       error
     );
 
-    /*
-     * Protección adicional contra carreras
-     * con el índice unique de MongoDB.
-     */
     if (
       error.code === 11000
     ) {
@@ -320,11 +476,7 @@ const createUser = async (req, res) => {
   }
 };
 
-/**
- * ============================================================
- * ACTUALIZAR MIEMBRO
- * ============================================================
- */
+
 const updateUser = async (req, res) => {
   try {
     const user =
@@ -339,11 +491,6 @@ const updateUser = async (req, res) => {
       });
     }
 
-    /*
-     * Para cambiar un miembro de círculo,
-     * necesitamos permiso tanto sobre el círculo
-     * actual como sobre el nuevo.
-     */
     if (
       !hasCirclePermission(
         req,
@@ -362,6 +509,15 @@ const updateUser = async (req, res) => {
       username: user.username,
       circle: user.circle,
       job: user.job,
+      rangeChangeDate: user.rangeChangeDate,
+      rangeHistory: Array.isArray(user.rangeHistory)
+        ? user.rangeHistory.map((entry) => ({
+            range: entry.range,
+            startDate: entry.startDate,
+            endDate: entry.endDate,
+            changedBy: entry.changedBy,
+          }))
+        : [],
       email: user.email,
       phone: user.phone,
     };
@@ -372,6 +528,7 @@ const updateUser = async (req, res) => {
       username,
       circle,
       job,
+      rangeChangeDate,
       email,
       phone,
     } = req.body;
@@ -457,6 +614,17 @@ const updateUser = async (req, res) => {
         String(phone).trim();
     }
 
+    if (job !== undefined || rangeChangeDate !== undefined) {
+      applyRangeHistoryChange({
+        user,
+        previousRange: previousUser.job,
+        previousRangeChangeDate: previousUser.rangeChangeDate,
+        newRange: user.job,
+        newRangeChangeDate: rangeChangeDate,
+        changedBy: getAdminName(req),
+      });
+    }
+
     await user.save();
 
     const currentUser = {
@@ -465,6 +633,15 @@ const updateUser = async (req, res) => {
       username: user.username,
       circle: user.circle,
       job: user.job,
+      rangeChangeDate: user.rangeChangeDate,
+      rangeHistory: Array.isArray(user.rangeHistory)
+        ? user.rangeHistory.map((entry) => ({
+            range: entry.range,
+            startDate: entry.startDate,
+            endDate: entry.endDate,
+            changedBy: entry.changedBy,
+          }))
+        : [],
       email: user.email,
       phone: user.phone,
     };
@@ -511,18 +688,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-/**
- * ============================================================
- * ELIMINAR MIEMBRO
- * ============================================================
- *
- * Eliminar un miembro NO elimina:
- * - reuniones
- * - asistencias históricas
- * - registros de asistencia
- *
- * Solamente elimina el registro del miembro.
- */
 const deleteUser = async (req, res) => {
   try {
     const user =
@@ -585,10 +750,136 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const deleteUsersByCircle = async (req, res) => {
+  try {
+    if (!hasGlobalPermission(req)) {
+      return res.status(403).json({
+        message:
+          "Solo el Administrador Principal puede eliminar miembros.",
+      });
+    }
+
+    const circleName = decodeURIComponent(
+      String(req.params.circleName || "").trim()
+    );
+
+    if (!circleName) {
+      return res.status(400).json({
+        message:
+          "El círculo es obligatorio.",
+      });
+    }
+
+    const circle = await Circle.findOne({
+      name: {
+        $regex: `^${circleName.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}$`,
+        $options: "i",
+      },
+    });
+
+    if (!circle) {
+      return res.status(404).json({
+        message:
+          "Círculo no encontrado.",
+      });
+    }
+
+    const members = await User.find({
+      circle: circle.name,
+    }).select(
+      "_id doc name username circle job rangeChangeDate rangeHistory email phone"
+    );
+
+    if (!members.length) {
+      return res.json({
+        message:
+          "El círculo no tiene miembros para eliminar.",
+        deletedCount: 0,
+        circle: circle.name,
+      });
+    }
+
+    const memberSnapshots = members.map((member) => ({
+      userId: String(member._id),
+      doc: member.doc || "",
+      name: member.name || "",
+      username: member.username || "",
+      circle: member.circle || "",
+      job: member.job || "",
+      rangeChangeDate: member.rangeChangeDate || null,
+      rangeHistory: Array.isArray(member.rangeHistory)
+        ? member.rangeHistory.map((entry) => ({
+            range: entry.range,
+            startDate: entry.startDate,
+            endDate: entry.endDate,
+            changedBy: entry.changedBy,
+          }))
+        : [],
+      email: member.email || "",
+      phone: member.phone || "",
+    }));
+
+    const result = await User.deleteMany({
+      circle: circle.name,
+    });
+
+    // La eliminación de miembros no debe fallar si la bitácora
+    // presenta un problema. Los miembros ya fueron eliminados
+    // correctamente y el círculo, reuniones y asistencias históricas
+    // deben permanecer intactos.
+    try {
+      await createAuditLog({
+        admin: req.user || req.admin,
+        action: "DELETE_CIRCLE_MEMBERS",
+        module: "members",
+        description:
+          `Se eliminaron ${result.deletedCount} miembro(s) del círculo ${circle.name}. El círculo, sus reuniones y sus asistencias históricas permanecen intactos.`,
+        targetId: circle._id,
+        targetName: circle.name,
+        circle: circle.name,
+        metadata: {
+          circleId: String(circle._id),
+          circleName: circle.name,
+          deletedCount: result.deletedCount,
+          members: memberSnapshots,
+          circlePreserved: true,
+          meetingsPreserved: true,
+          attendanceHistoryPreserved: true,
+        },
+      });
+    } catch (auditError) {
+      console.error(
+        "Error guardando bitácora de eliminación masiva:",
+        auditError
+      );
+    }
+
+    return res.json({
+      message:
+        `${result.deletedCount} miembro(s) eliminado(s) correctamente del círculo.`,
+      deletedCount: result.deletedCount,
+      circle: circle.name,
+    });
+  } catch (error) {
+    console.error(
+      "Error eliminando todos los miembros del círculo:",
+      error
+    );
+
+    return res.status(500).json({
+      message:
+        error?.message ||
+        "Error eliminando los miembros del círculo.",
+    });
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
+  getRangeHistory,
   createUser,
   updateUser,
   deleteUser,
+  deleteUsersByCircle,
 };
