@@ -1,58 +1,37 @@
-const express = require("express");
-const multer = require("multer");
+    const express = require("express");
+    const multer = require("multer");
 
-const {
-  importUsers,
-  previewUsers,
-  downloadUsersTemplate,
-} = require("../controllers/importController");
+    const {
+      importUsers,
+      previewUsers,
+      commitUsers,
+      downloadUsersTemplate,
+    } = require("../controllers/importController");
 
-const authMiddleware = require("../middleware/authMiddleware");
+    const authMiddleware = require("../middleware/authMiddleware");
+    const router = express.Router();
 
-const router = express.Router();
+    const upload = multer({
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        const allowed = [
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "application/vnd.ms-excel",
+          "application/octet-stream",
+        ];
 
-const upload = multer({
-  storage: multer.memoryStorage(),
+        const extension = String(file.originalname || "").toLowerCase();
+        const isExcelExtension = extension.endsWith(".xlsx") || extension.endsWith(".xls");
 
-  limits: {
-    fileSize: 10 * 1024 * 1024,
-  },
+        if (allowed.includes(file.mimetype) || isExcelExtension) cb(null, true);
+        else cb(new Error("Solo se permiten archivos Excel (.xlsx o .xls)."));
+      },
+    });
 
-  fileFilter: (req, file, cb) => {
-    const allowed = [
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.ms-excel",
-    ];
+    router.get("/users/template", authMiddleware, downloadUsersTemplate);
+    router.post("/users/preview", authMiddleware, upload.single("file"), previewUsers);
+    router.post("/users/commit", authMiddleware, express.json({ limit: "2mb" }), commitUsers);
+    router.post("/users", authMiddleware, upload.single("file"), importUsers);
 
-    if (allowed.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Solo se permiten archivos Excel."));
-    }
-  },
-});
-
-// Administrador y Gestor pueden descargar la plantilla.
-router.get(
-  "/users/template",
-  authMiddleware,
-  downloadUsersTemplate
-);
-
-router.post(
-  "/users/preview",
-  authMiddleware,
-  upload.single("file"),
-  previewUsers
-);
-
-// Administrador: todos los círculos.
-// Gestor: únicamente sus círculos.
-router.post(
-  "/users",
-  authMiddleware,
-  upload.single("file"),
-  importUsers
-);
-
-module.exports = router;
+    module.exports = router;

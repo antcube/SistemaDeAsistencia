@@ -6,6 +6,9 @@ require("dotenv").config();
 const connectDatabase =
   require("./config/database");
 
+const memberMigrationRoutes =
+  require("./routes/memberMigrationRoutes");
+
 const adminRoutes =
   require("./routes/adminRoutes");
 
@@ -68,6 +71,12 @@ app.use(
   "/api/circles",
   circleRoutes
 );
+
+app.use(
+  "/api/member-migrations",
+  memberMigrationRoutes
+);
+
 
 app.use(
   "/api/attendance",

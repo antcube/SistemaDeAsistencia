@@ -3,7 +3,7 @@ import { MEETING_TYPES, WEEKDAYS } from "../../constants/meetings";
 
 const EMPTY_FORM = {
   type: "CIRCULO DE LIDERAZGO",
-  title: "",
+  title: "CÍRCULO DE LIDERAZGO",
   circles: [],
   host: "",
   scheduleMode: "DATE",
@@ -11,7 +11,7 @@ const EMPTY_FORM = {
   weekdays: [],
   time: "09:00",
   endTime: "10:00",
-  location: "Sala Magna / Enlace Virtual",
+  location: "",
 };
 
 const getCircleName = (circle) => {
@@ -27,6 +27,23 @@ const getToday = () => {
   const day = String(today.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+};
+
+const getMeetingTitle = (type) => {
+  switch (type) {
+    case "HEALTH":
+      return "HEALTH";
+    case "MENTORIA":
+      return "MENTORÍA";
+    case "MASTERCLASS":
+      return "MASTERCLASS";
+    case "ANUNCIOS CORPORATIVOS":
+      return "ANUNCIOS CORPORATIVOS";
+    case "CIRCULO DE LIDERAZGO":
+      return "CÍRCULO DE LIDERAZGO";
+    default:
+      return String(type || "").trim();
+  }
 };
 
 const getSuggestedValues = (type) => {
@@ -211,18 +228,7 @@ const MeetingForm = ({
        * El título queda automáticamente definido
        * según el tipo.
        */
-      title:
-        type === "ANUNCIOS CORPORATIVOS"
-          ? "ANUNCIOS CORPORATIVOS"
-          : type === "HEALTH"
-          ? "HEALTH"
-          : type === "MENTORIA"
-          ? "MENTORÍA"
-          : type === "MASTERCLASS"
-          ? "MASTERCLASS"
-          : type === "CIRCULO DE LIDERAZGO"
-          ? "CÍRCULO DE LIDERAZGO"
-          : current.title || suggested.title,
+      title: getMeetingTitle(type),
 
       time:
         current.time === "09:00"
@@ -284,10 +290,6 @@ const MeetingForm = ({
       return "Selecciona al menos un día de la semana.";
     }
 
-    if (!form.host.trim()) {
-      return "Completa el campo Moderador / Líder.";
-    }
-
     if (!form.time) {
       return "Selecciona la hora de inicio.";
     }
@@ -303,9 +305,6 @@ const MeetingForm = ({
     /*
      * Todos los tipos tienen título automático.
      */
-    if (!form.title.trim()) {
-      return "Completa el título de la reunión.";
-    }
 
     return "";
   };
@@ -337,22 +336,13 @@ const MeetingForm = ({
       await onSubmit({
         ...form,
 
-        title:
-          form.type === "ANUNCIOS CORPORATIVOS"
-            ? "ANUNCIOS CORPORATIVOS"
-            : form.type === "HEALTH"
-            ? "HEALTH"
-            : form.type === "MENTORIA"
-            ? "MENTORÍA"
-            : form.type === "MASTERCLASS"
-            ? "MASTERCLASS"
-            : form.type === "CIRCULO DE LIDERAZGO"
-            ? "CÍRCULO DE LIDERAZGO"
-            : form.title.trim(),
+        // El nombre se obtiene automáticamente del tipo de reunión.
+        title: getMeetingTitle(form.type),
 
-        host: form.host.trim(),
-
-        location: form.location.trim(),
+        // En una nueva reunión estos campos quedan vacíos.
+        // Si se edita una reunión existente, se conservan.
+        host: meeting ? form.host.trim() : "",
+        location: meeting ? form.location.trim() : "",
 
         circles: effectiveCircles,
 
@@ -441,44 +431,14 @@ const MeetingForm = ({
               </select>
 
               <p className="mt-1 text-[10px] leading-4 text-slate-400">
-                Las sesiones pueden programarse en cualquier día y
-                hora. Los horarios habituales solo se usan como
-                sugerencia.
+                El nombre de la reunión se genera automáticamente según el tipo seleccionado.
+                Los horarios habituales solo se usan como sugerencia.
               </p>
             </div>
 
-            {/* TITULO */}
+
+            {/* CIRCULOS */}
             <div>
-              <label className="mb-1 block font-semibold text-slate-700">
-                Título de la Reunión{" "}
-                <span className="text-rose-500">*</span>
-              </label>
-
-              <input
-                type="text"
-                value={form.title}
-                onChange={(event) =>
-                  updateField(
-                    "title",
-                    event.target.value
-                  )
-                }
-                disabled={
-                  submitting ||
-                  form.type === "ANUNCIOS CORPORATIVOS"
-                }
-                placeholder="Nombre de la sesión"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#3f6fcb] focus:ring-2 focus:ring-[#2457c5]/15 disabled:bg-slate-50"
-              />
-
-              <p className="mt-1 text-[10px] text-slate-400">
-                El nombre se establece automáticamente según el tipo
-                de reunión.
-              </p>
-            </div>
-
-            {/* CIRCULOS + HOST */}
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
                 <label className="mb-1 block font-semibold text-slate-700">
                   Círculo Convocado{" "}
@@ -524,27 +484,6 @@ const MeetingForm = ({
                     Usa Ctrl/Cmd para seleccionar varios.
                   </p>
                 )}
-              </div>
-
-              <div>
-                <label className="mb-1 block font-semibold text-slate-700">
-                  Moderador / Líder{" "}
-                  <span className="text-rose-500">*</span>
-                </label>
-
-                <input
-                  type="text"
-                  value={form.host}
-                  onChange={(event) =>
-                    updateField(
-                      "host",
-                      event.target.value
-                    )
-                  }
-                  disabled={submitting}
-                  placeholder="Moderador"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none transition focus:border-[#3f6fcb] focus:ring-2 focus:ring-[#2457c5]/15"
-                />
               </div>
             </div>
 
@@ -694,27 +633,6 @@ const MeetingForm = ({
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none transition focus:border-[#3f6fcb] focus:ring-2 focus:ring-[#2457c5]/15"
                 />
               </div>
-            </div>
-
-            {/* UBICACION */}
-            <div>
-              <label className="mb-1 block font-semibold text-slate-700">
-                Ubicación o Enlace Virtual
-              </label>
-
-              <input
-                type="text"
-                value={form.location}
-                onChange={(event) =>
-                  updateField(
-                    "location",
-                    event.target.value
-                  )
-                }
-                disabled={submitting}
-                placeholder="Ej. Sala Magna / meet.google.com/..."
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#3f6fcb] focus:ring-2 focus:ring-[#2457c5]/15"
-              />
             </div>
 
             {/* ERROR */}

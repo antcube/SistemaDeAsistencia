@@ -24,7 +24,9 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
     try {
       setLoading(true);
       setError("");
+
       const data = await circleService.getCircles();
+
       setCircles(Array.isArray(data) ? data : data?.circles || []);
     } catch (err) {
       setError(err?.message || "No se pudieron cargar los círculos.");
@@ -39,6 +41,7 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
 
   const createCircle = async (event) => {
     event.preventDefault();
+
     const cleanName = name.trim();
 
     if (!cleanName) {
@@ -55,6 +58,7 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
 
       setName("");
       setMessage(`Círculo "${cleanName}" creado correctamente.`);
+
       await loadCircles();
       await onCirclesChanged?.();
     } catch (err) {
@@ -76,8 +80,11 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
     try {
       setError("");
       setMessage("");
+
       await circleService.deleteCircle(circle._id);
+
       setMessage(`Círculo "${circle.name}" eliminado correctamente.`);
+
       await loadCircles();
       await onCirclesChanged?.();
     } catch (err) {
@@ -119,6 +126,7 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
 
   const closeMembersManager = () => {
     if (deletingMembers) return;
+
     setSelectedCircle(null);
     setCircleMembers([]);
     setSelectedMemberIds([]);
@@ -148,7 +156,11 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
   };
 
   const deleteSelectedMembers = async () => {
-    if (!selectedCircle || !selectedMemberIds.length || deletingMembers) {
+    if (
+      !selectedCircle ||
+      !selectedMemberIds.length ||
+      deletingMembers
+    ) {
       return;
     }
 
@@ -162,9 +174,11 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
       .join(", ");
 
     const extraCount = selectedMembers.length - 5;
-    const preview = extraCount > 0
-      ? `${previewNames} y ${extraCount} más`
-      : previewNames;
+
+    const preview =
+      extraCount > 0
+        ? `${previewNames} y ${extraCount} más`
+        : previewNames;
 
     const confirmed = window.confirm(
       `¿Eliminar ${selectedMembers.length} miembro(s) del círculo "${selectedCircle.name}"?\n\n${preview}\n\nEl círculo permanecerá intacto y sus reuniones no serán eliminadas.`
@@ -197,46 +211,6 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
     }
   };
 
-  const deleteAllMembers = async () => {
-    if (!selectedCircle || deletingMembers || !circleMembers.length) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `⚠️ ¿ELIMINAR TODOS LOS MIEMBROS?\n\nSe eliminarán ${circleMembers.length} miembro(s) del círculo "${selectedCircle.name}".\n\nEl círculo, sus reuniones y su configuración permanecerán intactos.\n\nEsta acción no se puede deshacer.`
-    );
-
-    if (!confirmed) return;
-
-    try {
-      setDeletingMembers(true);
-      setError("");
-      setMessage("");
-
-      const response = await userService.deleteUsersByCircle(
-        selectedCircle.name
-      );
-
-      const deletedCount =
-        Number(response?.deletedCount) || circleMembers.length;
-
-      setCircleMembers([]);
-      setSelectedMemberIds([]);
-      setMessage(
-        `${deletedCount} miembro(s) eliminado(s) del círculo "${selectedCircle.name}". El círculo permanece intacto.`
-      );
-
-      await onCirclesChanged?.();
-    } catch (err) {
-      setError(
-        err?.message ||
-          "No se pudieron eliminar los miembros del círculo."
-      );
-    } finally {
-      setDeletingMembers(false);
-    }
-  };
-
   if (!isMainAdmin) return null;
 
   return (
@@ -253,9 +227,11 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
             <span className="text-[10px] font-extrabold tracking-wider text-violet-600">
               ADMINISTRADOR PRINCIPAL
             </span>
+
             <h2 className="mt-1 text-lg font-bold text-slate-900">
               Gestionar Círculos
             </h2>
+
             <p className="mt-1 text-xs text-slate-500">
               Crea, administra y gestiona los miembros de cada círculo.
             </p>
@@ -318,6 +294,7 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
                   <h3 className="text-sm font-bold text-slate-800">
                     Círculos existentes
                   </h3>
+
                   <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">
                     {circles.length} total
                   </span>
@@ -342,8 +319,11 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
                           <div className="truncate text-sm font-bold text-slate-800">
                             {circle.name}
                           </div>
+
                           <div className="mt-0.5 text-[10px] font-semibold text-slate-400">
-                            {circle.active === false ? "Inactivo" : "Activo"}
+                            {circle.active === false
+                              ? "Inactivo"
+                              : "Activo"}
                           </div>
                         </div>
 
@@ -351,7 +331,9 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
                           <div className="flex flex-wrap items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => openMembersManager(circle)}
+                              onClick={() =>
+                                openMembersManager(circle)
+                              }
                               className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-bold text-blue-700 transition hover:bg-blue-100"
                             >
                               👥 Eliminar miembros
@@ -359,7 +341,9 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
 
                             <button
                               type="button"
-                              onClick={() => deleteCircle(circle)}
+                              onClick={() =>
+                                deleteCircle(circle)
+                              }
                               disabled={saving || deletingMembers}
                               className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-[10px] font-bold text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
                             >
@@ -385,9 +369,11 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
                   >
                     ← Volver a círculos
                   </button>
+
                   <h3 className="truncate text-base font-extrabold text-slate-900">
                     Eliminar miembros · {selectedCircle.name}
                   </h3>
+
                   <p className="mt-1 text-xs text-slate-500">
                     Eliminar miembros no elimina el círculo ni sus reuniones.
                   </p>
@@ -405,9 +391,11 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
               ) : circleMembers.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
                   <div className="text-2xl">👥</div>
+
                   <strong className="mt-2 block text-sm text-slate-700">
                     Este círculo no tiene miembros
                   </strong>
+
                   <p className="mt-1 text-xs text-slate-500">
                     El círculo continúa existiendo y puedes agregar miembros desde el Directorio.
                   </p>
@@ -418,11 +406,15 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
                     <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-slate-700">
                       <input
                         type="checkbox"
-                        checked={selectedMemberIds.length === circleMembers.length}
+                        checked={
+                          selectedMemberIds.length ===
+                          circleMembers.length
+                        }
                         onChange={toggleAllMembers}
                         disabled={deletingMembers}
                         className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                       />
+
                       Seleccionar todos
                     </label>
 
@@ -435,7 +427,8 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
                     <div className="divide-y divide-slate-200">
                       {circleMembers.map((member) => {
                         const memberId = member._id;
-                        const checked = selectedMemberIds.includes(memberId);
+                        const checked =
+                          selectedMemberIds.includes(memberId);
 
                         return (
                           <label
@@ -449,7 +442,9 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
                             <input
                               type="checkbox"
                               checked={checked}
-                              onChange={() => toggleMember(memberId)}
+                              onChange={() =>
+                                toggleMember(memberId)
+                              }
                               disabled={deletingMembers}
                               className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                             />
@@ -458,9 +453,12 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
                               <div className="truncate text-xs font-extrabold text-slate-800">
                                 {member.name || "Sin nombre"}
                               </div>
+
                               <div className="mt-0.5 truncate text-[10px] font-medium text-slate-400">
                                 DNI: {member.doc || "—"}
-                                {member.job ? ` · ${member.job}` : ""}
+                                {member.job
+                                  ? ` · ${member.job}`
+                                  : ""}
                               </div>
                             </div>
                           </label>
@@ -469,32 +467,27 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {/* ÚNICO BOTÓN DE ELIMINACIÓN */}
+                  <div className="mt-4">
                     <button
                       type="button"
                       onClick={deleteSelectedMembers}
-                      disabled={!selectedMemberIds.length || deletingMembers}
-                      className="inline-flex min-h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-xs font-extrabold text-rose-600 shadow-sm transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      disabled={
+                        !selectedMemberIds.length ||
+                        deletingMembers
+                      }
+                      className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-xs font-extrabold text-rose-600 shadow-sm transition hover:bg-rose-50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {deletingMembers
                         ? "Eliminando..."
                         : `🗑️ Eliminar seleccionados (${selectedMemberIds.length})`}
                     </button>
-
-                    <button
-                      type="button"
-                      onClick={deleteAllMembers}
-                      disabled={!circleMembers.length || deletingMembers}
-                      className="inline-flex min-h-10 items-center justify-center rounded-xl border border-rose-600 bg-rose-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {deletingMembers
-                        ? "Eliminando..."
-                        : `⚠️ Eliminar todos (${circleMembers.length})`}
-                    </button>
                   </div>
 
                   <p className="mt-3 text-center text-[10px] font-semibold leading-4 text-slate-400">
-                    Estas acciones eliminan únicamente miembros. El círculo y sus reuniones permanecerán intactos.
+                    Esta acción elimina únicamente los miembros
+                    seleccionados. El círculo y sus reuniones permanecerán
+                    intactos.
                   </p>
                 </>
               )}

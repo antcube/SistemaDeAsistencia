@@ -144,6 +144,7 @@ const getUsers = async (req, res) => {
     const {
       search = "",
       circle = "",
+      mode = "",
       page = 1,
       limit = 50,
     } = req.query;
@@ -182,6 +183,35 @@ const getUsers = async (req, res) => {
       }
 
       query.circle = circle;
+    } else if (mode) {
+      if (!hasGlobalPermission(req)) {
+        return res.status(403).json({
+          message:
+            "Solo el Administrador Principal puede usar este filtro.",
+        });
+      }
+
+      const normalizedMode =
+        String(mode).trim().toLowerCase();
+
+      if (normalizedMode === "virtuales") {
+        query.circle = {
+          $regex: "virtual",
+          $options: "i",
+        };
+      } else if (normalizedMode === "presenciales") {
+        query.circle = {
+          $not: {
+            $regex: "virtual",
+            $options: "i",
+          },
+        };
+      } else {
+        return res.status(400).json({
+          message:
+            "El tipo de círculo seleccionado no es válido.",
+        });
+      }
     }
 
     if (search.trim()) {

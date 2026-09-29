@@ -4,6 +4,7 @@ import scheduleService from "../services/scheduleService";
 import circleService from "../services/circleService";
 import { useAuth } from "../context/AuthContext";
 import CircleManager from "../components/CircleManager";
+import MemberMigrationPanel from "../components/MemberMigrationPanel";
 
 const WEEKDAYS = [
   { value: 1, label: "Lunes" },
@@ -170,6 +171,41 @@ const Programaciones = () => {
   const isMainAdmin =
     String(admin?.adminId || "").trim() === "ADM-001";
 
+  const assignedCircleNames = useMemo(() => {
+    if (Array.isArray(admin?.circleScope)) {
+      return admin.circleScope
+        .map((circle) => String(circle || "").trim())
+        .filter(Boolean);
+    }
+
+    if (admin?.circleScope) {
+      return [String(admin.circleScope).trim()].filter(Boolean);
+    }
+
+    return [];
+  }, [admin]);
+
+  const availableCircleNames = useMemo(() => {
+    if (isMainAdmin) {
+      return circles
+        .map((circle) =>
+          typeof circle === "string"
+            ? circle
+            : circle?.name
+        )
+        .map((name) => String(name || "").trim())
+        .filter(Boolean);
+    }
+
+    return assignedCircleNames;
+  }, [circles, assignedCircleNames, isMainAdmin]);
+
+  const firstAssignedCircle =
+    availableCircleNames[0] || "";
+
+  const effectiveCircleFilter =
+    circleFilter || firstAssignedCircle;
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -235,11 +271,11 @@ const Programaciones = () => {
         );
 
       const matchesCircle =
-        !circleFilter ||
+        !effectiveCircleFilter ||
         (schedule.circles || []).some(
           (circle) =>
-            String(circle).toUpperCase() ===
-            String(circleFilter).toUpperCase()
+            String(circle).trim().toUpperCase() ===
+            String(effectiveCircleFilter).trim().toUpperCase()
         );
 
       return (
@@ -250,7 +286,7 @@ const Programaciones = () => {
   }, [
     schedules,
     search,
-    circleFilter,
+    effectiveCircleFilter,
   ]);
 
   const updateFormField = (
@@ -834,7 +870,7 @@ const Programaciones = () => {
             </div>
 
             <select
-              value={circleFilter}
+              value={effectiveCircleFilter}
               onChange={(event) =>
                 setCircleFilter(
                   event.target.value
@@ -842,30 +878,14 @@ const Programaciones = () => {
               }
               className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
-              <option value="">
-                Todos los círculos
-              </option>
-
-              {circles.map((circle) => {
-                const name =
-                  typeof circle ===
-                  "string"
-                    ? circle
-                    : circle?.name;
-
-                if (!name) {
-                  return null;
-                }
-
-                return (
-                  <option
-                    key={name}
-                    value={name}
-                  >
-                    {name}
-                  </option>
-                );
-              })}
+              {availableCircleNames.map((name) => (
+                <option
+                  key={name}
+                  value={name}
+                >
+                  {name}
+                </option>
+              ))}
             </select>
 
           </div>
@@ -1127,6 +1147,10 @@ const Programaciones = () => {
           )}
 
         </div>
+
+        {isMainAdmin && (
+          <MemberMigrationPanel circles={circles} />
+        )}
       </div>
 
       {/* =======================================================

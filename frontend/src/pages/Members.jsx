@@ -71,6 +71,12 @@ const Members = () => {
   const [circle, setCircle] =
     useState("");
 
+  const [memberMode, setMemberMode] =
+    useState("");
+
+  const [circleMenuOpen, setCircleMenuOpen] =
+    useState(false);
+
   const [page, setPage] =
     useState(1);
 
@@ -139,6 +145,23 @@ const Members = () => {
     isMainAdmin ||
     isCircleManager;
 
+  // Separa los círculos para el Administrador Principal.
+  const filteredCircles =
+    circles.filter((item) => {
+      const name = String(item?.name || "").trim();
+      const isVirtual = /virtual/i.test(name);
+
+      if (memberMode === "virtuales") {
+        return isVirtual;
+      }
+
+      if (memberMode === "presenciales") {
+        return !isVirtual;
+      }
+
+      return true;
+    });
+
   /*
    * =========================================================
    * CARGAR CÍRCULOS
@@ -183,6 +206,7 @@ const Members = () => {
           await userService.getUsers({
             search,
             circle,
+            mode: isMainAdmin ? memberMode : "",
             page,
             limit: 50,
           });
@@ -220,7 +244,7 @@ const Members = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [page, circle]);
+  }, [page, circle, memberMode]);
 
   /*
    * =========================================================
@@ -241,6 +265,8 @@ const Members = () => {
     () => {
       setSearch("");
       setCircle("");
+      setMemberMode("");
+      setCircleMenuOpen(false);
       setPage(1);
     };
 
@@ -539,52 +565,159 @@ const Members = () => {
               type="search"
               value={search}
               onChange={(event) =>
-                setSearch(
-                  event.target.value
-                )
+                setSearch(event.target.value)
               }
               placeholder="Buscar por DNI, nombre, rango, círculo..."
               className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
-          {/* FILTRO CÍRCULO */}
+          {/* FILTRO DE CÍRCULOS */}
 
-          <div className="lg:w-[205px] lg:shrink-0">
-            <select
-              value={circle}
-              onChange={(event) => {
-                setCircle(
-                  event.target.value
-                );
+          {isMainAdmin ? (
+            <div className="relative lg:w-[205px] lg:shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!memberMode) {
+                    setMemberMode("presenciales");
+                    setCircle("");
+                    setPage(1);
+                  }
 
-                setPage(1);
-              }}
-              className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">
-                {isMainAdmin
-                  ? "Todos los círculos"
-                  : "Todos mis círculos asignados"}
-              </option>
+                  setCircleMenuOpen((open) => !open);
+                }}
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="truncate">
+                    {memberMode === "virtuales"
+                      ? "Virtuales"
+                      : memberMode === "presenciales"
+                      ? "Presenciales"
+                      : "Todos los miembros"}
+                  </span>
 
-              {circles.map(
-                (item) => (
+                  <span className="shrink-0 text-slate-500">
+                    ▾
+                  </span>
+                </span>
+              </button>
+
+              {circleMenuOpen && (
+                <div className="absolute left-0 top-[44px] z-50 w-full overflow-hidden rounded-lg border border-slate-300 bg-white shadow-lg">
+                  {!memberMode ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCircle("");
+                          setMemberMode("");
+                          setCircleMenuOpen(false);
+                          setPage(1);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Todos los miembros
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMemberMode("presenciales");
+                          setCircle("");
+                          setCircleMenuOpen(false);
+                          setPage(1);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Presenciales
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMemberMode("virtuales");
+                          setCircle("");
+                          setCircleMenuOpen(false);
+                          setPage(1);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Virtuales
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {filteredCircles.map((item) => (
+                        <button
+                          key={item._id || item.name}
+                          type="button"
+                          onClick={() => {
+                            setCircle(item.name);
+                            setCircleMenuOpen(false);
+                            setPage(1);
+                          }}
+                          className={`block w-full px-3 py-2 text-left text-sm font-medium transition hover:bg-slate-50 ${
+                            circle === item.name
+                              ? "bg-blue-50 text-blue-700"
+                              : "text-slate-700"
+                          }`}
+                        >
+                          {item.name}
+                        </button>
+                      ))}
+
+                      <div className="mx-3 border-t border-slate-200" />
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMemberMode(
+                            memberMode === "virtuales"
+                              ? "presenciales"
+                              : "virtuales"
+                          );
+                          setCircle("");
+                          setCircleMenuOpen(false);
+                          setPage(1);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-sm font-bold text-blue-700 transition hover:bg-blue-50"
+                      >
+                        {memberMode === "virtuales"
+                          ? "Ver círculos presenciales"
+                          : "Ver círculos virtuales"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="lg:w-[205px] lg:shrink-0">
+              <select
+                value={circle}
+                onChange={(event) => {
+                  setCircle(event.target.value);
+                  setPage(1);
+                }}
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">
+                  Todos mis círculos asignados
+                </option>
+
+                {circles.map((item) => (
                   <option
-                    key={
-                      item._id ||
-                      item.name
-                    }
-                    value={
-                      item.name
-                    }
+                    key={item._id || item.name}
+                    value={item.name}
                   >
                     {item.name}
                   </option>
-                )
-              )}
-            </select>
-          </div>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* BUSCAR */}
 

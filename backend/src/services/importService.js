@@ -15,6 +15,20 @@ const normalizeValue = (value) => {
   return String(value).trim();
 };
 
+// Convierte nombres importados a formato de presentación:
+// "JUANA AMELIA RIVERA ÑANCO" -> "Juana Amelia Rivera Ñanco".
+// Se aplica únicamente al campo Nombre; no modifica DNI, usuario, correo, etc.
+const normalizePersonName = (value) => {
+  const text = normalizeValue(value);
+  if (!text) return "";
+
+  return text
+    .toLocaleLowerCase("es-PE")
+    .replace(/(^|[\s'-])([a-záéíóúüñ])/giu, (match, separator, letter) =>
+      `${separator}${letter.toLocaleUpperCase("es-PE")}`
+    );
+};
+
 const normalizeDateValue = (value) => {
   if (value === null || value === undefined || value === "") return null;
 
@@ -113,7 +127,10 @@ const mapRow = (row, headers) => {
       continue;
     }
 
-    mapped[field] = normalizeValue(row[header]);
+    mapped[field] =
+      field === "name"
+        ? normalizePersonName(row[header])
+        : normalizeValue(row[header]);
   }
 
   return mapped;
@@ -404,42 +421,24 @@ const importUsersFromRows = async (
 const previewUsersFromRows = async (rows) => {
   const errors = [];
   const validRows = [];
+  const previewRows = [];
 
   if (!Array.isArray(rows) || !rows.length) {
     return {
+      rows: [],
       validRows: [],
       errors: [{ row: 0, message: "El archivo no contiene registros." }],
     };
   }
 
   const headers = Object.keys(rows[0] || {});
-  const seenDni = new Set();
+  const seenDni = new Map();
 
   rows.forEach((row, index) => {
-    const excelRow = index + 2;
+    const excelRow = Number(row?.__excelRow) || index + 2;
     const user = mapRow(row, headers);
 
-    if (!hasAnyMemberData(user)) {
-      errors.push({
-        row: excelRow,
-        message: "La fila está completamente vacía.",
-      });
-      return;
-    }
-
-    if (user.doc) {
-      if (seenDni.has(user.doc)) {
-        errors.push({
-          row: excelRow,
-          dni: user.doc,
-          message: "El DNI está duplicado dentro del archivo.",
-        });
-        return;
-      }
-      seenDni.add(user.doc);
-    }
-
-    validRows.push({
+    const previewRow = {
       doc: user.doc || "",
       name: user.name || "",
       username: user.username || "",
@@ -449,13 +448,96 @@ const previewUsersFromRows = async (rows) => {
       email: user.email || "",
       phone: user.phone || "",
       excelRow,
+    };
+
+    if (!hasAnyMemberData(user)) {
+      const message = "La fila está completamente vacía.";
+
+      errors.push({
+        row: excelRow,
+        message,
+      });
+
+      previewRows.push({
+        ...previewRow,
+        status: "error",
+        error: message,
+      });
+      return;
+    }
+
+    if (user.doc) {
+      const previousRow = seenDni.get(user.doc);
+
+      if (previousRow) {
+        const message = `El DNI ${user.doc} está repetido. Corrige uno de los registros.`;
+
+        errors.push({
+          row: excelRow,
+          dni: user.doc,
+          message,
+        });
+
+        const previousPreviewIndex = previewRows.findIndex(
+          (item) => item.excelRow === previousRow
+        );
+
+        if (previousPreviewIndex >= 0) {
+          previewRows[previousPreviewIndex] = {
+            ...previewRows[previousPreviewIndex],
+            status: "error",
+            error: message,
+          };
+        }
+
+        previewRows.push({
+          ...previewRow,
+          status: "error",
+          error: message,
+        });
+        return;
+      }
+
+      seenDni.set(user.doc, excelRow);
+    }
+
+    previewRows.push({
+      ...previewRow,
+      status: "ok",
+      error: "",
     });
+
+    validRows.push(previewRow);
   });
 
-  return { validRows, errors };
+  return {
+    rows: previewRows,
+    validRows,
+    errors,
+  };
+};
+
+const importPreparedUsers = async (
+  rows,
+  targetCircle = "",
+  allowedCircles = null
+) => {
+  if (!Array.isArray(rows) || !rows.length) {
+    return {
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      errors: [{ row: 0, message: "No hay registros para importar." }],
+    };
+  }
+
+  return importUsersFromRows(rows, targetCircle, allowedCircles);
 };
 
 module.exports = {
   importUsersFromRows,
+  importPreparedUsers,
   previewUsersFromRows,
+  normalizeHeader,
+  HEADER_MAP,
 };

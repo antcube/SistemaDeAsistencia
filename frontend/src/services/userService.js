@@ -4,6 +4,7 @@ const userService = {
   async getUsers({
     search = "",
     circle = "",
+    mode = "",
     page = 1,
     limit = 50,
   } = {}) {
@@ -30,6 +31,13 @@ const userService = {
       params.set(
         "circle",
         circle.trim()
+      );
+    }
+
+    if (mode.trim()) {
+      params.set(
+        "mode",
+        mode.trim()
       );
     }
 
