@@ -62,10 +62,10 @@ const Header = () => {
 
             <div className="cc-brand-title">
 
-              Círculos{" "}
+              Círculos De
 
               <strong>
-                Connect
+              Liderazgo
               </strong>
 
               <span className="cc-brand-badge">

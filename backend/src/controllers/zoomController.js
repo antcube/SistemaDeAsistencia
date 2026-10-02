@@ -920,15 +920,8 @@ const saveZoomAttendance =
     attendance.registeredAt =
       new Date();
 
-    attendance.note =
-      attended
-        ? `🎥 Zoom validado · ${totalMinutes} min acumulados · correo coincidente`
-        : !user.email
-        ? "🎥 El miembro no tiene correo registrado en el Directorio de Miembros."
-        : `🎥 Zoom: ${totalMinutes} min acumulados · no alcanza ${ZOOM_MINUTES_REQUIRED} min`;
-
-    attendance.notes =
-      attendance.note;
+    attendance.note = "";
+    attendance.notes = "";
 
     attendance.justificationReason =
       "";

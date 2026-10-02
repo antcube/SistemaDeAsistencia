@@ -1730,12 +1730,19 @@ const registerAttendanceByQr =
             user._id,
         });
 
+      const hadPreviousActiveAttendance =
+        Boolean(attendance && attendance.active !== false);
+
       const previousStatus =
         attendance
           ? normalizeStatus(
               attendance.status
             )
           : "";
+
+      const wasAlreadyAttended =
+        hadPreviousActiveAttendance &&
+        previousStatus === "Asistió";
 
       const isNewAttendance =
         !attendance;
@@ -1837,8 +1844,13 @@ const registerAttendanceByQr =
       return res.json({
         success: true,
 
-        message:
-          "Asistencia registrada correctamente.",
+        alreadyRegistered: wasAlreadyAttended,
+
+        previousStatus,
+
+        message: wasAlreadyAttended
+          ? "La asistencia ya estaba registrada, pero el estado fue actualizado a Asistió correctamente."
+          : "Asistencia registrada correctamente.",
 
         attendance,
 
@@ -1848,6 +1860,9 @@ const registerAttendanceByQr =
 
           name:
             user.name,
+
+          username:
+            user.username,
 
           circle:
             user.circle,
