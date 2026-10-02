@@ -682,22 +682,30 @@ const getMonthlyCircleReport =
             null;
 
           if (!record) {
-            const qrWasActivated =
-              Boolean(
-                meeting.qrStartTimestamp
-              ) &&
-              Boolean(
-                meeting.qrEndTimestamp
-              );
+            /*
+             * Una reunión sin registro permanece Pendiente durante
+             * todo su día. La F recién aparece cuando el día de la
+             * reunión ya terminó.
+             *
+             * Esto es independiente del QR: Procesar Zoom nunca crea
+             * una falta para quien no apareció en un reporte parcial.
+             */
+            const meetingDate = String(
+              meeting.date || ""
+            ).trim();
 
-            const qrExpired =
-              qrWasActivated &&
-              now >
-                new Date(
-                  meeting.qrEndTimestamp
-                );
+            const todayDate = new Intl.DateTimeFormat("en-CA", {
+              timeZone: "America/Lima",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            }).format(now);
 
-            if (qrExpired) {
+            const dayHasPassed =
+              Boolean(meetingDate) &&
+              meetingDate < todayDate;
+
+            if (dayHasPassed) {
               reportStatus =
                 "No asistió";
 

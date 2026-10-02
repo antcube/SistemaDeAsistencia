@@ -857,10 +857,6 @@
           circle: circle.name,
         });
 
-        // La eliminación de miembros no debe fallar si la bitácora
-        // presenta un problema. Los miembros ya fueron eliminados
-        // correctamente y el círculo, reuniones y asistencias históricas
-        // deben permanecer intactos.
         try {
           await createAuditLog({
             admin: req.user || req.admin,

@@ -437,14 +437,12 @@ const Zoom = () => {
               {" "}
               Asistió
             </strong>{" "}
-            si el miembro aparece con
-            su correo y acumula al menos
+            si el correo existe en el
+            Directorio y acumula al menos
             10 minutos. Los demás quedan
-            como{" "}
-            <strong>
-              No asistió
-            </strong>
-            .
+            sin cambios. La falta se refleja
+            en el Reporte Mensual cuando ya
+            pasó el día de la reunión.
           </p>
 
           <button
@@ -634,7 +632,7 @@ const Zoom = () => {
                                 </span>
                               ) : (
                                 <span className="zoom-status-absent">
-                                  FALTA
+                                  SIN CAMBIOS
                                 </span>
                               )}
 
