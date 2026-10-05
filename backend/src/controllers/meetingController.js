@@ -742,6 +742,55 @@ const deactivateQr = async (req, res) => {
 
 /**
  * ============================================================
+ * ELIMINAR TODOS LOS ANUNCIOS CORPORATIVOS
+ * ============================================================
+ *
+ * Solo para el Administrador Principal.
+ *
+ * IMPORTANTE:
+ * Se utiliza soft delete para conservar la integridad de los
+ * registros históricos y de las asistencias relacionadas.
+ */
+const deleteAllCorporateAnnouncements = async (req, res) => {
+  try {
+    const result = await Meeting.updateMany(
+      {
+        type: "ANUNCIOS CORPORATIVOS",
+        active: true,
+      },
+      {
+        $set: {
+          active: false,
+          deletedAt: new Date(),
+          deletedBy: req.user.adminId,
+          deletedBySchedule: false,
+          deletedByScheduleChange: false,
+          replacementScheduleId: null,
+        },
+      }
+    );
+
+    return res.json({
+      message:
+        result.modifiedCount === 0
+          ? "No había anuncios corporativos activos para eliminar."
+          : `Se eliminaron ${result.modifiedCount} anuncios corporativos correctamente.`,
+      deletedCount: result.modifiedCount,
+    });
+  } catch (error) {
+    console.error(
+      "Error eliminando todos los anuncios corporativos:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Error eliminando los anuncios corporativos.",
+    });
+  }
+};
+
+/**
+ * ============================================================
  * EXPORTACIONES
  * ============================================================
  */
@@ -752,6 +801,7 @@ module.exports = {
   createMeeting,
   updateMeeting,
   deleteMeeting,
+  deleteAllCorporateAnnouncements,
   restoreMeeting,
   moveMeeting,
   activateQr,

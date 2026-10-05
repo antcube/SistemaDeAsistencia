@@ -1237,11 +1237,20 @@ const AttendancePortal = () => {
       return "F";
     };
 
-  // Regla central del historial: mientras la fecha de una sesión no haya
-  // llegado, esa sesión no tiene resultado y nunca debe contarse como falta.
+  // Regla central del historial:
+  // una sesión futura normalmente permanece como programada, pero si ya
+  // existe un registro de asistencia (por ejemplo, una asistencia validada
+  // mediante una migración), ese registro tiene prioridad y debe mostrarse
+  // exactamente igual que en el Reporte General.
   function isFutureMeeting(meeting) {
     const meetingDateKey = String(meeting?.date || "").slice(0, 10);
     if (!meetingDateKey) return false;
+
+    // Si ya existe un Attendance real para esta reunión, no ocultamos su estado
+    // aunque la fecha de la sesión todavía no haya llegado.
+    if (meeting?.hasAttendanceRecord) {
+      return false;
+    }
 
     const now = new Date();
     const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;

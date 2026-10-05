@@ -124,6 +124,9 @@ const Members = () => {
   const [fileInputKey, setFileInputKey] =
     useState(0);
 
+  const [columnView, setColumnView] =
+    useState(0);
+
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [pendingExcelFile, setPendingExcelFile] = useState(null);
 
@@ -819,261 +822,363 @@ const Members = () => {
               </small>
             </div>
           ) : (
-            <div className="max-h-[570px] overflow-auto">
-              <table className="w-full min-w-[920px] table-fixed">
+            <>
+              {/* Navegación de columnas: DNI y Nombre permanecen como anclas visuales */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-3.5 py-2.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-slate-400">
+                    Información del miembro
+                  </span>
 
-                <thead className="sticky top-0 z-10 bg-slate-50">
-                  <tr className="border-b border-slate-200">
+                  <div
+                    className="flex items-center gap-1"
+                    aria-label={`Vista ${columnView + 1} de 2`}
+                  >
+                    {[0, 1].map((viewIndex) => (
+                      <span
+                        key={viewIndex}
+                        className={`h-1.5 rounded-full transition-all duration-500 ease-out ${
+                          columnView === viewIndex
+                            ? "w-5 bg-blue-700"
+                            : "w-1.5 bg-slate-300"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
 
-                    <th className="w-[95px] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-emerald-700">
-                      DNI
-                    </th>
+                <div className="flex items-center gap-2">
+                  <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1 shadow-inner shadow-slate-100/70">
+                    <button
+                      type="button"
+                      onClick={() => setColumnView(0)}
+                      className={`rounded-md px-3 py-1.5 text-[11px] font-bold transition-all duration-300 ${
+                        columnView === 0
+                          ? "bg-white text-blue-800 shadow-sm ring-1 ring-slate-200"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                      aria-pressed={columnView === 0}
+                    >
+                      Datos principales
+                    </button>
 
-                    <th className="w-[250px] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                      Nombre completo
-                    </th>
+                    <button
+                      type="button"
+                      onClick={() => setColumnView(1)}
+                      className={`rounded-md px-3 py-1.5 text-[11px] font-bold transition-all duration-300 ${
+                        columnView === 1
+                          ? "bg-white text-blue-800 shadow-sm ring-1 ring-slate-200"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                      aria-pressed={columnView === 1}
+                    >
+                      Contacto y gestión
+                    </button>
+                  </div>
 
-                    <th className="w-[115px] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                      Usuario
-                    </th>
+                  <button
+                    type="button"
+                    onClick={() => setColumnView((value) => (value === 0 ? 1 : 0))}
+                    className="group flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-lg font-bold leading-none text-blue-800 shadow-sm transition-all duration-300 hover:-translate-y-px hover:border-blue-300 hover:bg-blue-100 hover:shadow-md active:translate-y-0 active:scale-95"
+                    title={
+                      columnView === 0
+                        ? "Ver contacto y acciones"
+                        : "Volver a datos principales"
+                    }
+                    aria-label={
+                      columnView === 0
+                        ? "Ver contacto y acciones"
+                        : "Volver a datos principales"
+                    }
+                  >
+                    <span
+                      className={`block transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                        columnView === 0 ? "translate-x-0" : "rotate-180"
+                      }`}
+                    >
+                      ›
+                    </span>
+                  </button>
+                </div>
+              </div>
 
-                    <th className="w-[155px] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                      Círculo asignado
-                    </th>
+              {/*
+                Una única tabla mantiene DNI + Nombre siempre visibles.
+                Solo las tres columnas derechas cambian de contenido con slide + fade.
+              */}
+              <div className="max-h-[570px] overflow-y-auto overflow-x-hidden">
+                <table className="w-full table-fixed">
+                  <thead className="sticky top-0 z-20 bg-slate-50">
+                    <tr className="border-b border-slate-200">
+                      <th className="w-[12%] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-emerald-700">
+                        DNI
+                      </th>
 
-                    <th className="w-[105px] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                      Rango
-                    </th>
+                      <th className="w-[31%] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
+                        Nombre completo
+                      </th>
 
-                    <th className="w-[145px] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                      Fecha Cambio Rango
-                    </th>
+                      <th className="w-[17%] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
+                        <div className="relative min-h-[16px] overflow-hidden">
+                          <span
+                            className={`absolute inset-0 block whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                              columnView === 0
+                                ? "translate-x-0 opacity-100"
+                                : "-translate-x-4 opacity-0"
+                            }`}
+                          >
+                            Usuario
+                          </span>
+                          <span
+                            className={`absolute inset-0 block whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                              columnView === 1
+                                ? "translate-x-0 opacity-100"
+                                : "translate-x-4 opacity-0"
+                            }`}
+                          >
+                            Fecha cambio rango
+                          </span>
+                        </div>
+                      </th>
 
-                    <th className="w-[190px] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                      Correo
-                    </th>
+                      <th className="w-[21%] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
+                        <div className="relative min-h-[16px] overflow-hidden">
+                          <span
+                            className={`absolute inset-0 block whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                              columnView === 0
+                                ? "translate-x-0 opacity-100"
+                                : "-translate-x-4 opacity-0"
+                            }`}
+                          >
+                            Círculo asignado
+                          </span>
+                          <span
+                            className={`absolute inset-0 block whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                              columnView === 1
+                                ? "translate-x-0 opacity-100"
+                                : "translate-x-4 opacity-0"
+                            }`}
+                          >
+                            Correo / Teléfono
+                          </span>
+                        </div>
+                      </th>
 
-                    <th className="w-[125px] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                      Acciones
-                    </th>
+                      <th className="w-[19%] px-3.5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
+                        <div className="relative min-h-[16px] overflow-hidden">
+                          <span
+                            className={`absolute inset-0 block whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                              columnView === 0
+                                ? "translate-x-0 opacity-100"
+                                : "-translate-x-4 opacity-0"
+                            }`}
+                          >
+                            Rango
+                          </span>
+                          <span
+                            className={`absolute inset-0 block whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                              columnView === 1
+                                ? "translate-x-0 opacity-100"
+                                : "translate-x-4 opacity-0"
+                            }`}
+                          >
+                            Acciones
+                          </span>
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
 
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {users.map(
-                    (user) => (
+                  <tbody>
+                    {users.map((user) => (
                       <tr
-                        key={
-                          user._id
-                        }
-                        className="border-b border-slate-100 transition hover:bg-slate-50"
+                        key={user._id}
+                        className="border-b border-slate-100 transition-colors duration-200 hover:bg-slate-50"
                       >
-
-                        {/* DNI */}
-
+                        {/* Ancla 1: siempre visible */}
                         <td className="px-3.5 py-3 align-middle text-xs font-bold text-emerald-700">
                           {user.doc}
                         </td>
 
-                        {/* NOMBRE */}
-
+                        {/* Ancla 2: siempre visible */}
                         <td className="overflow-hidden px-3.5 py-3 align-middle text-xs font-bold text-slate-800">
-                          <span className="block truncate">
+                          <span className="block truncate" title={user.name}>
                             {user.name}
                           </span>
                         </td>
 
-                        {/* USUARIO */}
-
-                        <td className="overflow-hidden px-3.5 py-3 align-middle text-xs font-medium text-slate-600">
-                          <span className="block truncate">
-                            {user.username ||
-                              "—"}
-                          </span>
-                        </td>
-
-                        {/* CÍRCULO */}
-
-                        <td className="px-3.5 py-3 align-middle">
-
-                          <span className="inline-flex max-w-full items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-800">
-                            <span className="truncate">
-                              {user.circle}
-                            </span>
-                          </span>
-
-                        </td>
-
-                        {/* RANGO */}
-
-                        <td className="overflow-hidden px-3.5 py-3 align-middle text-xs font-medium text-slate-600">
-                          <span className="block truncate">
-                            {user.job ||
-                              "—"}
-                          </span>
-                        </td>
-
-                        {/* FECHA DE CAMBIO DE RANGO */}
-
-                        <td className="px-3.5 py-3 align-middle text-xs font-medium text-slate-600">
-                          {formatDate(user.rangeChangeDate)}
-                        </td>
-
-                        {/* CORREO */}
-
-                        <td className="overflow-hidden px-3.5 py-3 align-middle">
-
-                          <div className="flex min-w-0 flex-col gap-0.5">
-
-                            <span className="truncate text-[11px] font-medium text-slate-500">
-                              {user.email ||
-                                "Sin correo"}
-                            </span>
-
-                            <small className="truncate text-[10px] text-slate-400">
-                              {user.phone ||
-                                "Sin teléfono"}
-                            </small>
-
-                          </div>
-
-                        </td>
-
-                        {/* ACCIONES */}
-
-                        <td className="px-3.5 py-3 align-middle">
-
-                          <div className="flex items-center gap-2">
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openRangeHistory(user)
-                              }
-                              title="Ver historial de rangos"
-                              className="inline-flex h-8 items-center justify-center rounded-md border border-indigo-200 bg-white px-2 text-[11px] font-bold text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-700"
+                        {/* Columna dinámica 1: Usuario -> Fecha cambio rango */}
+                        <td className="px-3.5 py-2.5 align-middle">
+                          <div className="relative min-h-[34px] overflow-hidden">
+                            <div
+                              className={`absolute inset-0 flex items-center transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+                                columnView === 0
+                                  ? "translate-x-0 opacity-100"
+                                  : "-translate-x-5 opacity-0"
+                              }`}
+                              aria-hidden={columnView !== 0}
                             >
-                              📋
-                            </button>
+                              <span className="block max-w-full truncate text-xs font-medium text-slate-600" title={user.username || ""}>
+                                {user.username || "—"}
+                              </span>
+                            </div>
 
-                            {/* EDITAR:
-                                ADMIN + GESTOR */}
-
-                            {/* =====================================================
-    EDITAR
-    SOLO ADMINISTRADOR PRINCIPAL
-
-    El Gestor NO puede editar miembros existentes.
-    Solamente puede:
-    - Crear nuevos miembros manualmente.
-    - Subir nuevos miembros mediante Excel.
-===================================================== */}
-
-{isMainAdmin && (
-  <button
-    type="button"
-    onClick={() =>
-      openEdit(user)
-    }
-    title="Editar miembro"
-    className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-  >
-    ✏️
-  </button>
-)}
-
-{/* =====================================================
-    ELIMINAR
-    SOLO ADMINISTRADOR PRINCIPAL
-===================================================== */}
-
-{isMainAdmin && (
-  <button
-    type="button"
-    onClick={() =>
-      handleDelete(user)
-    }
-    title="Eliminar miembro"
-    className="inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-white px-2 text-[11px] font-bold text-rose-600 transition hover:bg-rose-50"
-  >
-    🗑️
-  </button>
-)}
-
+                            <div
+                              className={`absolute inset-0 flex items-center transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+                                columnView === 1
+                                  ? "translate-x-0 opacity-100"
+                                  : "translate-x-5 opacity-0"
+                              }`}
+                              aria-hidden={columnView !== 1}
+                            >
+                              <span className="text-xs font-medium text-slate-600">
+                                {formatDate(user.rangeChangeDate)}
+                              </span>
+                            </div>
                           </div>
-
                         </td>
 
+                        {/* Columna dinámica 2: Círculo -> Correo / Teléfono */}
+                        <td className="px-3.5 py-2.5 align-middle">
+                          <div className="relative min-h-[34px] overflow-hidden">
+                            <div
+                              className={`absolute inset-0 flex items-center transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+                                columnView === 0
+                                  ? "translate-x-0 opacity-100"
+                                  : "-translate-x-5 opacity-0"
+                              }`}
+                              aria-hidden={columnView !== 0}
+                            >
+                              <span className="inline-flex max-w-full items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-800">
+                                <span className="truncate" title={user.circle}>
+                                  {user.circle}
+                                </span>
+                              </span>
+                            </div>
+
+                            <div
+                              className={`absolute inset-0 flex min-w-0 flex-col justify-center gap-0.5 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+                                columnView === 1
+                                  ? "translate-x-0 opacity-100"
+                                  : "translate-x-5 opacity-0"
+                              }`}
+                              aria-hidden={columnView !== 1}
+                            >
+                              <span className="truncate text-[11px] font-medium text-slate-600" title={user.email || ""}>
+                                {user.email || "Sin correo"}
+                              </span>
+                              <small className="truncate text-[10px] text-slate-400" title={user.phone || ""}>
+                                {user.phone || "Sin teléfono"}
+                              </small>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Columna dinámica 3: Rango -> Acciones */}
+                        <td className="px-3.5 py-2.5 align-middle">
+                          <div className="relative min-h-[34px] overflow-hidden">
+                            <div
+                              className={`absolute inset-0 flex items-center transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+                                columnView === 0
+                                  ? "translate-x-0 opacity-100"
+                                  : "-translate-x-5 opacity-0"
+                              }`}
+                              aria-hidden={columnView !== 0}
+                            >
+                              <span
+                                className="inline-flex max-w-full items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-bold text-slate-700"
+                                title={user.job || ""}
+                              >
+                                {user.job || "—"}
+                              </span>
+                            </div>
+
+                            <div
+                              className={`absolute inset-0 flex items-center transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+                                columnView === 1
+                                  ? "translate-x-0 opacity-100"
+                                  : "translate-x-5 opacity-0 pointer-events-none"
+                              }`}
+                              aria-hidden={columnView !== 1}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => openRangeHistory(user)}
+                                  title="Ver historial de rangos"
+                                  tabIndex={columnView === 1 ? 0 : -1}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-indigo-200 bg-white text-[11px] font-bold text-indigo-600 shadow-sm transition-all duration-200 hover:-translate-y-px hover:bg-indigo-50 hover:text-indigo-700 hover:shadow"
+                                >
+                                  📋
+                                </button>
+
+                                {isMainAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openEdit(user)}
+                                    title="Editar miembro"
+                                    tabIndex={columnView === 1 ? 0 : -1}
+                                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-[11px] font-bold text-slate-600 shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 hover:shadow"
+                                  >
+                                    ✏️
+                                  </button>
+                                )}
+
+                                {isMainAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDelete(user)}
+                                    title="Eliminar miembro"
+                                    tabIndex={columnView === 1 ? 0 : -1}
+                                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-rose-200 bg-white text-[11px] font-bold text-rose-600 shadow-sm transition-all duration-200 hover:-translate-y-px hover:bg-rose-50 hover:shadow"
+                                  >
+                                    🗑️
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
                       </tr>
-                    )
-                  )}
-
-                </tbody>
-
-              </table>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
           {/* ===================================================
-              PAGINACIÓN
+              PAGINACIÓN DE MIEMBROS
           ==================================================== */}
 
           <div className="flex min-h-[54px] items-center justify-between border-t border-slate-200 bg-white px-3.5">
-
             <span className="text-[11px] font-medium text-slate-500">
-              {pagination.total ||
-                0}{" "}
-              miembros
+              {pagination.total || 0} miembros
             </span>
 
             <div className="flex items-center gap-2">
-
               <button
                 type="button"
-                disabled={
-                  page <= 1
-                }
-                onClick={() =>
-                  setPage(
-                    (value) =>
-                      value - 1
-                  )
-                }
+                disabled={page <= 1}
+                onClick={() => setPage((value) => value - 1)}
                 className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-lg leading-none text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 ‹
               </button>
 
               <strong className="min-w-[55px] text-center text-[11px] font-bold text-slate-700">
-                {pagination.page ||
-                  page}{" "}
-                /{" "}
-                {pagination.totalPages ||
-                  1}
+                {pagination.page || page} / {pagination.totalPages || 1}
               </strong>
 
               <button
                 type="button"
-                disabled={
-                  page >=
-                  (pagination.totalPages ||
-                    1)
-                }
-                onClick={() =>
-                  setPage(
-                    (value) =>
-                      value + 1
-                  )
-                }
+                disabled={page >= (pagination.totalPages || 1)}
+                onClick={() => setPage((value) => value + 1)}
                 className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-lg leading-none text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 ›
               </button>
-
             </div>
-
           </div>
 
         </div>

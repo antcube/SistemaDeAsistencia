@@ -1530,6 +1530,12 @@ const getUserMonthlyAttendanceByDni =
                       "No asistió"
                   ),
 
+                // Indica si existe un registro real de asistencia para
+                // esta sesión. Esto permite que /asistencia respete
+                // asistencias ya validadas aunque la fecha todavía no haya llegado.
+                hasAttendanceRecord:
+                  Boolean(record),
+
                 note:
                   record?.note ||
                   record?.notes ||

@@ -11,6 +11,7 @@ const {
   getPublicQrMeeting,
   activateQr,
   deactivateQr,
+  deleteAllCorporateAnnouncements,
 } = require("../controllers/meetingController");
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -58,6 +59,13 @@ router.patch(
   authMiddleware,
   requireGlobalAdministrator,
   moveMeeting
+);
+
+router.delete(
+  "/anuncios-corporativos",
+  authMiddleware,
+  requireGlobalAdministrator,
+  deleteAllCorporateAnnouncements
 );
 
 router.delete(

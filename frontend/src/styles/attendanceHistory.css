@@ -257,9 +257,9 @@
 
 .portal-next-session {
   position: relative;
-  width: 247px;
-  min-width: 247px;
-  height: 70px;
+  width: 270px;
+  min-width: 270px;
+  height: 80px;
   min-height: 70px;
   box-sizing: border-box;
   display: flex;
@@ -301,7 +301,7 @@
 
 .portal-next-session-date strong {
   color: #eef7ff;
-  font-size: 18px;
+  font-size: 22px;
   line-height: 20px;
   font-weight: 500;
   letter-spacing: -.35px;
@@ -326,9 +326,9 @@
   justify-content: center;
 }
 
-.portal-next-session span { display: block; margin: 0; color: #78c9ff; font-size: 10px; line-height: 1.1; font-weight: 500; text-transform: uppercase; font-family: Arial, sans-serif; }
+.portal-next-session span { display: block; margin: 0; color: #78c9ff; font-size: 12.5px; line-height: 1.1; margin-top: 4px; font-weight: 500; text-transform: uppercase; font-family: Arial, sans-serif; }
 
-.portal-next-session-content strong { display: block; margin-top: 3px; color: #EEF3FF; font-size: 9px; line-height: 1.15; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: Arial, sans-serif; }
+.portal-next-session-content strong { display: block; margin-top: 3px; color: #EEF3FF; font-size: 10.5px; line-height: 1.15; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: Arial, sans-serif; }
 
 .portal-next-session-content small {
   display: block;
@@ -371,7 +371,7 @@
   color: #6BD9FF;
   font-size: 22px;
   line-height: 1;
-  font-weight: 300;
+  font-weight: 500;
   transition: transform .18s ease, color .18s ease;
 }
 
@@ -949,7 +949,7 @@
 .portal-dark-date small { margin-top: 2px; color: #6BD9FF; font-size: 9.5px; text-transform: uppercase; font-weight: 500;}
 .portal-dark-info strong { display: block; color: #EEF3FF; font-size: 14px; font-weight: 500; font-family: 'Montserrat', sans-serif;  transform: translateX(15px);}
 
-.portal-dark-status-wrap { display: flex !important; align-items: center !important; justify-content: flex-end !important; gap: 5px !important; flex-wrap: nowrap !important; width: 220px !important; min-width: 220px !important; white-space: nowrap !important; }
+.portal-dark-status-wrap { display: flex !important; align-items: center !important; justify-content: flex-end !important; gap: 8px !important; flex-wrap: nowrap !important; width: 220px !important; min-width: 220px !important; white-space: nowrap !important; }
 .portal-dark-status-wrap .portal-status {
   order: 3 !important;
   flex: 0 0 89px !important;
@@ -1203,28 +1203,28 @@
 }
 
 .portal-justify-countdown {
-  order: 2 !important;
-  flex: 0 0 89px !important;
+  order: 0 !important;
+  flex: 0 0 94px !important;
   display: inline-flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  width: 58px !important;
-  min-width: 58px !important;
+  justify-content: flex-end !important;
+  width: 94px !important;
+  min-width: 94px !important;
   height: 30px !important;
   min-height: 20px !important;
-  padding: 0 5px !important;
+  padding: 0 !important;
   box-sizing: border-box !important;
-  border: 1px solid rgba(255, 193, 7, 0.52) !important;
-  border-radius: 4px !important;
-  background: rgba(255, 167, 38, 0.12) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
   color: #ffd45c !important;
-  font-size: 10px !important;
+  font-size: 12px !important;
   line-height: 1 !important;
   font-weight: 900 !important;
   white-space: nowrap !important;
   letter-spacing: .01em !important;
-  box-shadow: 0 0 8px rgba(255, 193, 7, 0.10), inset 0 0 7px rgba(255, 193, 7, 0.04) !important;
-  animation: portal-countdown-attention 2s ease-in-out infinite !important;
+  box-shadow: none !important;
+  animation: none !important;
 }
 
 .portal-justify-countdown::before {
@@ -1635,7 +1635,7 @@
     display: flex !important;
     align-items: center !important;
     justify-content: flex-end !important;
-    gap: 3px !important;
+    gap: 6px !important;
     flex-wrap: nowrap !important;
     overflow: visible !important;
     grid-column: auto !important;
@@ -1702,19 +1702,19 @@
   }
 
   .attendance-history-view .portal-dark-status-wrap .portal-justify-countdown {
-    width: 38px !important;
-    min-width: 38px !important;
-    max-width: 38px !important;
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
     height: 22px !important;
     min-height: 22px !important;
-    flex: 0 0 38px !important;
+    flex: 0 0 48px !important;
     padding: 0 3px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     box-sizing: border-box !important;
     border-radius: 5px !important;
-    font-size: 5px !important;
+    font-size: 6px !important;
     line-height: 1 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -2418,19 +2418,19 @@ color: transparent !important;
   }
 
   .attendance-history-view .portal-mobile-countdown {
-    width: 38px !important;
-    min-width: 38px !important;
+    width: 48px !important;
+    min-width: 48px !important;
     height: 30px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     box-sizing: border-box !important;
     padding: 0 3px !important;
-    border: 1px solid rgba(255, 193, 7, .52) !important;
-    border-radius: 4px !important;
-    background: rgba(255, 167, 38, .12) !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
     color: #ffd45c !important;
-    font-size: 5px !important;
+    font-size: 6px !important;
     font-weight: 900 !important;
     line-height: 1 !important;
     white-space: nowrap !important;
