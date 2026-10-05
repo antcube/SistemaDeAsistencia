@@ -246,34 +246,15 @@ const Members = () => {
   }, []);
 
   useEffect(() => {
-    loadUsers();
-  }, [page, circle, memberMode]);
-
-  /*
-   * =========================================================
-   * BÚSQUEDA
-   * =========================================================
-   */
-
-  const handleSearch =
-    (event) => {
-      event.preventDefault();
-
-      setPage(1);
-
+    // Búsqueda reactiva: espera brevemente mientras el usuario escribe
+    // para evitar una petición al backend por cada tecla pulsada.
+    const searchTimer = window.setTimeout(() => {
       loadUsers();
-    };
+    }, search ? 250 : 0);
 
-  const clearFilters =
-    () => {
-      setSearch("");
-      setCircle("");
-      setMemberMode("");
-      setCircleMenuOpen(false);
-      setPage(1);
-    };
+    return () => window.clearTimeout(searchTimer);
+  }, [page, circle, memberMode, search]);
 
-  
 
   const openCreate =
     () => {
@@ -556,8 +537,7 @@ const Members = () => {
             BARRA SUPERIOR
         ====================================================== */}
 
-        <form
-          onSubmit={handleSearch}
+        <div
           className="mb-4 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-[0_4px_18px_rgba(15,23,42,0.10)] lg:flex-row lg:items-center"
         >
 
@@ -567,9 +547,10 @@ const Members = () => {
             <input
               type="search"
               value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
               placeholder="Buscar por DNI, nombre, rango, círculo..."
               className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
@@ -722,27 +703,6 @@ const Members = () => {
             </div>
           )}
 
-          {/* BUSCAR */}
-
-          <button
-            type="submit"
-            className="h-10 rounded-lg border border-blue-700 bg-gradient-to-r from-blue-600 to-blue-800 px-4 text-xs font-bold text-white shadow-sm transition hover:-translate-y-px hover:shadow-md"
-          >
-            🔎 Buscar
-          </button>
-
-          {/* LIMPIAR */}
-
-          <button
-            type="button"
-            onClick={
-              clearFilters
-            }
-            className="h-10 rounded-lg border border-slate-300 bg-white px-4 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
-          >
-            Limpiar
-          </button>
-
           {/* PLANTILLA */}
 
           <button
@@ -784,7 +744,7 @@ const Members = () => {
           >
             + Nuevo Miembro
           </button>
-        </form>
+        </div>
 
         {/* =====================================================
             TABLA

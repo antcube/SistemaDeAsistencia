@@ -260,7 +260,7 @@ const MicroKpi = ({ label, value, tone = "cyan", suffix = "%", subLeft, subRight
         <div className="min-w-0"><p className="truncate text-[8px] font-black uppercase tracking-[.13em] text-[#94A3B8]">{label}</p><p className="mt-0.5 text-[26px] font-black leading-none text-white"><AnimatedNumber value={value} suffix={suffix} decimals={suffix ? 1 : 0}/></p></div>
         <span className={`text-[8px] font-black ${accent}`}>{suffix ? pct(value) : value}</span>
       </div>
-      {(subLeft || subRight) && <div className="mt-2 flex items-center justify-between gap-2 border-t border-[#1E293B] pt-1.5 text-[8px] font-bold text-[#64748B]"><span className="truncate">{subLeft}</span><span className="truncate">{subRight}</span></div>}
+      {(subLeft || subRight) && <div className="mt-2 flex items-center justify-between gap-2 border-t border-[#1E293B] pt-1.5 text-[10px] font-extrabold text-[#7C8FB3]"><span className="truncate">{subLeft}</span><span className="truncate">{subRight}</span></div>}
     </article>
   );
 };
@@ -292,10 +292,10 @@ const ComparisonExecutive = ({ comparison, selectedWeek, onWeek }) => {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-4 gap-4">
-        <MicroKpi label="Asistencia global" value={globalAttendance} tone="green" subLeft={`P ${pct(pSummary.attendanceRate)}`} subRight={`V ${pct(vSummary.attendanceRate)}`}/>
-        <MicroKpi label="Faltas globales" value={globalAbsence} tone="red" subLeft={`P ${pct(pSummary.absenceRate)}`} subRight={`V ${pct(vSummary.absenceRate)}`}/>
-        <MicroKpi label="Justificados" value={globalJustified} tone="amber" subLeft={`P ${pct(pSummary.justifiedRate)}`} subRight={`V ${pct(vSummary.justifiedRate)}`}/>
-        <MicroKpi label="Promedio por sesión" value={globalAverage} tone="cyan" subLeft={`P ${pct(pSummary.averageSessionAttendance)}`} subRight={`V ${pct(vSummary.averageSessionAttendance)}`}/>
+        <MicroKpi label="Asistencia global" value={globalAttendance} tone="green" subLeft={`PRESENCIAL ${pct(pSummary.attendanceRate)}`} subRight={`VIRTUAL ${pct(vSummary.attendanceRate)}`}/>
+        <MicroKpi label="Faltas globales" value={globalAbsence} tone="red" subLeft={`PRESENCIAL ${pct(pSummary.absenceRate)}`} subRight={`VIRTUAL ${pct(vSummary.absenceRate)}`}/>
+        <MicroKpi label="Justificados" value={globalJustified} tone="amber" subLeft={`PRESENCIAL ${pct(pSummary.justifiedRate)}`} subRight={`VIRTUAL ${pct(vSummary.justifiedRate)}`}/>
+        <MicroKpi label="Promedio por sesión" value={globalAverage} tone="cyan" subLeft={`PRESENCIAL ${pct(pSummary.averageSessionAttendance)}`} subRight={`VIRTUAL ${pct(vSummary.averageSessionAttendance)}`}/>
       </div>
 
       <div className="grid grid-cols-12 gap-4">
@@ -627,30 +627,30 @@ const Dashboard = () => {
       <div className="pointer-events-none absolute right-[-100px] top-[-70px] h-80 w-80 rounded-full bg-[#8B5CF6]/8 blur-3xl"/>
 
       <div className="relative mx-auto w-full max-w-[1480px] space-y-4">
-        <header data-no-pdf className="flex min-h-[58px] items-center gap-3 rounded-2xl border border-[#1E293B] bg-[#0D1527]/95 px-4 py-2.5 shadow-[0_10px_30px_rgba(0,0,0,.28)] backdrop-blur-xl">
-          <div className="flex min-w-[188px] items-center gap-2">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#2457c5] to-[#4CC8FF] text-white shadow-[0_0_14px_rgba(76,200,255,.18)]"><Icon name="trend" className="h-3.5 w-3.5"/></div>
-            <div className="min-w-0"><p className="text-[8px] font-black uppercase tracking-[.16em] text-[#38BDF8]">Círculos Connect</p><h1 className="truncate text-[13px] font-black leading-tight text-white">Dashboard Ejecutivo</h1></div>
+        <header data-no-pdf className="flex min-h-[66px] items-center gap-3.5 rounded-2xl border border-[#1E293B] bg-[#0D1527]/95 px-5 py-3 shadow-[0_10px_30px_rgba(0,0,0,.28)] backdrop-blur-xl">
+          <div className="flex min-w-[205px] items-center gap-2">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#2457c5] to-[#4CC8FF] text-white shadow-[0_0_14px_rgba(76,200,255,.18)]"><Icon name="trend" className="h-3.5 w-3.5"/></div>
+            <div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-[.16em] text-[#38BDF8]">Círculos Connect</p><h1 className="truncate text-[15px] font-black leading-tight text-white">Dashboard Ejecutivo</h1></div>
           </div>
 
-          <div className="flex h-9 rounded-lg border border-[#1E293B] bg-[#090D16] p-0.5">
-            <button type="button" onClick={() => {setMode("comparison");setSelectedWeek(null);}} className={`rounded-md px-3.5 text-[9px] font-black transition-all ${mode === "comparison" ? "bg-gradient-to-r from-[#2457c5] to-[#38BDF8] text-white shadow-[0_0_12px_rgba(56,189,248,.2)]" : "text-[#94A3B8] hover:text-white"}`}>Comparativa</button>
-            <button type="button" onClick={() => {setMode("circle");setSelectedWeek(null);}} className={`rounded-md px-3.5 text-[9px] font-black transition-all ${mode === "circle" ? "bg-gradient-to-r from-[#2457c5] to-[#38BDF8] text-white shadow-[0_0_12px_rgba(56,189,248,.2)]" : "text-[#94A3B8] hover:text-white"}`}>Por Círculo</button>
+          <div className="flex h-10 rounded-lg border border-[#1E293B] bg-[#090D16] p-0.5">
+            <button type="button" onClick={() => {setMode("comparison");setSelectedWeek(null);}} className={`rounded-md px-4 text-[10px] font-black transition-all ${mode === "comparison" ? "bg-gradient-to-r from-[#2457c5] to-[#38BDF8] text-white shadow-[0_0_12px_rgba(56,189,248,.2)]" : "text-[#94A3B8] hover:text-white"}`}>Comparativa</button>
+            <button type="button" onClick={() => {setMode("circle");setSelectedWeek(null);}} className={`rounded-md px-4 text-[10px] font-black transition-all ${mode === "circle" ? "bg-gradient-to-r from-[#2457c5] to-[#38BDF8] text-white shadow-[0_0_12px_rgba(56,189,248,.2)]" : "text-[#94A3B8] hover:text-white"}`}>Por Círculo</button>
           </div>
 
-          {mode === "circle" && <select value={selectedCircle} onChange={(e) => {setSelectedCircle(e.target.value);setSelectedWeek(null);}} disabled={loadingCircles} className="h-9 w-[180px] rounded-lg border border-[#1E293B] bg-[#090D16] px-2.5 text-[9px] font-black text-white outline-none focus:border-[#38BDF8]"><option value="">Seleccionar Círculo</option>{circles.map((circle) => <option key={circle._id || circle.name} value={circle.name}>{circle.name}</option>)}</select>}
+          {mode === "circle" && <select value={selectedCircle} onChange={(e) => {setSelectedCircle(e.target.value);setSelectedWeek(null);}} disabled={loadingCircles} className="h-10 w-[190px] rounded-lg border border-[#1E293B] bg-[#090D16] px-3 text-[10px] font-black text-white outline-none focus:border-[#38BDF8]"><option value="">Seleccionar Círculo</option>{circles.map((circle) => <option key={circle._id || circle.name} value={circle.name}>{circle.name}</option>)}</select>}
 
-          <div className="flex h-9 items-center overflow-hidden rounded-lg border border-[#1E293B] bg-[#090D16]">
+          <div className="flex h-10 items-center overflow-hidden rounded-lg border border-[#1E293B] bg-[#090D16]">
             <button type="button" onClick={() => moveMonth(-1)} className="grid h-full w-9 place-items-center text-[#94A3B8] hover:text-[#38BDF8]">‹</button>
-            <div className="min-w-[118px] border-x border-[#1E293B] px-2.5 text-center text-[9px] font-black text-white">{MONTHS[month-1]} {year}</div>
+            <div className="min-w-[128px] border-x border-[#1E293B] px-2.5 text-center text-[10px] font-black text-white">{MONTHS[month-1]} {year}</div>
             <button type="button" onClick={() => moveMonth(1)} className="grid h-full w-9 place-items-center text-[#94A3B8] hover:text-[#38BDF8]">›</button>
           </div>
 
-          <button type="button" onClick={() => load()} disabled={loading || (mode === "circle" && !selectedCircle)} className="flex h-9 items-center gap-1.5 rounded-lg border border-[#38BDF8]/35 bg-[#10244e] px-3 text-[9px] font-black text-[#7DD3FC] disabled:opacity-50"><Icon name="refresh" className={`h-3 w-3 ${loading ? "animate-spin" : ""}`}/><span>Actualizar</span></button>
-          {selectedWeek && <button type="button" onClick={clearWeek} className="h-9 rounded-lg border border-[#1E293B] bg-[#090D16] px-3 text-[9px] font-black text-[#38BDF8]">Mes completo</button>}
+          <button type="button" onClick={() => load()} disabled={loading || (mode === "circle" && !selectedCircle)} className="flex h-10 items-center gap-2 rounded-lg border border-[#38BDF8]/35 bg-[#10244e] px-4 text-[10px] font-black text-[#7DD3FC] disabled:opacity-50"><Icon name="refresh" className={`h-3 w-3 ${loading ? "animate-spin" : ""}`}/><span>Actualizar</span></button>
+          {selectedWeek && <button type="button" onClick={clearWeek} className="h-10 rounded-lg border border-[#1E293B] bg-[#090D16] px-4 text-[10px] font-black text-[#38BDF8]">Mes completo</button>}
 
-          <div className="ml-auto hidden min-w-0 text-right xl:block"><p className="truncate text-[9px] font-black text-white">{mode === "comparison" ? "Presencial vs. Virtual" : selectedCircle}</p><p className="text-[8px] text-[#64748B]">{selectedWeek ? `Semana ${selectedWeek}` : "Mes completo"}</p></div>
-          <button type="button" onClick={downloadDashboardPdf} disabled={pdfLoading} className="flex h-9 items-center gap-1.5 rounded-lg border border-[#F43F5E]/35 bg-[#45152a]/80 px-3 text-[9px] font-black text-[#ffd9e2] disabled:opacity-60"><Icon name={pdfLoading ? "refresh" : "pdf"} className={`h-3 w-3 text-[#FB7185] ${pdfLoading ? "animate-spin" : ""}`}/><span>{pdfLoading ? "Generando" : "PDF"}</span></button>
+          <div className="ml-auto hidden min-w-0 text-right xl:block"><p className="truncate text-[10px] font-black text-white">{mode === "comparison" ? "Presencial vs. Virtual" : selectedCircle}</p><p className="text-[9px] text-[#64748B]">{selectedWeek ? `Semana ${selectedWeek}` : "Mes completo"}</p></div>
+          <button type="button" onClick={downloadDashboardPdf} disabled={pdfLoading} className="flex h-10 items-center gap-2 rounded-lg border border-[#F43F5E]/35 bg-[#45152a]/80 px-4 text-[10px] font-black text-[#ffd9e2] disabled:opacity-60"><Icon name={pdfLoading ? "refresh" : "pdf"} className={`h-3.5 w-3.5 text-[#FB7185] ${pdfLoading ? "animate-spin" : ""}`}/><span>{pdfLoading ? "Generando" : "PDF"}</span></button>
         </header>
 
         <main id="dashboard-export-area" className="w-full">
