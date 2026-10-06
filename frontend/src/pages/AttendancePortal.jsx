@@ -262,6 +262,11 @@ const AttendancePortal = () => {
   const [qrSuccess, setQrSuccess] =
     useState("");
 
+  const [qrDuplicate, setQrDuplicate] =
+    useState(false);
+  const [qrUsername, setQrUsername] =
+    useState("");
+
   const [qrNow, setQrNow] =
     useState(Date.now());
 
@@ -294,6 +299,7 @@ const AttendancePortal = () => {
           setQrLoading(true);
           setQrError("");
           setQrSuccess("");
+          setQrDuplicate(false);
           setMember(null);
           setMeetings([]);
 
@@ -402,6 +408,8 @@ const AttendancePortal = () => {
         setQrError(
           "Ingresa tu DNI para registrar tu asistencia."
         );
+        setQrDuplicate(false);
+        setQrUsername("");
 
         return;
       }
@@ -449,8 +457,8 @@ const AttendancePortal = () => {
         setQrSubmitting(true);
         setQrError("");
         setQrSuccess("");
-
-        
+        setQrDuplicate(false);
+        setQrUsername("");
 
         const response =
           await attendanceService.registerByQr(
@@ -462,10 +470,33 @@ const AttendancePortal = () => {
           response?.data ||
           response;
 
-        setQrSuccess(
-          data?.message ||
-            "Asistencia registrada correctamente."
+        const registeredUser =
+          data?.user ||
+          data?.attendance?.user ||
+          null;
+
+        setQrUsername(
+          String(
+            registeredUser?.username ||
+            registeredUser?.user ||
+            registeredUser?.usuario ||
+            ""
+          ).trim()
         );
+
+        if (data?.alreadyRegistered) {
+          setQrDuplicate(true);
+          setQrError(
+            "Este DNI ya registró su asistencia en esta sesión. Su estado fue actualizado a Asistió."
+          );
+          setQrSuccess("");
+        } else {
+          setQrDuplicate(false);
+          setQrError("");
+          setQrSuccess(
+            data?.message || "Asistencia registrada correctamente."
+          );
+        }
 
         setQrDni("");
       } catch (err) {
@@ -474,10 +505,22 @@ const AttendancePortal = () => {
           err
         );
 
-        setQrError(
+        const status = err?.status || err?.response?.status || 0;
+        const message = String(
+          err?.data?.message ||
+          err?.response?.data?.message ||
           err?.message ||
-            "No se pudo registrar la asistencia."
+          "No se pudo registrar la asistencia."
         );
+
+        const isDuplicate =
+          status === 409 ||
+          message.toLowerCase().includes("ya tiene un registro") ||
+          message.toLowerCase().includes("ya está registrada") ||
+          message.toLowerCase().includes("ya fue registrada");
+
+        setQrDuplicate(isDuplicate);
+        setQrError(message);
       } finally {
         setQrSubmitting(false);
       }
@@ -1194,11 +1237,20 @@ const AttendancePortal = () => {
       return "F";
     };
 
-  // Regla central del historial: mientras la fecha de una sesión no haya
-  // llegado, esa sesión no tiene resultado y nunca debe contarse como falta.
+  // Regla central del historial:
+  // una sesión futura normalmente permanece como programada, pero si ya
+  // existe un registro de asistencia (por ejemplo, una asistencia validada
+  // mediante una migración), ese registro tiene prioridad y debe mostrarse
+  // exactamente igual que en el Reporte General.
   function isFutureMeeting(meeting) {
     const meetingDateKey = String(meeting?.date || "").slice(0, 10);
     if (!meetingDateKey) return false;
+
+    // Si ya existe un Attendance real para esta reunión, no ocultamos su estado
+    // aunque la fecha de la sesión todavía no haya llegado.
+    if (meeting?.hasAttendanceRecord) {
+      return false;
+    }
 
     const now = new Date();
     const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -1475,11 +1527,21 @@ const AttendancePortal = () => {
     const counts = { attended: 0, justified: 0, absent: 0 };
 
     (categoryMeetings || []).forEach((meeting) => {
-      const status = getTimelineStatus(meeting);
+      // Los indicadores de la cabecera cuentan únicamente estados realmente
+      // registrados. Una reunión sin registro todavía no es asistencia,
+      // justificación ni falta, aunque el calendario ya tenga la sesión creada.
+      if (!meeting?.hasAttendanceRecord) return;
 
-      if (status === "attended") counts.attended += 1;
-      else if (status === "justified") counts.justified += 1;
-      else if (status === "absent") counts.absent += 1;
+      const status = normalizeStatus(meeting.status);
+
+      if (status === "Asistió" || status === "Clase Presencial") {
+        counts.attended += 1;
+      } else if (status === "Justificado") {
+        if (meeting.justificationValidity === "extra") counts.absent += 1;
+        else counts.justified += 1;
+      } else if (status === "No asistió") {
+        counts.absent += 1;
+      }
     });
 
     return counts;
@@ -1924,12 +1986,14 @@ const AttendancePortal = () => {
           {!qrLoading && qrMeeting && (
             <section className="attendance-portal-login attendance-register-view">
 
-              <div className="attendance-portal-logo">
-                📱
-              </div>
+              <img
+                src={seinfintyLogo}
+                alt="SEINFINITY"
+                className="attendance-register-logo"
+              />
 
               <span className="attendance-portal-kicker">
-                CÍRCULOS CONNECT / ASISTENCIA
+                CÍRCULOS CONNECT · REGISTRO
               </span>
 
               <h1>
@@ -1951,88 +2015,101 @@ const AttendancePortal = () => {
 
               {!qrIsExpired &&
               qrRemainingMs > 0 ? (
+                !qrSuccess && !qrDuplicate ? (
                 <form
-                  onSubmit={
-                    handleQrSubmit
-                  }
-                  className="attendance-portal-form"
-                >
+                onSubmit={handleQrSubmit}
+                className="attendance-portal-form"
+              >
+                <div className="qr-active-indicator">
+                  <span className="qr-active-dot" />
+                  <span>QR ACTIVO PARA REGISTRO</span>
+                </div>
 
-                  <label>
-                    DNI / N° de Documento
-                  </label>
+                <label htmlFor="qr-attendance-dni">
+                  DNI / N° DE DOCUMENTO
+                </label>
 
-                  <div className="attendance-portal-input-wrap">
+                <div className="attendance-portal-input-wrap">
+                  <span className="qr-dni-icon-wrap">
+                    <img src={dniIcon} alt="DNI" className="qr-dni-icon" />
+                  </span>
 
-                    <span>
-                      🆔
-                    </span>
+                  <input
+                    id="qr-attendance-dni"
+                    type="text"
+                    value={qrDni}
+                    onChange={(event) => {
+                      setQrDni(event.target.value.replace(/\D/g, ""));
+                      setQrError("");
+                      setQrSuccess("");
+                      setQrDuplicate(false);
+                      setQrUsername("");
+                    }}
+                    placeholder="Ingresa tu DNI"
+                    maxLength={12}
+                    autoComplete="off"
+                    inputMode="numeric"
+                    autoFocus
+                  />
+                </div>
 
-                    <input
-                      type="text"
-                      value={
-                        qrDni
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setQrDni(
-                          event.target.value
-                        )
-                      }
-                      placeholder="Ej: 74839201"
-                      maxLength={12}
-                      autoComplete="off"
-                      inputMode="numeric"
-                      autoFocus
-                    />
+                <div className="qr-time-remaining">
+                  <span className="qr-time-icon">◷</span>
+                  <span>Tiempo restante</span>
+                  <strong>{String(qrRemainingMinutes).padStart(2, "0")}:{String(qrRemainingSeconds).padStart(2, "0")}</strong>
+                </div>
 
-                  </div>
-
-                  <div className="text-center text-sm font-bold text-emerald-700">
-                    ⏱️ Tiempo disponible:{" "}
-                    {String(
-                      qrRemainingMinutes
-                    ).padStart(
-                      2,
-                      "0"
-                    )}
-                    :
-                    {String(
-                      qrRemainingSeconds
-                    ).padStart(
-                      2,
-                      "0"
-                    )}
-                  </div>
-
-                  {qrError && (
-                    <div className="attendance-portal-error">
-                      {qrError}
+                {qrError && !qrDuplicate && (
+                  <div className="attendance-portal-error">
+                    <span className="qr-alert-icon">!</span>
+                    <div>
+                      <strong>
+                        {qrError.toLowerCase().includes("no se encontró")
+                          ? "DNI NO ENCONTRADO"
+                          : "NO SE PUDO REGISTRAR"}
+                      </strong>
+                      <small>{qrError}</small>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {qrSuccess && (
-                    <div className="attendance-portal-success">
-                      {qrSuccess}
-                    </div>
-                  )}
+                {!qrSuccess && (
+                  <button
+                    type="submit"
+                    className="attendance-portal-submit"
+                    disabled={qrSubmitting}
+                  >
+                    <span>{qrSubmitting ? "Registrando..." : "Registrar asistencia"}</span>
+                    <span className="qr-submit-arrow">→</span>
+                  </button>
+                )}
 
-                  {!qrSuccess && (
-                    <button
-                      type="submit"
-                      className="attendance-portal-submit"
-                      disabled={
-                        qrSubmitting
-                      }
-                    >
-                      {qrSubmitting
-                        ? "Registrando..."
-                        : "Registrar asistencia"}
-                    </button>
-                  )}
+                <div className="qr-session-note">
+                  <span /> Registro exclusivo de esta sesión
+                </div>
 
-                </form>
+              </form>
+                ) : (
+                  <div className="qr-completed-state">
+                    {qrDuplicate ? (
+                      <div className="attendance-portal-error qr-duplicate-alert">
+                        <span className="qr-alert-icon">✓</span>
+                        <div>
+                          <strong>ASISTENCIA YA REGISTRADA</strong>
+                          <small>Este DNI ya registró su asistencia en esta sesión.</small>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="attendance-portal-success qr-success-alert">
+                        <span className="qr-success-icon">✓</span>
+                        <div>
+                          <strong>¡Felicidades{qrUsername ? `, ${qrUsername}` : ""}!</strong>
+                          <small>Tu asistencia fue registrada correctamente.</small>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
               ) : (
                 <div className="attendance-portal-error">
                   ❌ El tiempo límite para marcar asistencia ha finalizado.
@@ -2544,7 +2621,6 @@ const AttendancePortal = () => {
                                     <span className={getStatusClass(status, meeting.justificationValidity)}>
                                       <b>{getStatusSymbol(status)}</b>{displayStatus}
                                     </span>
-                                    {meeting.note && <small className="portal-dark-note">{meeting.note}</small>}
                                     {canJustifyMeeting(meeting) && (
                                       <>
                                         <button
@@ -2680,7 +2756,7 @@ const AttendancePortal = () => {
             </div>
           )}
 
-          <footer className="attendance-portal-footer">Círculos Connect · soy.embajador</footer>
+          
         </div>
       )}
 

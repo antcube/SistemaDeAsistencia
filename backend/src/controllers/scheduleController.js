@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const Meeting = require("../models/Meeting");
 const Schedule = require("../models/Schedule");
+const { createAuditLog } = require("../services/auditService");
 const {
   generateMeetingsForSchedule,
   generateMeetingsForMonth,
@@ -12,6 +13,24 @@ const {
   canManageGlobal,
   canManageCircle,
 } = require("../middleware/permissionMiddleware");
+
+const scheduleSnapshot = (schedule) => ({
+  name: schedule.name || "",
+  circles: Array.isArray(schedule.circles) ? [...schedule.circles] : [],
+  type: schedule.type || "",
+  title: schedule.title || "",
+  host: schedule.host || "",
+  time: schedule.time || "",
+  endTime: schedule.endTime || "",
+  location: schedule.location || "",
+  weekdays: Array.isArray(schedule.weekdays) ? [...schedule.weekdays] : [],
+  startDate: schedule.startDate || "",
+  endDate: schedule.endDate || null,
+  changeType: schedule.changeType || "CREATED",
+  active: Boolean(schedule.active),
+  deletedAt: schedule.deletedAt || null,
+  deletedBy: schedule.deletedBy || "",
+});
 
 const VALID_TYPES = [
   "CIRCULO DE LIDERAZGO",
@@ -167,11 +186,18 @@ const createSchedule = async (req, res) => {
 
     const start = new Date(`${startDate}T00:00:00`);
 
-    await generateMeetingsForSchedule(
+    const generatedMeetings = await generateMeetingsForSchedule(
       schedule,
       start.getFullYear(),
       start.getMonth() + 1
     );
+
+    await createAuditLog({
+      admin: req.user, action: "CREATE_SCHEDULE", module: "schedules",
+      description: `Se creó la programación ${schedule.name} (${schedule.type}) para ${schedule.circles.join(", ")}.`,
+      targetId: schedule._id, targetName: schedule.name, circle: schedule.circles.join(", "), reversible: true,
+      metadata: { after: scheduleSnapshot(schedule), createdMeetingIds: generatedMeetings.map((m) => String(m._id)), meetingType: schedule.type, meetingTitle: schedule.title, meetingDate: schedule.startDate },
+    });
 
     return res.status(201).json({
       message: "Programación creada correctamente.",
@@ -293,6 +319,13 @@ const generateScheduleMonth = async (req, res) => {
         month
       );
 
+    await createAuditLog({
+      admin: req.user, action: "GENERATE_SCHEDULE_MONTH", module: "schedules",
+      description: `Se generó ${String(month).padStart(2, "0")}/${year} para la programación ${schedule.name}.`,
+      targetId: schedule._id, targetName: schedule.name, circle: schedule.circles.join(", "), reversible: meetings.length > 0,
+      metadata: { createdMeetingIds: meetings.map((m) => String(m._id)), scheduleId: String(schedule._id), year, month, meetingType: schedule.type, meetingTitle: schedule.title },
+    });
+
     return res.json({
       message: "Mes generado correctamente.",
       created: meetings.length,
@@ -349,6 +382,8 @@ const migrateSchedule = async (req, res) => {
           "Esta programación ya no está activa.",
       });
     }
+
+    const beforeOld = scheduleSnapshot(oldSchedule);
 
     const {
       effectiveDate,
@@ -470,11 +505,18 @@ const migrateSchedule = async (req, res) => {
       `${effectiveDate}T00:00:00`
     );
 
-    await generateMeetingsForSchedule(
+    const generatedMeetings = await generateMeetingsForSchedule(
       newSchedule,
       start.getFullYear(),
       start.getMonth() + 1
     );
+
+    await createAuditLog({
+      admin: req.user, action: "MIGRATE_SCHEDULE", module: "schedules",
+      description: `Se migró la programación ${oldSchedule.name} desde ${effectiveDate}.`,
+      targetId: oldSchedule._id, targetName: oldSchedule.name, circle: oldSchedule.circles.join(", "), reversible: true,
+      metadata: { beforeOld, afterOld: scheduleSnapshot(oldSchedule), newScheduleId: String(newSchedule._id), newSchedule: scheduleSnapshot(newSchedule), effectiveDate, createdMeetingIds: generatedMeetings.map((m) => String(m._id)), meetingType: newSchedule.type, meetingTitle: newSchedule.title, meetingDate: effectiveDate },
+    });
 
     return res.json({
       message:
@@ -525,6 +567,7 @@ const terminateScheduleFromDate = async (
       });
     }
 
+    const before = scheduleSnapshot(schedule);
     const { effectiveDate } = req.body;
 
     if (!isValidDate(effectiveDate)) {
@@ -564,6 +607,13 @@ const terminateScheduleFromDate = async (
       effectiveDate,
       userId: req.user.adminId,
       byScheduleChange: false,
+    });
+
+    await createAuditLog({
+      admin: req.user, action: "TERMINATE_SCHEDULE", module: "schedules",
+      description: `Se eliminó la programación ${schedule.name} desde ${effectiveDate}.`,
+      targetId: schedule._id, targetName: schedule.name, circle: schedule.circles.join(", "), reversible: true,
+      metadata: { before, after: scheduleSnapshot(schedule), effectiveDate, meetingType: schedule.type, meetingTitle: schedule.title, meetingDate: effectiveDate },
     });
 
     return res.json({
@@ -614,6 +664,8 @@ const updateSchedule = async (req, res) => {
         message: "No tienes permisos.",
       });
     }
+
+    const before = scheduleSnapshot(schedule);
 
     /*
      * ========================================================
@@ -841,6 +893,13 @@ const updateSchedule = async (req, res) => {
 
     await schedule.save();
 
+    await createAuditLog({
+      admin: req.user, action: "UPDATE_SCHEDULE", module: "schedules",
+      description: `Se actualizó la programación ${schedule.name}.`,
+      targetId: schedule._id, targetName: schedule.name, circle: schedule.circles.join(", "), reversible: true,
+      metadata: { before, after: scheduleSnapshot(schedule), meetingType: schedule.type, meetingTitle: schedule.title, meetingDate: schedule.startDate },
+    });
+
     return res.json({
       message:
         "Programación actualizada correctamente.",
@@ -889,6 +948,8 @@ const restoreSchedule = async (req, res) => {
       });
     }
 
+    const before = scheduleSnapshot(schedule);
+
     schedule.active = true;
     schedule.deletedAt = null;
     schedule.deletedBy = "";
@@ -896,6 +957,13 @@ const restoreSchedule = async (req, res) => {
     schedule.changeType = "CREATED";
 
     await schedule.save();
+
+    await createAuditLog({
+      admin: req.user, action: "RESTORE_SCHEDULE", module: "schedules",
+      description: `Se restauró la programación ${schedule.name}.`,
+      targetId: schedule._id, targetName: schedule.name, circle: schedule.circles.join(", "), reversible: true,
+      metadata: { before, after: scheduleSnapshot(schedule), meetingType: schedule.type, meetingTitle: schedule.title, meetingDate: schedule.startDate },
+    });
 
     return res.json({
       message:

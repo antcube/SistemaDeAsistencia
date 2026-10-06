@@ -24,6 +24,20 @@ const getCircleName = (circle) => {
   if (typeof circle === "string") return circle.trim();
   return String(circle?.name || "").trim();
 };
+const currentPeriodValue = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+};
+
+const formatPeriodLabel = (period) => {
+  if (!/^\d{4}-\d{2}$/.test(String(period || ""))) return period || "";
+  const [year, month] = period.split("-").map(Number);
+  return new Intl.DateTimeFormat("es-PE", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(year, month - 1, 1));
+};
+
 
 const statusClasses = (status) => {
   if (status === "Asistió" || status === "Clase Presencial") {
@@ -42,6 +56,7 @@ const MemberMigrationPanel = ({ circles = [] }) => {
   const [searched, setSearched] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [destinationCircle, setDestinationCircle] = useState("");
+  const [migrationPeriod, setMigrationPeriod] = useState(currentPeriodValue());
   const [preview, setPreview] = useState(null);
 
   const [searchLoading, setSearchLoading] = useState(false);
@@ -71,6 +86,7 @@ const MemberMigrationPanel = ({ circles = [] }) => {
 
   const clearMigrationSelection = () => {
     setDestinationCircle("");
+    setMigrationPeriod(currentPeriodValue());
     setPreview(null);
     setError("");
     setMessage("");
@@ -154,6 +170,7 @@ const MemberMigrationPanel = ({ circles = [] }) => {
       const response = await memberMigrationService.preview({
         userId: selectedUser._id,
         destinationCircle,
+        migrationPeriod,
       });
 
       setPreview(response);
@@ -169,7 +186,7 @@ const MemberMigrationPanel = ({ circles = [] }) => {
     if (!preview || !selectedUser?._id || !destinationCircle) return;
 
     const confirmed = window.confirm(
-      `¿Confirmas migrar a ${destinationCircle}? Se copiarán sus asistencias, faltas y justificaciones a las sesiones equivalentes por número. El historial original no se eliminará.`
+      `¿Confirmas migrar a ${destinationCircle} desde ${formatPeriodLabel(migrationPeriod)}? Se convalidarán únicamente los estados registrados de ese mes. Los meses anteriores permanecerán en sus círculos históricos.`
     );
 
     if (!confirmed) return;
@@ -182,10 +199,11 @@ const MemberMigrationPanel = ({ circles = [] }) => {
       const response = await memberMigrationService.migrate({
         userId: selectedUser._id,
         destinationCircle,
+        migrationPeriod,
       });
 
       setMessage(
-        `${response.message || "Migración realizada correctamente."} Sesiones convalidadas: ${response.migratedSessions || 0}.`
+        `${response.message || "Migración registrada correctamente."} ${response.scheduled ? `Cambio programado desde ${formatPeriodLabel(response.migrationPeriod)}.` : "Cambio aplicado."} Sesiones convalidadas: ${response.migratedSessions || 0}.`
       );
 
       setSelectedUser(null);
@@ -320,11 +338,35 @@ const MemberMigrationPanel = ({ circles = [] }) => {
               </select>
             </div>
 
+            <div>
+              <label className="mb-1.5 block text-xs font-bold text-slate-600">
+                Migrar desde el mes
+              </label>
+              <input
+                type="month"
+                value={migrationPeriod}
+                min={currentPeriodValue()}
+                onChange={(event) => {
+                  setMigrationPeriod(event.target.value);
+                  setPreview(null);
+                  setError("");
+                  setMessage("");
+                }}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+
+              <div className="mt-2 rounded-xl border border-cyan-100 bg-cyan-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+                <span className="font-bold text-slate-800">Cambio efectivo desde {formatPeriodLabel(migrationPeriod)}.</span>{" "}
+                Se convalidarán las asistencias, faltas y justificaciones registradas en ese mes por número de sesión.
+                Los meses anteriores permanecerán en el círculo histórico al que pertenecía el miembro.
+              </div>
+            </div>
+
             <div className="flex justify-end border-t border-slate-100 pt-4">
               <button
                 type="button"
                 onClick={handlePreview}
-                disabled={previewLoading || !destinationCircle}
+                disabled={previewLoading || !destinationCircle || !migrationPeriod}
                 className="h-10 rounded-xl bg-[#2457c5] px-5 text-sm font-bold text-white shadow-sm hover:bg-[#1d49a6] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {previewLoading ? "Preparando..." : "Ver convalidación"}
@@ -339,7 +381,10 @@ const MemberMigrationPanel = ({ circles = [] }) => {
                       Vista previa de la convalidación
                     </div>
                     <div className="mt-1 text-xs text-slate-500">
-                      {originCircle} → {destinationCircle}
+                      {preview.originCircle || originCircle} → {destinationCircle}
+                    </div>
+                    <div className="mt-1 text-[11px] font-semibold text-cyan-700">
+                      Vigencia: {formatPeriodLabel(preview.migrationPeriod || migrationPeriod)}
                     </div>
                   </div>
 
@@ -398,13 +443,13 @@ const MemberMigrationPanel = ({ circles = [] }) => {
                   </div>
                 ) : (
                   <div className="mt-4 rounded-lg border border-slate-200 bg-white px-4 py-4 text-sm text-slate-500">
-                    No hay asistencias, faltas o justificaciones registradas para convalidar.
+                    No hay estados registrados para convalidar en {formatPeriodLabel(preview.migrationPeriod || migrationPeriod)}. La migración puede registrarse igualmente; los meses anteriores no serán modificados.
                   </div>
                 )}
 
                 {preview.missingDestinationSessions > 0 && (
                   <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-700">
-                    Faltan {preview.missingDestinationSessions} sesiones equivalentes en el círculo de destino. La migración no se ejecutará hasta que todas las sesiones necesarias puedan convalidarse.
+                    Hay {preview.missingDestinationSessions} sesiones sin equivalente en el destino. Solo se convalidarán las equivalencias disponibles; el historial anterior se conserva.
                   </div>
                 )}
 

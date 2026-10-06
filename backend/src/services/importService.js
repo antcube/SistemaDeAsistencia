@@ -1,543 +1,615 @@
-const User = require("../models/User");
-const Circle = require("../models/Circle");
+        const User = require("../models/User");
+        const Circle = require("../models/Circle");
 
-const normalizeHeader = (value) => {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "");
-};
+        const {
+          normalizeRange,
+        } = require("../utils/rangeUtils");
 
-const normalizeValue = (value) => {
-  if (value === null || value === undefined) return "";
-  return String(value).trim();
-};
+        const normalizeHeader = (value) => {
+          return String(value || "")
+            .trim()
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, "");
+        };
 
-// Convierte nombres importados a formato de presentación:
-// "JUANA AMELIA RIVERA ÑANCO" -> "Juana Amelia Rivera Ñanco".
-// Se aplica únicamente al campo Nombre; no modifica DNI, usuario, correo, etc.
-const normalizePersonName = (value) => {
-  const text = normalizeValue(value);
-  if (!text) return "";
+        const normalizeValue = (value) => {
+          if (value === null || value === undefined) return "";
+          return String(value).trim();
+        };
 
-  return text
-    .toLocaleLowerCase("es-PE")
-    .replace(/(^|[\s'-])([a-záéíóúüñ])/giu, (match, separator, letter) =>
-      `${separator}${letter.toLocaleUpperCase("es-PE")}`
-    );
-};
+        // Convierte nombres importados a formato de presentación:
+        // "JUANA AMELIA RIVERA ÑANCO" -> "Juana Amelia Rivera Ñanco".
+        // Se aplica únicamente al campo Nombre; no modifica DNI, usuario, correo, etc.
+        const normalizePersonName = (value) => {
+          const text = normalizeValue(value);
+          if (!text) return "";
 
-const normalizeDateValue = (value) => {
-  if (value === null || value === undefined || value === "") return null;
+          return text
+            .toLocaleLowerCase("es-PE")
+            .replace(/(^|[\s'-])([a-záéíóúüñ])/giu, (match, separator, letter) =>
+              `${separator}${letter.toLocaleUpperCase("es-PE")}`
+            );
+        };
 
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()));
-  }
+        const normalizeDateValue = (value) => {
+          if (value === null || value === undefined || value === "") return null;
 
-  if (typeof value === "number" && Number.isFinite(value)) {
-    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-    return new Date(excelEpoch.getTime() + Math.round(value) * 86400000);
-  }
+          if (value instanceof Date && !Number.isNaN(value.getTime())) {
+            return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()));
+          }
 
-  const text = String(value).trim();
-  if (!text) return null;
+          if (typeof value === "number" && Number.isFinite(value)) {
+            const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+            return new Date(excelEpoch.getTime() + Math.round(value) * 86400000);
+          }
 
-  const match = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-  if (match) {
-    const [, year, month, day] = match;
-    return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-  }
+          const text = String(value).trim();
+          if (!text) return null;
 
-  const parsed = new Date(text);
-  if (Number.isNaN(parsed.getTime())) return null;
+          const match = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+          if (match) {
+            const [, year, month, day] = match;
+            return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+          }
 
-  return new Date(Date.UTC(
-    parsed.getFullYear(),
-    parsed.getMonth(),
-    parsed.getDate()
-  ));
-};
+          const parsed = new Date(text);
+          if (Number.isNaN(parsed.getTime())) return null;
 
-const formatDateOnly = (value) => {
-  const date = normalizeDateValue(value);
-  if (!date) return "";
+          return new Date(Date.UTC(
+            parsed.getFullYear(),
+            parsed.getMonth(),
+            parsed.getDate()
+          ));
+        };
 
-  return [
-    date.getUTCFullYear(),
-    String(date.getUTCMonth() + 1).padStart(2, "0"),
-    String(date.getUTCDate()).padStart(2, "0"),
-  ].join("-");
-};
+        const formatDateOnly = (value) => {
+          const date = normalizeDateValue(value);
+          if (!date) return "";
 
-const HEADER_MAP = {
-  dni: "doc",
-  doc: "doc",
-  documento: "doc",
-  numerodocumento: "doc",
+          return [
+            date.getUTCFullYear(),
+            String(date.getUTCMonth() + 1).padStart(2, "0"),
+            String(date.getUTCDate()).padStart(2, "0"),
+          ].join("-");
+        };
 
-  nombre: "name",
-  nombres: "name",
-  nombreyapellido: "name",
-  nombreapellido: "name",
-  nombrecompleto: "name",
-  name: "name",
+        const HEADER_MAP = {
+          dni: "doc",
+          doc: "doc",
+          documento: "doc",
+          numerodocumento: "doc",
 
-  usuario: "username",
-  username: "username",
-  user: "username",
+          nombre: "name",
+          nombres: "name",
+          nombreyapellido: "name",
+          nombreapellido: "name",
+          nombrecompleto: "name",
+          name: "name",
 
-  circulo: "circle",
-  circuloasignado: "circle",
-  circuloarchivo: "circle",
-  circle: "circle",
+          usuario: "username",
+          username: "username",
+          user: "username",
 
-  rango: "job",
-  rangos: "job",
-  cargo: "job",
-  puesto: "job",
-  job: "job",
+          circulo: "circle",
+          circuloasignado: "circle",
+          circuloarchivo: "circle",
+          circle: "circle",
 
-  fechadecambioderango: "rangeChangeDate",
-  fechacambioderango: "rangeChangeDate",
-  fechacambiorango: "rangeChangeDate",
-  fechaderangocambio: "rangeChangeDate",
-  rangechangedate: "rangeChangeDate",
+          rango: "job",
+          rangos: "job",
+          cargo: "job",
+          puesto: "job",
+          job: "job",
 
-  correo: "email",
-  email: "email",
+          fechadecambioderango: "rangeChangeDate",
+          fechacambioderango: "rangeChangeDate",
+          fechacambiorango: "rangeChangeDate",
+          fechaderangocambio: "rangeChangeDate",
+          rangechangedate: "rangeChangeDate",
 
-  telefono: "phone",
-  celular: "phone",
-  movil: "phone",
-  phone: "phone",
-};
+          correo: "email",
+          email: "email",
 
-const mapRow = (row, headers) => {
-  const mapped = {};
+          telefono: "phone",
+          celular: "phone",
+          movil: "phone",
+          phone: "phone",
+        };
 
-  for (const header of headers) {
-    const normalized = normalizeHeader(header);
-    const field = HEADER_MAP[normalized];
-    if (!field) continue;
+        const mapRow = (row, headers) => {
+          const mapped = {};
 
-    if (field === "rangeChangeDate") {
-      mapped[field] = formatDateOnly(row[header]);
-      continue;
-    }
+          for (const header of headers) {
+            const normalized = normalizeHeader(header);
+            const field = HEADER_MAP[normalized];
+            if (!field) continue;
 
-    mapped[field] =
-      field === "name"
-        ? normalizePersonName(row[header])
-        : normalizeValue(row[header]);
-  }
+            if (field === "rangeChangeDate") {
+              mapped[field] = formatDateOnly(row[header]);
+              continue;
+            }
 
-  return mapped;
-};
+            mapped[field] =
+              field === "name"
+                ? normalizePersonName(row[header])
+                : field === "job"
+                ? normalizeRange(row[header])
+                : normalizeValue(row[header]);
+          }
 
-const hasAnyMemberData = (user) => {
-  return Boolean(
-    user.doc ||
-    user.name ||
-    user.username ||
-    user.circle ||
-    user.job ||
-    user.rangeChangeDate ||
-    user.email ||
-    user.phone
-  );
-};
+          return mapped;
+        };
 
-const applyImportedRangeHistory = ({
-  user,
-  previousRange,
-  previousRangeChangeDate,
-  newRange,
-  newRangeChangeDate,
-}) => {
-  const oldRange = String(previousRange || "").trim();
-  const currentRange = String(newRange || "").trim();
+        const hasAnyMemberData = (user) => {
+          return Boolean(
+            user.doc ||
+            user.name ||
+            user.username ||
+            user.circle ||
+            user.job ||
+            user.rangeChangeDate ||
+            user.email ||
+            user.phone
+          );
+        };
 
-  if (!currentRange) return;
-
-  const effectiveDate =
-    normalizeDateValue(newRangeChangeDate) ||
-    normalizeDateValue(previousRangeChangeDate);
-
-  if (!Array.isArray(user.rangeHistory)) {
-    user.rangeHistory = [];
-  }
-
-  const currentEntry = user.rangeHistory
-    .slice()
-    .reverse()
-    .find((entry) => !entry.endDate);
-
-  if (oldRange === currentRange) {
-    if (!effectiveDate) return;
-
-    user.rangeChangeDate = effectiveDate;
-
-    if (currentEntry) {
-      currentEntry.range = currentRange;
-      currentEntry.startDate = effectiveDate;
-      currentEntry.changedBy = "Importación Excel";
-    } else {
-      user.rangeHistory.push({
-        range: currentRange,
-        startDate: effectiveDate,
-        endDate: null,
-        changedBy: "Importación Excel",
-      });
-    }
-
-    return;
-  }
-
-  if (currentEntry) {
-    currentEntry.endDate = effectiveDate || new Date();
-  }
-
-  user.rangeHistory.push({
-    range: currentRange,
-    startDate: effectiveDate || new Date(),
-    endDate: null,
-    changedBy: "Importación Excel",
-  });
-
-  user.rangeChangeDate = effectiveDate || new Date();
-};
-
-const importUsersFromRows = async (
-  rows,
-  targetCircle = "",
-  allowedCircles = null
-) => {
-  const errors = [];
-  const validRows = [];
-  const cleanTargetCircle = normalizeValue(targetCircle);
-
-  const allowedCircleSet = Array.isArray(allowedCircles)
-    ? new Set(
-        allowedCircles.map((circle) =>
-          String(circle).trim().toUpperCase()
-        )
-      )
-    : null;
-
-  const circles = await Circle.find({ active: true });
-
-  if (!rows.length) {
-    return {
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-      errors: [{ row: 0, message: "El archivo no contiene registros." }],
-    };
-  }
-
-  const headers = Object.keys(rows[0]);
-  const seenDni = new Set();
-
-  rows.forEach((row, index) => {
-    const excelRow = index + 2;
-    const user = mapRow(row, headers);
-
-    // Una fila completamente vacía no representa a ningún miembro.
-    if (!hasAnyMemberData(user)) {
-      errors.push({
-        row: excelRow,
-        message: "La fila está completamente vacía.",
-      });
-      return;
-    }
-
-    // DNI y nombre pueden quedar vacíos. Solo comprobamos duplicados
-    // cuando realmente existe un DNI.
-    if (user.doc) {
-      if (seenDni.has(user.doc)) {
-        errors.push({
-          row: excelRow,
-          dni: user.doc,
-          message: "El DNI está duplicado dentro del archivo.",
-        });
-        return;
-      }
-      seenDni.add(user.doc);
-    }
-
-    // El círculo destino siempre lo determina el selector de la interfaz.
-    if (!cleanTargetCircle) {
-      errors.push({
-        row: excelRow,
-        message: "El círculo destino es obligatorio.",
-      });
-      return;
-    }
-
-    const matchingCircle = circles.find(
-      (circle) =>
-        String(circle.name || "").trim().toUpperCase() ===
-        cleanTargetCircle.toUpperCase()
-    );
-
-    if (!matchingCircle) {
-      errors.push({
-        row: excelRow,
-        dni: user.doc || "",
-        message: `El círculo destino "${cleanTargetCircle}" no existe o está inactivo.`,
-      });
-      return;
-    }
-
-    if (
-      allowedCircleSet &&
-      !allowedCircleSet.has(cleanTargetCircle.toUpperCase())
-    ) {
-      errors.push({
-        row: excelRow,
-        dni: user.doc || "",
-        message: `No tienes permisos para importar miembros al círculo "${cleanTargetCircle}".`,
-      });
-      return;
-    }
-
-    validRows.push({
-      ...user,
-      circle: matchingCircle.name,
-      excelRow,
-    });
-  });
-
-  // Solo buscamos usuarios existentes cuando hay DNIs reales.
-  const docs = validRows
-    .map((row) => row.doc)
-    .filter(Boolean);
-
-  const existingUsers = docs.length
-    ? await User.find({ doc: { $in: docs } }).select("doc")
-    : [];
-
-  const existingDocs = new Set(existingUsers.map((user) => user.doc));
-  const usersToInsert = [];
-  let skipped = 0;
-  let updated = 0;
-
-  for (const row of validRows) {
-    // Un DNI permite actualizar al usuario existente.
-    if (row.doc && existingDocs.has(row.doc)) {
-      const existingUser = await User.findOne({ doc: row.doc });
-
-      if (!existingUser) {
-        skipped++;
-        continue;
-      }
-
-      const changed =
-        String(existingUser.name || "") !== String(row.name || "") ||
-        String(existingUser.username || "") !== String(row.username || "") ||
-        String(existingUser.circle || "") !== String(row.circle || "") ||
-        String(existingUser.job || "") !== String(row.job || "") ||
-        formatDateOnly(existingUser.rangeChangeDate) !== formatDateOnly(row.rangeChangeDate) ||
-        String(existingUser.email || "") !== String(row.email || "") ||
-        String(existingUser.phone || "") !== String(row.phone || "");
-
-      if (changed) {
-        const previousRange = existingUser.job;
-        const previousRangeChangeDate = existingUser.rangeChangeDate;
-
-        existingUser.name = row.name || "";
-        existingUser.username = row.username || "";
-        existingUser.circle = row.circle;
-        existingUser.job = row.job || "";
-        existingUser.email = row.email || "";
-        existingUser.phone = row.phone || "";
-
-        applyImportedRangeHistory({
-          user: existingUser,
+        const applyImportedRangeHistory = ({
+          user,
           previousRange,
           previousRangeChangeDate,
-          newRange: row.job || "",
-          newRangeChangeDate: row.rangeChangeDate,
-        });
+          newRange,
+          newRangeChangeDate,
+        }) => {
+          const oldRange = String(previousRange || "").trim();
+          const currentRange = String(newRange || "").trim();
 
-        await existingUser.save();
-        updated++;
-      } else {
-        skipped++;
-      }
+          if (!currentRange) return;
 
-      continue;
-    }
+          const effectiveDate =
+            normalizeDateValue(newRangeChangeDate) ||
+            normalizeDateValue(previousRangeChangeDate);
 
-    // Para un DNI vacío NO enviamos doc: "" a MongoDB. Se omite el campo
-    // para que el índice sparse permita múltiples miembros sin DNI.
-    const newUser = {
-      name: row.name || "",
-      username: row.username || "",
-      circle: row.circle,
-      job: row.job || "",
-      rangeChangeDate: normalizeDateValue(row.rangeChangeDate),
-      rangeHistory:
-        row.job && row.rangeChangeDate
-          ? [
-              {
-                range: row.job,
-                startDate: normalizeDateValue(row.rangeChangeDate),
+          if (!Array.isArray(user.rangeHistory)) {
+            user.rangeHistory = [];
+          }
+
+          const currentEntry = user.rangeHistory
+            .slice()
+            .reverse()
+            .find((entry) => !entry.endDate);
+
+          if (oldRange === currentRange) {
+            if (!effectiveDate) return;
+
+            user.rangeChangeDate = effectiveDate;
+
+            if (currentEntry) {
+              currentEntry.range = currentRange;
+              currentEntry.startDate = effectiveDate;
+              currentEntry.changedBy = "Importación Excel";
+            } else {
+              user.rangeHistory.push({
+                range: currentRange,
+                startDate: effectiveDate,
                 endDate: null,
                 changedBy: "Importación Excel",
-              },
-            ]
-          : [],
-      email: row.email || "",
-      phone: row.phone || "",
-    };
+              });
+            }
 
-    if (row.doc) {
-      newUser.doc = row.doc;
-    }
+            return;
+          }
 
-    usersToInsert.push(newUser);
-  }
+          if (currentEntry) {
+            currentEntry.endDate = effectiveDate || new Date();
+          }
 
-  let inserted = 0;
+          user.rangeHistory.push({
+            range: currentRange,
+            startDate: effectiveDate || new Date(),
+            endDate: null,
+            changedBy: "Importación Excel",
+          });
 
-  if (usersToInsert.length) {
-    const created = await User.insertMany(usersToInsert, {
-      ordered: false,
-    });
-    inserted = created.length;
-  }
+          user.rangeChangeDate = effectiveDate || new Date();
+        };
 
-  return {
-    inserted,
-    updated,
-    skipped,
-    errors,
-  };
-};
+        const importUsersFromRows = async (
+          rows,
+          targetCircle = "",
+          allowedCircles = null
+        ) => {
+          const errors = [];
+          const validRows = [];
+          const cleanTargetCircle = normalizeValue(targetCircle);
 
-const previewUsersFromRows = async (rows) => {
-  const errors = [];
-  const validRows = [];
-  const previewRows = [];
+          const allowedCircleSet = Array.isArray(allowedCircles)
+            ? new Set(
+                allowedCircles.map((circle) =>
+                  String(circle).trim().toUpperCase()
+                )
+              )
+            : null;
 
-  if (!Array.isArray(rows) || !rows.length) {
-    return {
-      rows: [],
-      validRows: [],
-      errors: [{ row: 0, message: "El archivo no contiene registros." }],
-    };
-  }
+          const circles = await Circle.find({ active: true });
 
-  const headers = Object.keys(rows[0] || {});
-  const seenDni = new Map();
+          if (!rows.length) {
+            return {
+              inserted: 0,
+              updated: 0,
+              skipped: 0,
+              errors: [{ row: 0, message: "El archivo no contiene registros." }],
+            };
+          }
 
-  rows.forEach((row, index) => {
-    const excelRow = Number(row?.__excelRow) || index + 2;
-    const user = mapRow(row, headers);
+          const headers = Object.keys(rows[0]);
+          const seenDni = new Set();
 
-    const previewRow = {
-      doc: user.doc || "",
-      name: user.name || "",
-      username: user.username || "",
-      circle: user.circle || "",
-      job: user.job || "",
-      rangeChangeDate: user.rangeChangeDate || "",
-      email: user.email || "",
-      phone: user.phone || "",
-      excelRow,
-    };
+          rows.forEach((row, index) => {
+            const excelRow = index + 2;
+            const user = mapRow(row, headers);
 
-    if (!hasAnyMemberData(user)) {
-      const message = "La fila está completamente vacía.";
+            // Una fila completamente vacía no representa a ningún miembro.
+            if (!hasAnyMemberData(user)) {
+              errors.push({
+                row: excelRow,
+                message: "La fila está completamente vacía.",
+              });
+              return;
+            }
 
-      errors.push({
-        row: excelRow,
-        message,
-      });
+            // DNI y nombre pueden quedar vacíos. Solo comprobamos duplicados
+            // cuando realmente existe un DNI.
+            if (user.doc) {
+              if (seenDni.has(user.doc)) {
+                errors.push({
+                  row: excelRow,
+                  dni: user.doc,
+                  message: "El DNI está duplicado dentro del archivo.",
+                });
+                return;
+              }
+              seenDni.add(user.doc);
+            }
 
-      previewRows.push({
-        ...previewRow,
-        status: "error",
-        error: message,
-      });
-      return;
-    }
+            // El círculo destino siempre lo determina el selector de la interfaz.
+            if (!cleanTargetCircle) {
+              errors.push({
+                row: excelRow,
+                message: "El círculo destino es obligatorio.",
+              });
+              return;
+            }
 
-    if (user.doc) {
-      const previousRow = seenDni.get(user.doc);
+            const matchingCircle = circles.find(
+              (circle) =>
+                String(circle.name || "").trim().toUpperCase() ===
+                cleanTargetCircle.toUpperCase()
+            );
 
-      if (previousRow) {
-        const message = `El DNI ${user.doc} está repetido. Corrige uno de los registros.`;
+            if (!matchingCircle) {
+              errors.push({
+                row: excelRow,
+                dni: user.doc || "",
+                message: `El círculo destino "${cleanTargetCircle}" no existe o está inactivo.`,
+              });
+              return;
+            }
 
-        errors.push({
-          row: excelRow,
-          dni: user.doc,
-          message,
-        });
+            if (
+              allowedCircleSet &&
+              !allowedCircleSet.has(cleanTargetCircle.toUpperCase())
+            ) {
+              errors.push({
+                row: excelRow,
+                dni: user.doc || "",
+                message: `No tienes permisos para importar miembros al círculo "${cleanTargetCircle}".`,
+              });
+              return;
+            }
 
-        const previousPreviewIndex = previewRows.findIndex(
-          (item) => item.excelRow === previousRow
-        );
+            validRows.push({
+              ...user,
+              circle: matchingCircle.name,
+              excelRow,
+            });
+          });
 
-        if (previousPreviewIndex >= 0) {
-          previewRows[previousPreviewIndex] = {
-            ...previewRows[previousPreviewIndex],
-            status: "error",
-            error: message,
+          // Solo buscamos usuarios existentes cuando hay DNIs reales.
+          const docs = validRows
+            .map((row) => row.doc)
+            .filter(Boolean);
+
+          const existingUsers = docs.length
+            ? await User.find({ doc: { $in: docs } }).select("doc")
+            : [];
+
+          const existingDocs = new Set(existingUsers.map((user) => user.doc));
+          const usersToInsert = [];
+          let skipped = 0;
+          let updated = 0;
+          const changes = [];
+
+          for (const row of validRows) {
+            // Un DNI permite actualizar al usuario existente.
+            if (row.doc && existingDocs.has(row.doc)) {
+              const existingUser = await User.findOne({ doc: row.doc });
+
+              if (!existingUser) {
+                skipped++;
+                continue;
+              }
+
+              const changed =
+                String(existingUser.name || "") !== String(row.name || "") ||
+                String(existingUser.username || "") !== String(row.username || "") ||
+                String(existingUser.circle || "") !== String(row.circle || "") ||
+                String(existingUser.job || "") !== String(row.job || "") ||
+                formatDateOnly(existingUser.rangeChangeDate) !== formatDateOnly(row.rangeChangeDate) ||
+                String(existingUser.email || "") !== String(row.email || "") ||
+                String(existingUser.phone || "") !== String(row.phone || "");
+
+              if (changed) {
+                const previousRange = existingUser.job;
+                const previousRangeChangeDate = existingUser.rangeChangeDate;
+                const previous = {
+                  userId: String(existingUser._id),
+                  doc: existingUser.doc || "",
+                  name: existingUser.name || "",
+                  username: existingUser.username || "",
+                  circle: existingUser.circle || "",
+                  job: existingUser.job || "",
+                  rangeChangeDate: existingUser.rangeChangeDate || null,
+                  rangeHistory: Array.isArray(existingUser.rangeHistory) ? existingUser.rangeHistory.map((entry) => ({
+                    range: entry.range,
+                    startDate: entry.startDate,
+                    endDate: entry.endDate,
+                    changedBy: entry.changedBy,
+                  })) : [],
+                  email: existingUser.email || "",
+                  phone: existingUser.phone || "",
+                };
+
+                existingUser.name = row.name || "";
+                existingUser.username = row.username || "";
+                existingUser.circle = row.circle;
+                existingUser.job = row.job || "";
+                existingUser.email = row.email || "";
+                existingUser.phone = row.phone || "";
+
+                applyImportedRangeHistory({
+                  user: existingUser,
+                  previousRange,
+                  previousRangeChangeDate,
+                  newRange: row.job || "",
+                  newRangeChangeDate: row.rangeChangeDate,
+                });
+
+                await existingUser.save();
+                updated++;
+
+                changes.push({
+                  userId: String(existingUser._id),
+                  wasCreated: false,
+                  previous,
+                  current: {
+                    userId: String(existingUser._id),
+                    doc: existingUser.doc || "",
+                    name: existingUser.name || "",
+                    username: existingUser.username || "",
+                    circle: existingUser.circle || "",
+                    job: existingUser.job || "",
+                    rangeChangeDate: existingUser.rangeChangeDate || null,
+                    rangeHistory: Array.isArray(existingUser.rangeHistory) ? existingUser.rangeHistory.map((entry) => ({
+                      range: entry.range,
+                      startDate: entry.startDate,
+                      endDate: entry.endDate,
+                      changedBy: entry.changedBy,
+                    })) : [],
+                    email: existingUser.email || "",
+                    phone: existingUser.phone || "",
+                  },
+                });
+              } else {
+                skipped++;
+              }
+
+              continue;
+            }
+
+            // Para un DNI vacío NO enviamos doc: "" a MongoDB. Se omite el campo
+            // para que el índice sparse permita múltiples miembros sin DNI.
+            const newUser = {
+              name: row.name || "",
+              username: row.username || "",
+              circle: row.circle,
+              job: row.job || "",
+              rangeChangeDate: normalizeDateValue(row.rangeChangeDate),
+              rangeHistory:
+                row.job && row.rangeChangeDate
+                  ? [
+                      {
+                        range: row.job,
+                        startDate: normalizeDateValue(row.rangeChangeDate),
+                        endDate: null,
+                        changedBy: "Importación Excel",
+                      },
+                    ]
+                  : [],
+              email: row.email || "",
+              phone: row.phone || "",
+            };
+
+            if (row.doc) {
+              newUser.doc = row.doc;
+            }
+
+            usersToInsert.push(newUser);
+          }
+
+          let inserted = 0;
+
+          if (usersToInsert.length) {
+            const created = await User.insertMany(usersToInsert, {
+              ordered: false,
+            });
+            inserted = created.length;
+
+            for (const user of created) {
+              changes.push({
+                userId: String(user._id),
+                wasCreated: true,
+                current: {
+                  userId: String(user._id),
+                  doc: user.doc || "",
+                  name: user.name || "",
+                  username: user.username || "",
+                  circle: user.circle || "",
+                  job: user.job || "",
+                  rangeChangeDate: user.rangeChangeDate || null,
+                  rangeHistory: Array.isArray(user.rangeHistory) ? user.rangeHistory.map((entry) => ({
+                    range: entry.range,
+                    startDate: entry.startDate,
+                    endDate: entry.endDate,
+                    changedBy: entry.changedBy,
+                  })) : [],
+                  email: user.email || "",
+                  phone: user.phone || "",
+                },
+              });
+            }
+          }
+
+          return {
+            inserted,
+            updated,
+            skipped,
+            errors,
+            changes,
           };
-        }
+        };
 
-        previewRows.push({
-          ...previewRow,
-          status: "error",
-          error: message,
-        });
-        return;
-      }
+        const previewUsersFromRows = async (rows) => {
+          const errors = [];
+          const validRows = [];
+          const previewRows = [];
 
-      seenDni.set(user.doc, excelRow);
-    }
+          if (!Array.isArray(rows) || !rows.length) {
+            return {
+              rows: [],
+              validRows: [],
+              errors: [{ row: 0, message: "El archivo no contiene registros." }],
+            };
+          }
 
-    previewRows.push({
-      ...previewRow,
-      status: "ok",
-      error: "",
-    });
+          const headers = Object.keys(rows[0] || {});
+          const seenDni = new Map();
 
-    validRows.push(previewRow);
-  });
+          rows.forEach((row, index) => {
+            const excelRow = Number(row?.__excelRow) || index + 2;
+            const user = mapRow(row, headers);
 
-  return {
-    rows: previewRows,
-    validRows,
-    errors,
-  };
-};
+            const previewRow = {
+              doc: user.doc || "",
+              name: user.name || "",
+              username: user.username || "",
+              circle: user.circle || "",
+              job: user.job || "",
+              rangeChangeDate: user.rangeChangeDate || "",
+              email: user.email || "",
+              phone: user.phone || "",
+              excelRow,
+            };
 
-const importPreparedUsers = async (
-  rows,
-  targetCircle = "",
-  allowedCircles = null
-) => {
-  if (!Array.isArray(rows) || !rows.length) {
-    return {
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-      errors: [{ row: 0, message: "No hay registros para importar." }],
-    };
-  }
+            if (!hasAnyMemberData(user)) {
+              const message = "La fila está completamente vacía.";
 
-  return importUsersFromRows(rows, targetCircle, allowedCircles);
-};
+              errors.push({
+                row: excelRow,
+                message,
+              });
 
-module.exports = {
-  importUsersFromRows,
-  importPreparedUsers,
-  previewUsersFromRows,
-  normalizeHeader,
-  HEADER_MAP,
-};
+              previewRows.push({
+                ...previewRow,
+                status: "error",
+                error: message,
+              });
+              return;
+            }
+
+            if (user.doc) {
+              const previousRow = seenDni.get(user.doc);
+
+              if (previousRow) {
+                const message = `El DNI ${user.doc} está repetido. Corrige uno de los registros.`;
+
+                errors.push({
+                  row: excelRow,
+                  dni: user.doc,
+                  message,
+                });
+
+                const previousPreviewIndex = previewRows.findIndex(
+                  (item) => item.excelRow === previousRow
+                );
+
+                if (previousPreviewIndex >= 0) {
+                  previewRows[previousPreviewIndex] = {
+                    ...previewRows[previousPreviewIndex],
+                    status: "error",
+                    error: message,
+                  };
+                }
+
+                previewRows.push({
+                  ...previewRow,
+                  status: "error",
+                  error: message,
+                });
+                return;
+              }
+
+              seenDni.set(user.doc, excelRow);
+            }
+
+            previewRows.push({
+              ...previewRow,
+              status: "ok",
+              error: "",
+            });
+
+            validRows.push(previewRow);
+          });
+
+          return {
+            rows: previewRows,
+            validRows,
+            errors,
+          };
+        };
+
+        const importPreparedUsers = async (
+          rows,
+          targetCircle = "",
+          allowedCircles = null
+        ) => {
+          if (!Array.isArray(rows) || !rows.length) {
+            return {
+              inserted: 0,
+              updated: 0,
+              skipped: 0,
+              errors: [{ row: 0, message: "No hay registros para importar." }],
+            };
+          }
+
+          return importUsersFromRows(rows, targetCircle, allowedCircles);
+        };
+
+        module.exports = {
+          importUsersFromRows,
+          importPreparedUsers,
+          previewUsersFromRows,
+          normalizeHeader,
+          HEADER_MAP,
+        };

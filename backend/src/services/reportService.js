@@ -3,6 +3,10 @@ const User = require("../models/User");
 const Attendance = require("../models/Attendance");
 
 const {
+  buildEffectiveCircleMap,
+} = require("./memberCircleHistoryService");
+
+const {
   generateMeetingsForMonth,
 } = require("./scheduleService");
 
@@ -325,19 +329,35 @@ const getMonthlyCircleReport =
           )
       );
 
-    const userQuery = {};
-
-    if (circle) {
-      userQuery.circle =
-        circle;
-    }
-
-    const users =
-      await User.find(
-        userQuery
-      ).sort({
+    const allUsers =
+      await User.find({}).sort({
         name: 1,
       });
+
+    const effectiveCircleByUser =
+      await buildEffectiveCircleMap({
+        users: allUsers,
+        year,
+        month,
+      });
+
+    const normalizedRequestedCircle =
+      String(circle || "")
+        .trim()
+        .toLowerCase();
+
+    const users = circle
+      ? allUsers.filter((user) =>
+          String(
+            effectiveCircleByUser.get(
+              String(user._id)
+            ) || ""
+          )
+            .trim()
+            .toLowerCase() ===
+          normalizedRequestedCircle
+        )
+      : allUsers;
 
     const meetingIds =
       meetings.map(
@@ -458,6 +478,11 @@ const getMonthlyCircleReport =
          * que fueron creados para un círculo concreto
          * también respetan el círculo de Meeting.
          */
+        const effectiveCircle =
+          effectiveCircleByUser.get(
+            String(user._id)
+          ) || user.circle || "";
+
         const userMeetings =
           meetings.filter(
             (meeting) =>
@@ -467,7 +492,7 @@ const getMonthlyCircleReport =
                 .trim()
                 .toLowerCase() ===
               String(
-                user.circle || ""
+                effectiveCircle
               )
                 .trim()
                 .toLowerCase()
@@ -682,22 +707,30 @@ const getMonthlyCircleReport =
             null;
 
           if (!record) {
-            const qrWasActivated =
-              Boolean(
-                meeting.qrStartTimestamp
-              ) &&
-              Boolean(
-                meeting.qrEndTimestamp
-              );
+            /*
+             * Una reunión sin registro permanece Pendiente durante
+             * todo su día. La F recién aparece cuando el día de la
+             * reunión ya terminó.
+             *
+             * Esto es independiente del QR: Procesar Zoom nunca crea
+             * una falta para quien no apareció en un reporte parcial.
+             */
+            const meetingDate = String(
+              meeting.date || ""
+            ).trim();
 
-            const qrExpired =
-              qrWasActivated &&
-              now >
-                new Date(
-                  meeting.qrEndTimestamp
-                );
+            const todayDate = new Intl.DateTimeFormat("en-CA", {
+              timeZone: "America/Lima",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            }).format(now);
 
-            if (qrExpired) {
+            const dayHasPassed =
+              Boolean(meetingDate) &&
+              meetingDate < todayDate;
+
+            if (dayHasPassed) {
               reportStatus =
                 "No asistió";
 
@@ -949,6 +982,9 @@ const getMonthlyCircleReport =
             username:
               user.username,
             circle:
+              effectiveCircle,
+
+            currentCircle:
               user.circle,
             job: user.job,
             rangeChangeDate: user.rangeChangeDate || null,
@@ -959,7 +995,8 @@ const getMonthlyCircleReport =
 
           name: user.name,
           doc: user.doc,
-          circle: user.circle,
+          circle: effectiveCircle,
+          currentCircle: user.circle,
 
           categories,
 

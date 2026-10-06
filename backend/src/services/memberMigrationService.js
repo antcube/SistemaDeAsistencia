@@ -2,6 +2,9 @@ const User = require("../models/User");
 const Attendance = require("../models/Attendance");
 const Meeting = require("../models/Meeting");
 const MemberMigration = require("../models/MemberMigration");
+const {
+  resolveEffectiveCircleForPeriod,
+} = require("./memberCircleHistoryService");
 
 const normalizeText = (value) =>
   String(value || "")
@@ -22,6 +25,32 @@ const escapeRegex = (value) =>
 
 const isActive = (document) =>
   document?.active !== false;
+
+const attendanceSnapshot = (attendance) => {
+  if (!attendance) return null;
+
+  const raw = attendance.toObject ? attendance.toObject() : attendance;
+
+  return {
+    active: raw.active !== false,
+    doc: raw.doc || "",
+    name: raw.name || "",
+    circle: raw.circle || "",
+    status: raw.status || "",
+    justificationReason: raw.justificationReason || "",
+    justifiedBy: raw.justifiedBy || "",
+    justifiedAt: raw.justifiedAt || null,
+    registeredBy: raw.registeredBy || "",
+    source: raw.source || "",
+    attendanceMode: raw.attendanceMode || "",
+    attendedAt: raw.attendedAt || null,
+    note: raw.note || "",
+    notes: raw.notes || "",
+    registeredAt: raw.registeredAt || null,
+    deletedAt: raw.deletedAt || null,
+    deletedBy: raw.deletedBy || "",
+  };
+};
 
 const sortMeetings = (meetings) =>
   [...meetings].sort((a, b) => {
@@ -204,21 +233,80 @@ const getCircleMeetings = async ({
 
 /*
  * ============================================================
- * AGRUPAR REUNIONES POR CATEGORÍA
+ * AGRUPAR REUNIONES POR CATEGORÍA + MES
  * ============================================================
  *
- * IMPORTANTE:
+ * La equivalencia de una migración se calcula por NÚMERO DE
+ * SESIÓN DENTRO DEL MES, no por fecha exacta ni por día de la
+ * semana.
  *
- * Ya NO usamos título + horario como parte de la equivalencia.
- * Las fechas, títulos y horarios pueden cambiar al migrar de
- * círculo. Lo que determina la equivalencia es la categoría y
- * la posición cronológica de la sesión dentro de esa categoría.
+ * Ejemplo:
+ *
+ * Círculo origen (lunes)      Círculo destino (miércoles)
+ * 06/10 -> sesión 1     =>    08/10 -> sesión 1
+ * 13/10 -> sesión 2     =>    15/10 -> sesión 2
+ * 20/10 -> sesión 3     =>    22/10 -> sesión 3
+ *
+ * Cada categoría mantiene su propia secuencia mensual.
  */
-const groupMeetingsByCategory = (meetings) => {
+const getMeetingPeriod = (meeting) => {
+  const date = String(meeting?.date || "").trim();
+  const match = date.match(/^(\d{4})-(\d{2})-\d{2}$/);
+
+  if (match) {
+    return `${match[1]}-${match[2]}`;
+  }
+
+  // Fallback defensivo para registros antiguos con formatos no estándar.
+  const parsed = new Date(date);
+
+  if (!Number.isNaN(parsed.getTime())) {
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  }
+
+  return "sin_periodo";
+};
+
+const getCurrentMigrationPeriod = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+
+  return `${year}-${month}`;
+};
+
+const normalizeMigrationPeriod = (value) => {
+  const period = String(value || "").trim();
+
+  if (!/^\d{4}-\d{2}$/.test(period)) {
+    throw new Error("Selecciona un mes válido para la migración.");
+  }
+
+  const [year, month] = period.split("-").map(Number);
+
+  if (year < 2000 || month < 1 || month > 12) {
+    throw new Error("Selecciona un mes válido para la migración.");
+  }
+
+  return `${year}-${String(month).padStart(2, "0")}`;
+};
+
+const periodToParts = (period) => {
+  const normalized = normalizeMigrationPeriod(period);
+  const [year, month] = normalized.split("-").map(Number);
+  return { year, month };
+};
+
+const migrationGroupKey = (meeting) =>
+  `${meetingCategory(meeting)}|${getMeetingPeriod(meeting)}`;
+
+const groupMeetingsByCategoryAndPeriod = (meetings) => {
   const groups = new Map();
 
   for (const meeting of meetings) {
-    const key = meetingCategory(meeting);
+    const key = migrationGroupKey(meeting);
 
     if (!groups.has(key)) {
       groups.set(key, []);
@@ -243,59 +331,50 @@ const buildMigrationRows = async ({
   userId,
   originCircle,
   destinationCircle,
+  migrationPeriod = getCurrentMigrationPeriod(),
 }) => {
   /*
-   * ----------------------------------------------------------
-   * 1. ASISTENCIAS DEL MIEMBRO EN EL CÍRCULO ORIGEN
-   * ----------------------------------------------------------
+   * ==========================================================
+   * REGLA DE MIGRACIÓN
+   * ==========================================================
+   *
+   * 1. SOLO se convalida el mes en el que se realiza la migración.
+   *    Los meses anteriores permanecen intactos en el círculo origen.
+   *
+   * 2. La equivalencia es por CATEGORÍA + NÚMERO DE SESIÓN DEL MES.
+   *    La fecha exacta y el día de la semana NO intervienen.
+   *
+   * 3. Si origen tiene más sesiones que destino, se convalidan solo
+   *    las primeras N sesiones que tengan equivalente en destino.
+   *    Las sesiones sobrantes del origen NO bloquean la migración y
+   *    se conservan únicamente como historial del círculo anterior.
    */
-  const sourceAttendances =
-    await getMemberAttendances({
-      userId,
-      originCircle,
-    });
+
+  const sourceAttendances = await getMemberAttendances({
+    userId,
+    originCircle,
+  });
 
   if (!sourceAttendances.length) {
     return {
       rows: [],
       missingDestinationSessions: 0,
+      skippedOriginSessions: 0,
+      migrationPeriod,
     };
   }
 
-  /*
-   * ----------------------------------------------------------
-   * 2. TODAS LAS REUNIONES DE AMBOS CÍRCULOS
-   * ----------------------------------------------------------
-   *
-   * No filtramos por type porque dos círculos pueden representar
-   * la misma categoría con valores distintos de type/título.
-   */
-  const sourceMeetings =
-    await getCircleMeetings({
-      circle: originCircle,
-    });
+  const sourceMeetings = await getCircleMeetings({
+    circle: originCircle,
+  });
 
-  const destinationMeetings =
-    await getCircleMeetings({
-      circle: destinationCircle,
-    });
+  const destinationMeetings = await getCircleMeetings({
+    circle: destinationCircle,
+  });
 
-  /*
-   * ----------------------------------------------------------
-   * 3. AGRUPAR POR CATEGORÍA
-   * ----------------------------------------------------------
-   *
-   * Cada categoría tiene su propia secuencia de sesiones.
-   */
-  const sourceGroups =
-    groupMeetingsByCategory(sourceMeetings);
+  const sourceGroups = groupMeetingsByCategoryAndPeriod(sourceMeetings);
+  const destinationGroups = groupMeetingsByCategoryAndPeriod(destinationMeetings);
 
-  const destinationGroups =
-    groupMeetingsByCategory(destinationMeetings);
-
-  /*
-   * Attendance por reunión.
-   */
   const attendanceByMeeting = new Map();
 
   for (const attendance of sourceAttendances) {
@@ -310,27 +389,35 @@ const buildMigrationRows = async ({
   }
 
   const rows = [];
-  let missingDestinationSessions = 0;
+  let skippedOriginSessions = 0;
 
-  /*
-   * ----------------------------------------------------------
-   * 4. EQUIVALENCIA POR POSICIÓN
-   * ----------------------------------------------------------
-   *
-   * Ejemplo:
-   *
-   * ORIGEN                         DESTINO
-   * Liderazgo #1  -> Liderazgo #1
-   * Liderazgo #2  -> Liderazgo #2
-   * Health #1     -> Health #1
-   * Health #2     -> Health #2
-   * Mentoría #1   -> Mentoría #1
-   *
-   * Las fechas no intervienen en la equivalencia.
-   */
-  for (const [category, sourceGroup] of sourceGroups.entries()) {
-    const destinationGroup =
-      destinationGroups.get(category) || [];
+  for (const [groupKey, sourceGroup] of sourceGroups.entries()) {
+    const [category, period] = groupKey.split("|");
+
+    /*
+     * El historial de meses anteriores NO se toca.
+     * Tampoco adelantamos información de meses futuros.
+     */
+    if (period !== migrationPeriod) {
+      continue;
+    }
+
+    const destinationGroup = destinationGroups.get(groupKey) || [];
+
+    /*
+     * Solo existen equivalencias hasta donde existan sesiones
+     * en AMBOS círculos.
+     *
+     * Ejemplo:
+     * Origen:  5 sesiones
+     * Destino: 4 sesiones
+     * => se pueden convalidar sesiones 1..4.
+     * => la sesión 5 queda únicamente en el historial origen.
+     */
+    const equivalentSessionCount = Math.min(
+      sourceGroup.length,
+      destinationGroup.length
+    );
 
     for (let index = 0; index < sourceGroup.length; index += 1) {
       const sourceMeeting = sourceGroup[index];
@@ -338,27 +425,25 @@ const buildMigrationRows = async ({
         String(sourceMeeting._id)
       );
 
-      /*
-       * Solo migramos sesiones en las que el miembro realmente
-       * tiene un registro de asistencia/estado.
-       *
-       * Pero usamos TODAS las reuniones anteriores para calcular
-       * correctamente su número de sesión.
-       */
+      // Si el miembro no tiene estado registrado en esa sesión,
+      // no hay nada que convalidar.
       if (!attendance) {
         continue;
       }
 
-      const sessionNumber = index + 1;
-      const destinationMeeting =
-        destinationGroup[index] || null;
-
-      if (!destinationMeeting) {
-        missingDestinationSessions += 1;
+      // Sesión del origen sin equivalente en destino:
+      // se conserva en origen y NO bloquea la migración.
+      if (index >= equivalentSessionCount) {
+        skippedOriginSessions += 1;
+        continue;
       }
+
+      const destinationMeeting = destinationGroup[index];
+      const sessionNumber = index + 1;
 
       rows.push({
         category,
+        period,
         sessionNumber,
 
         originMeeting: {
@@ -369,15 +454,13 @@ const buildMigrationRows = async ({
           type: sourceMeeting.type,
         },
 
-        destinationMeeting: destinationMeeting
-          ? {
-              _id: destinationMeeting._id,
-              date: destinationMeeting.date,
-              time: destinationMeeting.time,
-              title: destinationMeeting.title,
-              type: destinationMeeting.type,
-            }
-          : null,
+        destinationMeeting: {
+          _id: destinationMeeting._id,
+          date: destinationMeeting.date,
+          time: destinationMeeting.time,
+          title: destinationMeeting.title,
+          type: destinationMeeting.type,
+        },
 
         status:
           attendance.status === "Faltó"
@@ -387,30 +470,24 @@ const buildMigrationRows = async ({
     }
   }
 
-  /*
-   * Ordenamos por fecha de origen únicamente para que el preview
-   * sea fácil de leer. Esto NO modifica la equivalencia.
-   */
   rows.sort((a, b) => {
-    const dateCompare = String(
-      a.originMeeting?.date || ""
-    ).localeCompare(
-      String(b.originMeeting?.date || "")
+    const categoryCompare = String(a.category || "").localeCompare(
+      String(b.category || "")
     );
 
-    if (dateCompare !== 0) {
-      return dateCompare;
+    if (categoryCompare !== 0) {
+      return categoryCompare;
     }
 
-    return (
-      Number(a.sessionNumber || 0) -
-      Number(b.sessionNumber || 0)
-    );
+    return Number(a.sessionNumber || 0) - Number(b.sessionNumber || 0);
   });
 
   return {
     rows,
-    missingDestinationSessions,
+    // Ya no se considera error que sobren sesiones en origen.
+    missingDestinationSessions: 0,
+    skippedOriginSessions,
+    migrationPeriod,
   };
 };
 
@@ -422,6 +499,7 @@ const buildMigrationRows = async ({
 const buildPreview = async ({
   userId,
   destinationCircle,
+  migrationPeriod = getCurrentMigrationPeriod(),
 }) => {
   if (!userId) {
     throw new Error(
@@ -446,10 +524,20 @@ const buildPreview = async ({
     );
   }
 
-  const originCircle =
-    String(
-      user.circle || ""
-    ).trim();
+  const normalizedMigrationPeriod = normalizeMigrationPeriod(migrationPeriod);
+  const { year: migrationYear, month: migrationMonth } =
+    periodToParts(normalizedMigrationPeriod);
+
+  // El círculo de origen corresponde al círculo efectivo que el
+  // miembro tendrá al inicio del mes seleccionado. Esto permite
+  // encadenar migraciones históricas/futuras sin perder trazabilidad.
+  const originCircle = String(
+    await resolveEffectiveCircleForPeriod({
+      user,
+      year: migrationYear,
+      month: migrationMonth,
+    })
+  ).trim();
 
   const targetCircle =
     String(
@@ -481,17 +569,9 @@ const buildPreview = async ({
       originCircle,
       destinationCircle:
         targetCircle,
+      migrationPeriod: normalizedMigrationPeriod,
     });
 
-  /*
-   * Solamente mostramos error si realmente no existen
-   * asistencias/faltas/justificaciones.
-   */
-  if (!migration.rows.length) {
-    throw new Error(
-      `No se encontraron asistencias, faltas o justificaciones del miembro en el círculo de origen "${originCircle}".`
-    );
-  }
 
   return {
     user: {
@@ -515,6 +595,15 @@ const buildPreview = async ({
 
     missingDestinationSessions:
       migration.missingDestinationSessions,
+
+    skippedOriginSessions:
+      migration.skippedOriginSessions || 0,
+
+    migrationPeriod:
+      migration.migrationPeriod,
+
+    isFutureMigration:
+      migration.migrationPeriod > getCurrentMigrationPeriod(),
   };
 };
 
@@ -526,6 +615,7 @@ const buildPreview = async ({
 const executeMigration = async ({
   userId,
   destinationCircle,
+  migrationPeriod = getCurrentMigrationPeriod(),
   migratedBy = "Sistema",
 }) => {
   if (!userId) {
@@ -551,10 +641,17 @@ const executeMigration = async ({
     );
   }
 
-  const sourceCircle =
-    String(
-      user.circle || ""
-    ).trim();
+  const normalizedMigrationPeriod = normalizeMigrationPeriod(migrationPeriod);
+  const { year: migrationYear, month: migrationMonth } =
+    periodToParts(normalizedMigrationPeriod);
+
+  const sourceCircle = String(
+    await resolveEffectiveCircleForPeriod({
+      user,
+      year: migrationYear,
+      month: migrationMonth,
+    })
+  ).trim();
 
   const targetCircle =
     String(
@@ -587,26 +684,15 @@ const executeMigration = async ({
         sourceCircle,
       destinationCircle:
         targetCircle,
+      migrationPeriod: normalizedMigrationPeriod,
     });
 
-  if (!migration.rows.length) {
-    throw new Error(
-      `No se encontraron asistencias, faltas o justificaciones del miembro en el círculo de origen "${sourceCircle}".`
-    );
-  }
 
   /*
-   * No permitimos migrar si alguna asistencia
-   * no tiene su sesión equivalente.
+   * Si el círculo origen tiene más sesiones que el destino,
+   * las sesiones sobrantes permanecen como historial del origen.
+   * Eso NO bloquea la migración.
    */
-  if (
-    migration.missingDestinationSessions >
-    0
-  ) {
-    throw new Error(
-      `No se puede realizar la migración porque faltan ${migration.missingDestinationSessions} sesiones equivalentes en el círculo de destino.`
-    );
-  }
 
   let createdAttendances = 0;
   let existingAttendances = 0;
@@ -649,8 +735,12 @@ const executeMigration = async ({
           user._id,
       });
 
+    const wasCreated = !destinationAttendance;
+    const previousAttendance = attendanceSnapshot(destinationAttendance);
+
     /*
-     * Si ya existía, reutilizamos el registro.
+     * Si ya existía, reutilizamos el registro y guardamos una instantánea
+     * para que la Bitácora pueda restaurarlo al deshacer la migración.
      */
     if (destinationAttendance) {
       existingAttendances += 1;
@@ -755,6 +845,16 @@ const executeMigration = async ({
 
       status:
         destinationAttendance.status,
+
+      attendanceId:
+        destinationAttendance._id,
+
+      wasCreated,
+
+      previousAttendance,
+
+      afterUpdatedAt:
+        destinationAttendance.updatedAt || new Date(),
     });
 
     migratedSessions += 1;
@@ -768,10 +868,16 @@ const executeMigration = async ({
    * IMPORTANTE:
    * El historial original permanece intacto.
    */
-  user.circle =
-    targetCircle;
+  const currentPeriod = getCurrentMigrationPeriod();
+  const isFutureMigration = normalizedMigrationPeriod > currentPeriod;
 
-  await user.save();
+  // Si la migración inicia en un mes futuro, NO cambiamos todavía
+  // el círculo actual del miembro. Los reportes/portal resolverán el
+  // círculo correcto usando effectivePeriod.
+  if (!isFutureMigration) {
+    user.circle = targetCircle;
+    await user.save();
+  }
 
   /*
    * ==========================================================
@@ -793,6 +899,10 @@ const executeMigration = async ({
 
       targetCircle,
 
+      effectivePeriod: normalizedMigrationPeriod,
+
+      status: isFutureMigration ? "SCHEDULED" : "APPLIED",
+
       sessions:
         migrationSessions,
 
@@ -812,6 +922,10 @@ const executeMigration = async ({
     existingAttendances,
     migration:
       migrationRecord,
+    migrationPeriod: normalizedMigrationPeriod,
+    scheduled: isFutureMigration,
+    sourceCircle,
+    targetCircle,
   };
 };
 

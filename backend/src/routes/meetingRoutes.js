@@ -4,6 +4,7 @@ const {
   getMeetings,
   getMeetingById,
   createMeeting,
+  createMeetingsBatch,
   updateMeeting,
   deleteMeeting,
   restoreMeeting,
@@ -11,6 +12,7 @@ const {
   getPublicQrMeeting,
   activateQr,
   deactivateQr,
+  deleteAllCorporateAnnouncements,
 } = require("../controllers/meetingController");
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -39,6 +41,14 @@ router.get(
 );
 
 
+
+router.post(
+  "/batch",
+  authMiddleware,
+  requireGlobalAdministrator,
+  createMeetingsBatch
+);
+
 router.post(
   "/",
   authMiddleware,
@@ -58,6 +68,13 @@ router.patch(
   authMiddleware,
   requireGlobalAdministrator,
   moveMeeting
+);
+
+router.delete(
+  "/anuncios-corporativos",
+  authMiddleware,
+  requireGlobalAdministrator,
+  deleteAllCorporateAnnouncements
 );
 
 router.delete(

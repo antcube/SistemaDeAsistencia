@@ -1,51 +1,49 @@
-/* ==========================================================
-   /ASISTENCIA — REGISTRO DE ASISTENCIA MEDIANTE QR
-   Este archivo controla únicamente la vista que aparece cuando
-   se abre /asistencia?asistencia_qr=...
-   ========================================================== */
-
 .attendance-portal-page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 24px 20px 40px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background:
-    radial-gradient(circle at 50% 0%, rgba(31, 65, 121, 0.24), transparent 38%),
-    linear-gradient(145deg, #0d1629 0%, #0c172b 52%, #0a1425 100%);
+    radial-gradient(circle at 50% 20%, rgba(43, 94, 170, 0.18), transparent 34%),
+    radial-gradient(circle at 50% 100%, rgba(30, 81, 151, 0.12), transparent 42%),
+    #080f24;
+  color: #eef5ff;
+  font-family: "Inter", "Segoe UI", sans-serif;
 }
 
 .attendance-register-view {
   width: 100%;
-  max-width: 420px;
+  max-width: 470px;
   box-sizing: border-box;
-  margin: 9vh auto 0;
-  padding: 30px 30px 31px;
-  border: 1px solid rgba(255, 255, 255, 0.94);
-  border-radius: 20px;
-  background: #ffffff;
+  margin: 0 auto;
+  padding: 37px 30px 37px;
+  border: 1px solid rgba(76, 153, 235, 0.46);
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse 65% 55% at 100% 0%, rgba(45, 80, 153, 0.72) 0%, rgba(45, 80, 153, 0.42) 30%, rgba(45, 80, 153, 0.12) 58%, transparent 82%), radial-gradient(ellipse 62% 58% at 0% 100%, rgba(45, 80, 153, 0.68) 0%, rgba(45, 80, 153, 0.38) 32%, rgba(45, 80, 153, 0.10) 60%, transparent 84%), radial-gradient(ellipse 48% 42% at 100% 65%, rgba(27, 58, 115, 0.48) 0%, rgba(27, 58, 115, 0.20) 42%, transparent 78%), radial-gradient(ellipse 48% 42% at 5% 10%, rgba(14, 27, 58, 0.90) 0%, rgba(14, 27, 58, 0.65) 42%, transparent 82%), #080F24;
   box-shadow:
-    0 30px 70px rgba(0, 0, 0, 0.28),
-    0 8px 24px rgba(0, 0, 0, 0.14);
+    0 28px 70px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(126, 195, 255, 0.06),
+    0 0 0 1px rgba(25, 74, 132, 0.14);
   text-align: center;
-  animation: register-card-in 0.28s ease both;
+  animation: register-card-in .35s cubic-bezier(.22,.8,.25,1) both;
 }
 
 @keyframes register-card-in {
-  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.attendance-register-view .attendance-portal-logo {
-  width: 60px;
-  height: 60px;
-  margin: 0 auto 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 15px;
-  background: linear-gradient(145deg, #5545df, #3b2dc1);
-  color: #ffffff;
-  font-size: 23px;
-  box-shadow: 0 10px 23px rgba(67, 53, 207, 0.28);
+.attendance-register-logo {
+  display: block;
+  width: 220px;
+  max-width: 78%;
+  height: auto;
+  margin: 0 auto 12px;
+  object-fit: contain;
+  filter: drop-shadow(0 7px 18px rgba(36, 160, 255, 0.12));
 }
 
 .attendance-register-view .attendance-portal-kicker {
@@ -53,178 +51,360 @@
   align-items: center;
   justify-content: center;
   max-width: 100%;
-  margin-bottom: 8px;
-  padding: 5px 9px;
-  border: 1px solid #dce4ff;
-  border-radius: 7px;
-  background: #f2f5ff;
-  color: #4e5ba8;
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.05em;
+  margin: 0 0 10px;
+  padding: 4px 13px;
+  border: 1px solid rgba(76, 200, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(8, 15, 36, 0.25);
+  color: #4cc8ff;
+  font-family: "Inter", sans-serif;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.25px;
+  line-height: 1;
 }
 
 .attendance-register-view h1 {
   margin: 0;
-  color: #15233a;
-  font-size: 23px;
-  line-height: 1.2;
-  font-weight: 900;
+  color: #f2f7ff;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-size: 25px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.035em;
 }
 
 .attendance-register-view > p {
   margin: 8px 0 19px;
-  color: #8a9ab0;
-  font-size: 10px;
-  line-height: 1.55;
-}
-
-/* En el QR mostramos primero el estado de disponibilidad. */
-.attendance-register-view .attendance-portal-form::before {
-  content: "●  QR Activo para Registro";
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 39px;
-  box-sizing: border-box;
-  margin: 4px 0 9px;
-  padding: 0 12px;
-  border: 1px solid #8de7c1;
-  border-radius: 10px;
-  background: #ecfbf5;
-  color: #168566;
-  font-size: 10px;
-  font-weight: 900;
+  color: #9db0ce;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
 .attendance-register-view .attendance-portal-form {
   text-align: left;
 }
 
+.qr-active-indicator {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid rgba(76, 200, 255, 0.28);
+  border-radius: 9px;
+  background: rgba(12, 35, 55, 0.72);
+  color: #52d6b0;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+
+.qr-active-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #42e1b3;
+  box-shadow: 0 0 8px rgba(66, 225, 179, .8);
+  animation: qr-dot-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes qr-dot-pulse {
+  0%, 100% { opacity: .65; transform: scale(.88); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
 .attendance-register-view .attendance-portal-form label {
   display: block;
-  margin: 13px 0 6px;
-  color: #435875;
-  font-size: 10px;
-  font-weight: 900;
+  margin: 0 0 7px;
+  color: #aebfda;
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
 }
 
 .attendance-register-view .attendance-portal-input-wrap {
   position: relative;
 }
 
-.attendance-register-view .attendance-portal-input-wrap > span {
+.attendance-register-view .attendance-portal-input-wrap > span.qr-dni-icon-wrap {
   position: absolute;
   left: 13px;
   top: 50%;
   z-index: 1;
+  width: 19px;
+  height: 19px;
   transform: translateY(-50%);
-  color: #7654d8;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-dni-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  opacity: .95;
 }
 
 .attendance-register-view .attendance-portal-input-wrap input {
   width: 100%;
-  height: 48px;
+  height: 50px;
   box-sizing: border-box;
-  border: 2px solid #cbd7e7;
-  border-radius: 10px;
-  padding: 0 13px 0 39px;
+  border: 1px solid rgba(83, 139, 199, .40);
+  border-radius: 9px;
+  padding: 0 15px 0 43px;
   outline: none;
-  background: #ffffff;
-  color: #253c59;
-  font-family: monospace;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  background: #050d20;
+  color: #edf6ff;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
 }
 
 .attendance-register-view .attendance-portal-input-wrap input::placeholder {
-  color: #a7b1c0;
+  color: #607593;
   opacity: 1;
+  font-weight: 500;
 }
 
 .attendance-register-view .attendance-portal-input-wrap input:focus {
-  border-color: #617ed4;
-  box-shadow: 0 0 0 4px rgba(65, 91, 204, 0.10);
+  border-color: #4cc8ff;
+  background: #061126;
+  box-shadow: 0 0 0 3px rgba(76, 200, 255, .10), 0 0 18px rgba(76, 200, 255, .08);
 }
 
-.attendance-register-view .text-center {
-  margin-top: 8px;
-  color: #667a94 !important;
-  font-size: 9px !important;
-  font-family: monospace;
-  font-weight: 800 !important;
-  text-align: center;
+.qr-time-remaining {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 16px;
+  color: #7891b2;
+  font-family: "Inter", sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.qr-time-remaining strong {
+  color: #58d4ff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.qr-time-icon {
+  color: #54cfff;
+  font-size: 13px;
+  line-height: 1;
 }
 
 .attendance-register-view .attendance-portal-submit,
-.attendance-register-view .attendance-portal-form button {
+.attendance-register-view .attendance-portal-form button.attendance-portal-submit {
+  position: relative;
   width: 100%;
-  min-height: 43px;
+  min-height: 45px;
   margin-top: 13px;
-  border: 0;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #214887, #1a3d78);
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 900;
+  overflow: hidden;
+  border: 1px solid rgba(87, 166, 238, .24);
+  border-radius: 9px;
+  background: radial-gradient(45% 55% at 78% 8%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.65) 14%, rgba(255, 255, 255, 0.25) 32%, rgba(255, 255, 255, 0) 65%), linear-gradient(90deg, rgb(63, 119, 178) 0%, rgb(107, 217, 255) 71%, rgb(107, 217, 255) 100%);
+  color: #080F24;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(26, 61, 120, 0.22);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  box-shadow: 0 9px 22px rgba(16, 53, 104, .28);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
 }
 
-.attendance-register-view .attendance-portal-submit:hover:not(:disabled),
-.attendance-register-view .attendance-portal-form button:hover:not(:disabled) {
+.attendance-register-view .attendance-portal-submit::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -35%;
+  width: 24%;
+  transform: skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(112, 225, 255, .35), transparent);
+  animation: qr-button-shine 3.4s ease-in-out infinite;
+}
+
+@keyframes qr-button-shine {
+  0%, 55% { left: -35%; }
+  100% { left: 125%; }
+}
+
+.attendance-register-view .attendance-portal-submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  filter: brightness(1.04);
-  box-shadow: 0 11px 22px rgba(26, 61, 120, 0.28);
+  filter: brightness(1.08);
+  box-shadow: 0 12px 26px rgba(22, 74, 135, .36);
 }
 
-.attendance-register-view .attendance-portal-submit:disabled,
-.attendance-register-view .attendance-portal-form button:disabled {
-  opacity: 0.58;
+.attendance-register-view .attendance-portal-submit:disabled {
+  opacity: .58;
   cursor: not-allowed;
+}
+
+.qr-submit-arrow {
+  margin-left: 7px;
+  font-size: 15px;
+  vertical-align: -1px;
 }
 
 .attendance-register-view .attendance-portal-error,
 .attendance-register-view .attendance-portal-success {
-  margin-top: 10px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 11px;
   padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 10px;
-  font-weight: 800;
-  line-height: 1.4;
+  box-sizing: border-box;
+  border-radius: 9px;
+  font-family: "Inter", sans-serif;
+  line-height: 1.25;
+  text-align: left;
+  animation: qr-alert-in .24s ease both;
+}
+
+@keyframes qr-alert-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .attendance-register-view .attendance-portal-error {
-  border: 1px solid #efcccc;
-  background: #fff5f5;
-  color: #a63f3f;
+  border: 1px solid rgba(244, 104, 135, .38);
+  background: rgba(79, 20, 44, .24);
+  color: #ff829d;
+}
+
+.attendance-register-view .attendance-portal-error strong,
+.attendance-register-view .attendance-portal-success strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: .01em;
+}
+
+.attendance-register-view .attendance-portal-error small,
+.attendance-register-view .attendance-portal-success small {
+  display: block;
+  color: #9caec7;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.qr-alert-icon,
+.qr-success-icon {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.qr-alert-icon {
+  border: 1px solid rgba(255, 111, 144, .72);
+  color: #ff7d9b;
+  background: rgba(255, 92, 128, .08);
+}
+
+.qr-duplicate-alert {
+  border-color: rgba(255, 194, 91, .42) !important;
+  background: rgba(92, 62, 15, .22) !important;
+  color: #ffd17b !important;
+}
+
+.qr-duplicate-alert .qr-alert-icon {
+  border-color: rgba(255, 209, 103, .72);
+  color: #ffd167;
 }
 
 .attendance-register-view .attendance-portal-success {
-  border: 1px solid #9ce7c8;
-  background: #edfbf5;
-  color: #158362;
+  border: 1px solid rgba(76, 220, 181, .34);
+  background: rgba(18, 91, 78, .18);
+  color: #66e1be;
+}
+
+.qr-success-icon {
+  border: 1px solid rgba(81, 224, 184, .72);
+  background: rgba(64, 211, 168, .12);
+  color: #5ee1ba;
+  animation: qr-success-pop .4s ease both;
+}
+
+@keyframes qr-success-pop {
+  0% { transform: scale(.72); opacity: .3; }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.qr-session-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 13px;
+  color: #6e84a3;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.qr-session-note span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4cc8ff;
+  box-shadow: 0 0 7px rgba(76, 200, 255, .7);
 }
 
 @media (max-width: 560px) {
-  .attendance-portal-page { padding: 12px 9px 28px; }
+  .attendance-portal-page {
+    min-height: 100svh;
+    padding: 16px 10px;
+  }
+
   .attendance-register-view {
     max-width: 100%;
-    margin-top: 25px;
-    padding: 25px 20px 27px;
-    border-radius: 18px;
+    padding: 24px 20px 22px;
+    border-radius: 16px;
   }
-  .attendance-register-view .attendance-portal-logo {
-    width: 56px;
-    height: 56px;
+
+  .attendance-register-logo {
+    width: 205px;
   }
-  .attendance-register-view h1 { font-size: 20px; }
+
+  .attendance-register-view h1 {
+    font-size: 21px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .attendance-register-view { animation: none; }
+  .attendance-register-view,
+  .qr-active-dot,
+  .attendance-register-view .attendance-portal-submit::before,
+  .qr-success-icon,
+  .attendance-register-view .attendance-portal-error,
+  .attendance-register-view .attendance-portal-success {
+    animation: none !important;
+  }
 }

@@ -4,6 +4,10 @@ const User = require("../models/User");
 const Admin = require("../models/Admin");
 
 const {
+  resolveEffectiveCircleForPeriod,
+} = require("../services/memberCircleHistoryService");
+
+const {
   createAuditLog,
 } = require("../services/auditService");
 
@@ -1191,10 +1195,17 @@ const getUserMonthlyAttendance = async (
       });
     }
 
+    const effectiveCircle =
+      await resolveEffectiveCircleForPeriod({
+        user,
+        year: dateInfo.year,
+        month: dateInfo.month,
+      });
+
     if (
       !hasCirclePermission(
         req,
-        user.circle
+        effectiveCircle
       )
     ) {
       return res.status(403).json({
@@ -1215,7 +1226,7 @@ const getUserMonthlyAttendance = async (
     const meetings =
       await Meeting.find({
         circle:
-          user.circle,
+          effectiveCircle,
 
         active: true,
 
@@ -1258,7 +1269,11 @@ const getUserMonthlyAttendance = async (
     );
 
     return res.json({
-      user,
+      user: {
+        ...user.toObject(),
+        circle: effectiveCircle,
+        currentCircle: user.circle,
+      },
 
       year:
         dateInfo.year,
@@ -1400,7 +1415,15 @@ const getUserMonthlyAttendanceByDni =
         });
       }
 
-      const gestorWhatsapp = await findGestorWhatsappByCircle(user.circle);
+      const effectiveCircle =
+        await resolveEffectiveCircleForPeriod({
+          user,
+          year: dateInfo.year,
+          month: dateInfo.month,
+        });
+
+      const gestorWhatsapp =
+        await findGestorWhatsappByCircle(user.circle);
 
       const {
         firstDate,
@@ -1414,7 +1437,7 @@ const getUserMonthlyAttendanceByDni =
       const meetings =
         await Meeting.find({
           circle:
-            user.circle,
+            effectiveCircle,
 
           active: true,
 
@@ -1471,6 +1494,9 @@ const getUserMonthlyAttendanceByDni =
             user.username,
 
           circle:
+            effectiveCircle,
+
+          currentCircle:
             user.circle,
 
           job:
@@ -1529,6 +1555,12 @@ const getUserMonthlyAttendanceByDni =
                     record?.status ||
                       "No asistió"
                   ),
+
+                // Indica si existe un registro real de asistencia para
+                // esta sesión. Esto permite que /asistencia respete
+                // asistencias ya validadas aunque la fecha todavía no haya llegado.
+                hasAttendanceRecord:
+                  Boolean(record),
 
                 note:
                   record?.note ||
@@ -1730,12 +1762,19 @@ const registerAttendanceByQr =
             user._id,
         });
 
+      const hadPreviousActiveAttendance =
+        Boolean(attendance && attendance.active !== false);
+
       const previousStatus =
         attendance
           ? normalizeStatus(
               attendance.status
             )
           : "";
+
+      const wasAlreadyAttended =
+        hadPreviousActiveAttendance &&
+        previousStatus === "Asistió";
 
       const isNewAttendance =
         !attendance;
@@ -1837,8 +1876,13 @@ const registerAttendanceByQr =
       return res.json({
         success: true,
 
-        message:
-          "Asistencia registrada correctamente.",
+        alreadyRegistered: wasAlreadyAttended,
+
+        previousStatus,
+
+        message: wasAlreadyAttended
+          ? "La asistencia ya estaba registrada, pero el estado fue actualizado a Asistió correctamente."
+          : "Asistencia registrada correctamente.",
 
         attendance,
 
@@ -1848,6 +1892,9 @@ const registerAttendanceByQr =
 
           name:
             user.name,
+
+          username:
+            user.username,
 
           circle:
             user.circle,

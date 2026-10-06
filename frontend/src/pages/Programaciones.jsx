@@ -124,6 +124,7 @@ const Programaciones = () => {
 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [deletingCorporateAnnouncements, setDeletingCorporateAnnouncements] = useState(false);
 
   const [search, setSearch] = useState("");
   const [circleFilter, setCircleFilter] = useState("");
@@ -205,6 +206,72 @@ const Programaciones = () => {
 
   const effectiveCircleFilter =
     circleFilter || firstAssignedCircle;
+
+  const handleDeleteAllCorporateAnnouncements = async () => {
+    if (!isMainAdmin || deletingCorporateAnnouncements) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "¿Eliminar todos los Anuncios Corporativos existentes?\n\nSe eliminarán las sesiones de ANUNCIOS CORPORATIVOS de todos los círculos. Esta acción no afectará HEALTH, MENTORÍA, MASTERCLASS ni otras sesiones."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingCorporateAnnouncements(true);
+      setError("");
+      setMessage("");
+
+      const token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("accessToken") ||
+        "";
+
+      const response = await fetch("/api/meetings/anuncios-corporativos", {
+        method: "DELETE",
+        headers: token
+          ? { Authorization: `Bearer ${token}` }
+          : {},
+      });
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            "No se pudieron eliminar los Anuncios Corporativos."
+        );
+      }
+
+      setMessage(
+        data?.message ||
+          `Se eliminaron ${data?.deletedCount || 0} Anuncios Corporativos correctamente.`
+      );
+
+      await loadData();
+    } catch (err) {
+      console.error(
+        "Error eliminando todos los Anuncios Corporativos:",
+        err
+      );
+
+      setError(
+        err?.message ||
+          "No se pudieron eliminar los Anuncios Corporativos."
+      );
+    } finally {
+      setDeletingCorporateAnnouncements(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -807,13 +874,26 @@ const Programaciones = () => {
 
             <div className="flex items-center gap-2">
               {isMainAdmin && (
-                <button
-                  type="button"
-                  onClick={() => setCircleManagerOpen(true)}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-violet-300 bg-white px-4 text-xs font-bold text-violet-700 shadow-sm transition hover:bg-violet-50"
-                >
-                  ⚙️ Gestionar Círculos
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setCircleManagerOpen(true)}
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-violet-300 bg-white px-4 text-xs font-bold text-violet-700 shadow-sm transition hover:bg-violet-50"
+                  >
+                    ⚙️ Gestionar Círculos
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDeleteAllCorporateAnnouncements}
+                    disabled={deletingCorporateAnnouncements}
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-xs font-bold text-rose-600 shadow-sm transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {deletingCorporateAnnouncements
+                      ? "Eliminando..."
+                      : "🗑️ Eliminar Anuncios Corporativos"}
+                  </button>
+                </>
               )}
 
               <button
