@@ -257,8 +257,8 @@
 
 .portal-next-session {
   position: relative;
-  width: 270px;
-  min-width: 270px;
+  width: 257px;
+  min-width: 257px;
   height: 80px;
   min-height: 70px;
   box-sizing: border-box;
@@ -326,7 +326,7 @@
   justify-content: center;
 }
 
-.portal-next-session span { display: block; margin: 0; color: #78c9ff; font-size: 12.5px; line-height: 1.1; margin-top: 4px; font-weight: 500; text-transform: uppercase; font-family: Arial, sans-serif; }
+.portal-next-session span { display: block; margin: 0; color: #78c9ff; font-size: 11.5px; line-height: 1.1; margin-top: 4px; font-weight: 500; text-transform: uppercase; font-family: Arial, sans-serif; }
 
 .portal-next-session-content strong { display: block; margin-top: 3px; color: #EEF3FF; font-size: 10.5px; line-height: 1.15; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: Arial, sans-serif; }
 
@@ -1603,7 +1603,7 @@
 
   .attendance-history-view .portal-dark-date strong { display: block !important; margin: 0 !important; font-family: 'Montserrat', sans-serif !important; font-size: 16px !important; line-height: 1 !important; font-weight: 500 !important; white-space: nowrap !important; }
 
-  .attendance-history-view .portal-dark-date small { display: block !important; margin: 2px 0 0 !important; color: #6BD9FF !important; font-family: 'Montserrat', sans-serif !important; font-size: 9.5px !important; line-height: 1 !important; font-weight: 700 !important; white-space: nowrap !important; }
+  .attendance-history-view .portal-dark-date small { display: block !important; margin: 2px 0 0 !important; color: #6BD9FF !important; font-family: 'Montserrat', sans-serif !important; font-size: 10.5px !important; line-height: 1 !important; font-weight: 700 !important; white-space: nowrap !important; }
 
   .attendance-history-view .portal-dark-info {
     width: 100% !important;
@@ -2153,7 +2153,7 @@
     height: 100% !important;
 
     font-family: Arial, sans-serif !important;
-    font-size: 11px !important;
+    font-size: 12px !important;
     font-weight: 900 !important;
     line-height: 1 !important;
   }
@@ -2282,9 +2282,9 @@
     display: flex !important;
     align-items: center !important;
     justify-content: flex-end !important;
-    gap: 4px !important;
+    gap: 5px !important;
     width: auto !important;
-    min-width: 33px !important;
+    min-width: 38px !important;
     height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -2292,19 +2292,20 @@
   }
 
   .attendance-history-view .portal-mobile-status-icon {
-    width: 31px !important;
-    height: 31px !important;
-    min-width: 31px !important;
-    min-height: 31px !important;
-    flex: 0 0 31px !important;
+    order: 3 !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    flex: 0 0 38px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     box-sizing: border-box !important;
     position: relative !important;
-    border-radius: 5px !important;
+    border-radius: 7px !important;
     font-family: 'Montserrat', sans-serif !important;
-    font-size: 13px !important;
+    font-size: 14px !important;
     font-weight: 700 !important;
     line-height: 1 !important;
   }
@@ -2319,8 +2320,8 @@
   .attendance-history-view .portal-mobile-status-icon.justified::before,
   .attendance-history-view .portal-mobile-status-icon.absent::before,
   .attendance-history-view .portal-mobile-status-icon.presencial::before {
-    width: 18px !important;
-    height: 18px !important;
+    width: 20px !important;
+    height: 20px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2335,7 +2336,7 @@
     border-radius: 50% !important;
     background: #62dcb8 !important;
     color: #07362c !important;
-    font-size: 11px !important;
+    font-size: 12px !important;
     font-weight: 900 !important;
     -webkit-text-stroke: 0.6px #07362c; /* Agrega grosor extra al borde del texto */
     transform: translateX(4px) !important;
@@ -2352,8 +2353,8 @@
     border-radius: 5px !important;
     background: #f0bf5d !important;
     color: #493713 !important;
-    font-size: 11px !important;
-    transform: translateX(4px) !important;
+    font-size: 12px !important;
+    transform: translateX(5px) !important;
   }
 
   .attendance-history-view .portal-mobile-status-icon.absent {
@@ -2367,8 +2368,8 @@ color: transparent !important;
     border-radius: 5px !important;
     background: #e8788e !important;
     color: #481621 !important;
-    font-size: 10px !important;
-    transform: translateX(4px) !important;
+    font-size: 12px !important;
+    transform: translateX(5px) !important;
   }
 
   .attendance-history-view .portal-mobile-status-icon.presencial {
@@ -2394,11 +2395,12 @@ color: transparent !important;
   }
 
   .attendance-history-view .portal-mobile-justify-button {
-    width: 31px !important;
-    height: 31px !important;
-    min-width: 31px !important;
-    min-height: 31px !important;
-    flex: 0 0 31px !important;
+    order: 2 !important;
+    width: 35px !important;
+    height: 35px !important;
+    min-width: 35px !important;
+    min-height: 35px !important;
+    flex: 0 0 38px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2412,35 +2414,42 @@ color: transparent !important;
 
   .attendance-history-view .portal-mobile-justify-button .portal-justify-whatsapp-icon,
   .attendance-history-view .portal-mobile-justify-button .portal-justify-whatsapp-icon svg {
-    width: 13px !important;
-    height: 13px !important;
-    min-width: 13px !important;
+    width: 17px !important;
+    height: 17px !important;
+    min-width: 17px !important;
   }
 
   .attendance-history-view .portal-mobile-countdown {
-    width: 48px !important;
-    min-width: 48px !important;
-    height: 30px !important;
+    order: 1 !important;
+    flex: 0 0 84px !important;
+    width: 84px !important;
+    min-width: 84px !important;
+    height: 38px !important;
     display: inline-flex !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-end !important;
     box-sizing: border-box !important;
-    padding: 0 3px !important;
+    padding: 0 4px 0 0 !important;
     border: none !important;
     border-radius: 0 !important;
     background: transparent !important;
     color: #ffd45c !important;
-    font-size: 6px !important;
+    font-size: 10.5px !important;
     font-weight: 900 !important;
     line-height: 1 !important;
+    letter-spacing: .01em !important;
     white-space: nowrap !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   .attendance-history-view .portal-mobile-countdown::before {
     content: "⏳";
-    margin-right: 2px;
-    font-size: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    margin-right: 4px;
+    font-size: 11px;
     line-height: 1;
   }
 }

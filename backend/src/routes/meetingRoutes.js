@@ -4,6 +4,7 @@ const {
   getMeetings,
   getMeetingById,
   createMeeting,
+  createMeetingsBatch,
   updateMeeting,
   deleteMeeting,
   restoreMeeting,
@@ -39,6 +40,14 @@ router.get(
   getMeetingById
 );
 
+
+
+router.post(
+  "/batch",
+  authMiddleware,
+  requireGlobalAdministrator,
+  createMeetingsBatch
+);
 
 router.post(
   "/",

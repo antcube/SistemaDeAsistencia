@@ -1,4 +1,5 @@
 const Schedule = require("../models/Schedule");
+const { createAuditLog } = require("../services/auditService");
 
 const {
   buildPreview,
@@ -32,6 +33,7 @@ const previewMemberMigration = async (req, res) => {
       destinationScheduleId,
       originCircle,
       destinationCircle,
+      migrationPeriod,
     } = req.body;
 
     const preview = await buildPreview({
@@ -40,6 +42,7 @@ const previewMemberMigration = async (req, res) => {
       destinationScheduleId,
       originCircle,
       destinationCircle,
+      migrationPeriod,
     });
 
     return res.json(preview);
@@ -65,6 +68,7 @@ const migrateMember = async (req, res) => {
       destinationScheduleId,
       originCircle,
       destinationCircle,
+      migrationPeriod,
     } = req.body;
 
     const result = await executeMigration({
@@ -73,15 +77,44 @@ const migrateMember = async (req, res) => {
       destinationScheduleId,
       originCircle,
       destinationCircle,
+      migrationPeriod,
       migratedBy:
         req.user?.adminId ||
         req.user?.name ||
         "Sistema",
     });
 
+    const migration = result.migration;
+
+    await createAuditLog({
+      admin: req.user || req.admin,
+      action: "MIGRATE_MEMBER",
+      module: "member_migrations",
+      description: result.scheduled
+        ? `${migration.memberName || "Miembro"} fue programado para migrar de ${result.sourceCircle} a ${result.targetCircle} desde ${result.migrationPeriod}.`
+        : `${migration.memberName || "Miembro"} fue migrado de ${result.sourceCircle} a ${result.targetCircle} desde ${result.migrationPeriod}. Se convalidaron ${result.migratedSessions} sesión(es).`,
+      targetId: migration._id,
+      targetName: migration.memberName || migration.memberDoc || "Miembro",
+      circle: `${result.sourceCircle}, ${result.targetCircle}`,
+      reversible: true,
+      metadata: {
+        migrationId: migration._id,
+        memberId: migration.member,
+        memberDoc: migration.memberDoc || "",
+        memberName: migration.memberName || "",
+        sourceCircle: result.sourceCircle,
+        targetCircle: result.targetCircle,
+        effectivePeriod: result.migrationPeriod,
+        migrationStatus: migration.status,
+        scheduled: Boolean(result.scheduled),
+        migratedSessions: result.migratedSessions,
+      },
+    });
+
     return res.json({
-      message:
-        "Miembro migrado y sesiones convalidadas correctamente.",
+      message: result.scheduled
+        ? `Migración programada correctamente desde ${result.migrationPeriod}.`
+        : "Miembro migrado y sesiones convalidadas correctamente.",
       ...result,
     });
   } catch (error) {

@@ -630,7 +630,7 @@ const Dashboard = () => {
         <header data-no-pdf className="flex min-h-[66px] items-center gap-3.5 rounded-2xl border border-[#1E293B] bg-[#0D1527]/95 px-5 py-3 shadow-[0_10px_30px_rgba(0,0,0,.28)] backdrop-blur-xl">
           <div className="flex min-w-[205px] items-center gap-2">
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#2457c5] to-[#4CC8FF] text-white shadow-[0_0_14px_rgba(76,200,255,.18)]"><Icon name="trend" className="h-3.5 w-3.5"/></div>
-            <div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-[.16em] text-[#38BDF8]">Círculos Connect</p><h1 className="truncate text-[15px] font-black leading-tight text-white">Dashboard Ejecutivo</h1></div>
+            <div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-[.16em] text-[#38BDF8]"></p><h1 className="truncate text-[15px] font-black leading-tight text-white">Dashboard Ejecutivo</h1></div>
           </div>
 
           <div className="flex h-10 rounded-lg border border-[#1E293B] bg-[#090D16] p-0.5">
@@ -656,7 +656,7 @@ const Dashboard = () => {
         <main id="dashboard-export-area" className="w-full">
           <div data-pdf-only style={{display:"none"}} className="mb-2 items-center justify-between rounded-xl border border-[#1E293B] bg-[#131B2E] px-4 py-3">
             <div><p className="text-[7px] font-black uppercase tracking-[.2em] text-[#38BDF8]">Círculos De Liderazgo · Círculos Connect</p><h2 className="text-base font-black text-white">Reporte Ejecutivo de Asistencia</h2><p className="text-[8px] text-[#94A3B8]">{mode === "comparison" ? "Comparativa Presencial vs. Virtual" : selectedCircle} · {MONTHS[month-1]} {year}</p></div>
-            <div className="text-right"><div className="ml-auto grid h-8 w-9 place-items-center rounded-lg bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] text-[10px] font-black text-white">CL</div><p className="mt-1 text-[7px] text-[#94A3B8]">{new Date().toLocaleDateString("es-PE")}</p></div>
+            <div className="text-right"><div className="ml-auto grid h-8 w-9 place-items-center rounded-lg bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] text-[12px] font-black text-white">CL</div><p className="mt-1 text-[7px] text-[#94A3B8]">{new Date().toLocaleDateString("es-PE")}</p></div>
           </div>
 
           {error && <div className="mb-2 rounded-lg border border-rose-400/20 bg-rose-400/10 px-3 py-1.5 text-[8px] font-bold text-rose-200">{error}</div>}

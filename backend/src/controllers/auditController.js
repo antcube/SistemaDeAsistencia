@@ -1,8 +1,11 @@
-    const AuditLog = require("../models/AuditLog");
+const AuditLog = require("../models/AuditLog");
     const Attendance = require("../models/Attendance");
     const Meeting = require("../models/Meeting");
     const User = require("../models/User");
     const Admin = require("../models/Admin");
+const Schedule = require("../models/Schedule");
+const Circle = require("../models/Circle");
+const MemberMigration = require("../models/MemberMigration");
 
     const { canManageGlobal } = require("../middleware/permissionMiddleware");
 
@@ -55,13 +58,6 @@
         const attendanceLogs = logs.filter((log) =>
           log.module === "attendance" && log.metadata?.meetingId
         );
-
-        // Todas las acciones de Bitácora muestran la opción Deshacer.
-        // La API valida después si existen datos suficientes para restaurarlas.
-        logs = logs.map((log) => {
-          if (!log.undone) log.reversible = true;
-          return log;
-        });
 
         if (attendanceLogs.length) {
           const meetingIds = [
@@ -614,6 +610,368 @@
             preservedLaterMeetings,
             log,
           });
+        }
+
+        // ============================================================
+        // DESHACER MIGRACIÓN DE MIEMBRO
+        // ============================================================
+        if (String(log.module || "").toLowerCase() === "member_migrations") {
+          const migrationId = metadata.migrationId || log.targetId;
+          const migration = migrationId
+            ? await MemberMigration.findById(migrationId)
+            : null;
+
+          if (!migration) {
+            return res.status(404).json({
+              message: "La migración asociada ya no existe.",
+            });
+          }
+
+          if (migration.status === "CANCELLED") {
+            return res.status(400).json({
+              message: "Esta migración ya fue cancelada.",
+            });
+          }
+
+          /*
+           * No deshacemos una migración intermedia si ya existe otra
+           * migración posterior. Hacerlo rompería la cadena histórica
+           * de círculos. Primero debe deshacerse la migración más reciente.
+           */
+          const laterMigration = await MemberMigration.findOne({
+            member: migration.member,
+            _id: { $ne: migration._id },
+            status: { $ne: "CANCELLED" },
+            $or: [
+              { effectivePeriod: { $gt: migration.effectivePeriod } },
+              {
+                effectivePeriod: migration.effectivePeriod,
+                migratedAt: { $gt: migration.migratedAt },
+              },
+            ],
+          })
+            .sort({ effectivePeriod: 1, migratedAt: 1 })
+            .lean();
+
+          if (laterMigration) {
+            return res.status(409).json({
+              message:
+                "No se puede deshacer esta migración porque el miembro tiene una migración posterior. Deshaz primero la migración más reciente.",
+            });
+          }
+
+          const restoreAttendanceSnapshot = (attendance, snapshot) => {
+            if (!attendance || !snapshot) return;
+
+            const fields = [
+              "active",
+              "doc",
+              "name",
+              "circle",
+              "status",
+              "justificationReason",
+              "justifiedBy",
+              "justifiedAt",
+              "registeredBy",
+              "source",
+              "attendanceMode",
+              "attendedAt",
+              "note",
+              "notes",
+              "registeredAt",
+              "deletedAt",
+              "deletedBy",
+            ];
+
+            for (const field of fields) {
+              if (Object.prototype.hasOwnProperty.call(snapshot, field)) {
+                attendance[field] = snapshot[field];
+              }
+            }
+          };
+
+          let restoredAttendances = 0;
+          let removedCreatedAttendances = 0;
+          let preservedLaterChanges = 0;
+
+          for (const session of migration.sessions || []) {
+            const attendance = session.attendanceId
+              ? await Attendance.findById(session.attendanceId)
+              : await Attendance.findOne({
+                  meeting: session.destinationMeeting,
+                  user: migration.member,
+                });
+
+            if (!attendance) {
+              continue;
+            }
+
+            const expectedUpdatedAt = session.afterUpdatedAt
+              ? new Date(session.afterUpdatedAt)
+              : null;
+
+            const changedLater =
+              expectedUpdatedAt &&
+              Number.isFinite(expectedUpdatedAt.getTime()) &&
+              attendance.updatedAt &&
+              attendance.updatedAt.getTime() !== expectedUpdatedAt.getTime();
+
+            if (changedLater) {
+              preservedLaterChanges += 1;
+              continue;
+            }
+
+            if (session.wasCreated) {
+              attendance.active = false;
+              attendance.deletedAt = new Date();
+              attendance.deletedBy = admin.adminId || admin.name || "ADM-001";
+              await attendance.save();
+              removedCreatedAttendances += 1;
+              continue;
+            }
+
+            if (session.previousAttendance) {
+              restoreAttendanceSnapshot(attendance, session.previousAttendance);
+              await attendance.save();
+              restoredAttendances += 1;
+            }
+          }
+
+          const member = await User.findById(migration.member);
+          let restoredMemberCircle = false;
+          let preservedMemberCircle = false;
+
+          if (member && migration.status === "APPLIED") {
+            if (
+              String(member.circle || "").trim().toLowerCase() ===
+              String(migration.targetCircle || "").trim().toLowerCase()
+            ) {
+              member.circle = migration.sourceCircle;
+              await member.save();
+              restoredMemberCircle = true;
+            } else {
+              preservedMemberCircle = true;
+            }
+          }
+
+          migration.status = "CANCELLED";
+          migration.cancelledAt = new Date();
+          migration.cancelledBy = admin.adminId || admin.name || "ADM-001";
+          await migration.save();
+
+          log.undone = true;
+          log.undoneAt = new Date();
+          log.undoneBy = admin.adminId || admin.name || "ADM-001";
+          log.undoMessage = preservedLaterChanges || preservedMemberCircle
+            ? `Migración cancelada. Se conservaron ${preservedLaterChanges} asistencia(s) con cambios posteriores${preservedMemberCircle ? " y el círculo actual del miembro no se sobrescribió" : ""}.`
+            : `Migración cancelada correctamente. Asistencias restauradas: ${restoredAttendances}. Registros creados por la migración retirados: ${removedCreatedAttendances}.`;
+          await log.save();
+
+          return res.json({
+            message: log.undoMessage,
+            restoredAttendances,
+            removedCreatedAttendances,
+            preservedLaterChanges,
+            restoredMemberCircle,
+            preservedMemberCircle,
+            log,
+          });
+        }
+
+        // ============================================================
+        // DESHACER REUNIONES / PROGRAMACIONES / CÍRCULOS
+        // ============================================================
+        const normalizeComparable = (value) => {
+          if (!value || typeof value !== "object") return {};
+          const clone = { ...value };
+          delete clone._id;
+          delete clone.id;
+          delete clone.createdAt;
+          delete clone.updatedAt;
+          delete clone.__v;
+          return JSON.parse(JSON.stringify(clone));
+        };
+
+        const snapshotMatches = (document, snapshot) => {
+          if (!document || !snapshot) return true;
+          const current = normalizeComparable(document.toObject ? document.toObject() : document);
+          const expected = normalizeComparable(snapshot);
+          return Object.keys(expected).every((key) =>
+            JSON.stringify(current[key] ?? null) === JSON.stringify(expected[key] ?? null)
+          );
+        };
+
+        const applySnapshot = (document, snapshot) => {
+          if (!document || !snapshot) return;
+          Object.entries(snapshot).forEach(([key, value]) => {
+            if (["_id", "id", "createdAt", "updatedAt", "__v"].includes(key)) return;
+            document[key] = value;
+          });
+        };
+
+        if (String(log.module || "").toLowerCase() === "meetings") {
+          const action = String(log.action || "").trim().toUpperCase();
+          let changedLater = false;
+          let restored = 0;
+
+          if (action === "DELETE_ALL_CORPORATE_ANNOUNCEMENTS") {
+            const affected = Array.isArray(metadata.affectedMeetings) ? metadata.affectedMeetings : [];
+            for (const snapshot of affected) {
+              const meeting = await Meeting.findById(snapshot._id);
+              if (!meeting) continue;
+              if (meeting.active) { changedLater = true; continue; }
+              applySnapshot(meeting, snapshot);
+              await meeting.save();
+              restored++;
+            }
+          } else if (action === "CREATE_MEETINGS_BATCH") {
+            const affected = Array.isArray(metadata.affectedMeetings)
+              ? metadata.affectedMeetings
+              : [];
+
+            for (const item of affected) {
+              if (!item?.meetingId) continue;
+              const meeting = await Meeting.findById(item.meetingId);
+              if (!meeting) continue;
+
+              if (item.after && !snapshotMatches(meeting, item.after)) {
+                changedLater = true;
+                continue;
+              }
+
+              if (item.mode === "RESTORED" && item.before) {
+                applySnapshot(meeting, item.before);
+                await meeting.save();
+                restored++;
+                continue;
+              }
+
+              meeting.active = false;
+              meeting.deletedAt = new Date();
+              meeting.deletedBy = admin.adminId || admin.name || "ADM-001";
+              meeting.deletedBySchedule = false;
+              meeting.deletedByScheduleChange = false;
+              await meeting.save();
+              restored++;
+            }
+          } else {
+            const meeting = log.targetId ? await Meeting.findById(log.targetId) : null;
+            if (!meeting) {
+              return res.status(404).json({ message: "La reunión asociada ya no existe." });
+            }
+
+            if (action === "CREATE_MEETING") {
+              if (!snapshotMatches(meeting, metadata.after)) changedLater = true;
+              else {
+                meeting.active = false;
+                meeting.deletedAt = new Date();
+                meeting.deletedBy = admin.adminId || admin.name || "ADM-001";
+                await meeting.save();
+                restored = 1;
+              }
+            } else {
+              if (metadata.after && !snapshotMatches(meeting, metadata.after)) changedLater = true;
+              else if (metadata.before) {
+                applySnapshot(meeting, metadata.before);
+                await meeting.save();
+                restored = 1;
+              }
+            }
+          }
+
+          log.undone = true;
+          log.undoneAt = new Date();
+          log.undoneBy = admin.adminId || admin.name || "ADM-001";
+          log.undoMessage = changedLater
+            ? "La acción se marcó como deshecha, pero se conservaron cambios posteriores para no sobrescribir información más reciente."
+            : `Acción de reunión restaurada correctamente (${restored} registro(s)).`;
+          await log.save();
+          return res.json({ message: log.undoMessage, changedLater, restored, log });
+        }
+
+        if (String(log.module || "").toLowerCase() === "schedules") {
+          const action = String(log.action || "").trim().toUpperCase();
+          const schedule = log.targetId ? await Schedule.findById(log.targetId) : null;
+          let changedLater = false;
+          let restoredMeetings = 0;
+
+          if (action === "CREATE_SCHEDULE") {
+            if (!schedule) return res.status(404).json({ message: "La programación ya no existe." });
+            if (metadata.after && !snapshotMatches(schedule, metadata.after)) changedLater = true;
+            else {
+              schedule.active = false;
+              schedule.deletedAt = new Date();
+              schedule.deletedBy = admin.adminId || admin.name || "ADM-001";
+              schedule.changeType = "TERMINATED";
+              await schedule.save();
+              const ids = Array.isArray(metadata.createdMeetingIds) ? metadata.createdMeetingIds : [];
+              const result = await Meeting.updateMany({ _id: { $in: ids }, active: true }, {
+                $set: { active: false, deletedAt: new Date(), deletedBy: admin.adminId || admin.name || "ADM-001", deletedBySchedule: true }
+              });
+              restoredMeetings = result.modifiedCount || 0;
+            }
+          } else if (action === "GENERATE_SCHEDULE_MONTH") {
+            const ids = Array.isArray(metadata.createdMeetingIds) ? metadata.createdMeetingIds : [];
+            const result = await Meeting.updateMany({ _id: { $in: ids }, active: true }, {
+              $set: { active: false, deletedAt: new Date(), deletedBy: admin.adminId || admin.name || "ADM-001", deletedBySchedule: true }
+            });
+            restoredMeetings = result.modifiedCount || 0;
+          } else if (action === "MIGRATE_SCHEDULE") {
+            const newSchedule = metadata.newScheduleId ? await Schedule.findById(metadata.newScheduleId) : null;
+            if (schedule && metadata.afterOld && !snapshotMatches(schedule, metadata.afterOld)) changedLater = true;
+            else {
+              if (schedule && metadata.beforeOld) { applySnapshot(schedule, metadata.beforeOld); await schedule.save(); }
+              if (newSchedule) { newSchedule.active = false; newSchedule.deletedAt = new Date(); newSchedule.deletedBy = admin.adminId || admin.name || "ADM-001"; await newSchedule.save(); }
+              const createdIds = Array.isArray(metadata.createdMeetingIds) ? metadata.createdMeetingIds : [];
+              await Meeting.updateMany({ _id: { $in: createdIds }, active: true }, { $set: { active: false, deletedAt: new Date(), deletedBy: admin.adminId || admin.name || "ADM-001", deletedByScheduleChange: true } });
+              const result = await Meeting.updateMany({ scheduleId: schedule?._id, deletedByScheduleChange: true, replacementScheduleId: metadata.newScheduleId }, { $set: { active: true, deletedAt: null, deletedBy: "", deletedByScheduleChange: false, replacementScheduleId: null } });
+              restoredMeetings = result.modifiedCount || 0;
+            }
+          } else {
+            if (!schedule) return res.status(404).json({ message: "La programación ya no existe." });
+            if (metadata.after && !snapshotMatches(schedule, metadata.after)) changedLater = true;
+            else if (metadata.before) {
+              applySnapshot(schedule, metadata.before);
+              await schedule.save();
+              if (action === "TERMINATE_SCHEDULE" && metadata.effectiveDate) {
+                const result = await Meeting.updateMany({ scheduleId: schedule._id, date: { $gte: metadata.effectiveDate }, deletedBySchedule: true }, { $set: { active: true, deletedAt: null, deletedBy: "", deletedBySchedule: false } });
+                restoredMeetings = result.modifiedCount || 0;
+              }
+            }
+          }
+
+          log.undone = true;
+          log.undoneAt = new Date();
+          log.undoneBy = admin.adminId || admin.name || "ADM-001";
+          log.undoMessage = changedLater
+            ? "No se sobrescribieron cambios posteriores realizados sobre la programación."
+            : `Acción de programación deshecha correctamente. Reuniones restauradas/retiradas: ${restoredMeetings}.`;
+          await log.save();
+          return res.json({ message: log.undoMessage, changedLater, restoredMeetings, log });
+        }
+
+        if (String(log.module || "").toLowerCase() === "circles") {
+          const action = String(log.action || "").trim().toUpperCase();
+          const circle = log.targetId ? await Circle.findById(log.targetId) : null;
+          if (!circle) return res.status(404).json({ message: "El círculo asociado ya no existe." });
+          let changedLater = false;
+
+          if (action === "CREATE_CIRCLE") {
+            if (metadata.after && !snapshotMatches(circle, metadata.after)) changedLater = true;
+            else { circle.active = false; await circle.save(); }
+          } else {
+            if (metadata.after && !snapshotMatches(circle, metadata.after)) changedLater = true;
+            else if (metadata.before) { applySnapshot(circle, metadata.before); await circle.save(); }
+          }
+
+          log.undone = true;
+          log.undoneAt = new Date();
+          log.undoneBy = admin.adminId || admin.name || "ADM-001";
+          log.undoMessage = changedLater
+            ? "No se sobrescribieron cambios posteriores realizados sobre el círculo."
+            : "Acción de círculo deshecha correctamente.";
+          await log.save();
+          return res.json({ message: log.undoMessage, changedLater, log });
         }
 
         // ============================================================

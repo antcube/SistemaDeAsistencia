@@ -62,6 +62,13 @@ const meetingService = {
     );
   },
 
+  async createMeetingsBatch(data) {
+    return api.post(
+      "/meetings/batch",
+      data
+    );
+  },
+
   async updateMeeting(
     id,
     data

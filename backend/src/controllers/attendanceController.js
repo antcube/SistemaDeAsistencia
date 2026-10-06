@@ -4,6 +4,10 @@ const User = require("../models/User");
 const Admin = require("../models/Admin");
 
 const {
+  resolveEffectiveCircleForPeriod,
+} = require("../services/memberCircleHistoryService");
+
+const {
   createAuditLog,
 } = require("../services/auditService");
 
@@ -1191,10 +1195,17 @@ const getUserMonthlyAttendance = async (
       });
     }
 
+    const effectiveCircle =
+      await resolveEffectiveCircleForPeriod({
+        user,
+        year: dateInfo.year,
+        month: dateInfo.month,
+      });
+
     if (
       !hasCirclePermission(
         req,
-        user.circle
+        effectiveCircle
       )
     ) {
       return res.status(403).json({
@@ -1215,7 +1226,7 @@ const getUserMonthlyAttendance = async (
     const meetings =
       await Meeting.find({
         circle:
-          user.circle,
+          effectiveCircle,
 
         active: true,
 
@@ -1258,7 +1269,11 @@ const getUserMonthlyAttendance = async (
     );
 
     return res.json({
-      user,
+      user: {
+        ...user.toObject(),
+        circle: effectiveCircle,
+        currentCircle: user.circle,
+      },
 
       year:
         dateInfo.year,
@@ -1400,7 +1415,15 @@ const getUserMonthlyAttendanceByDni =
         });
       }
 
-      const gestorWhatsapp = await findGestorWhatsappByCircle(user.circle);
+      const effectiveCircle =
+        await resolveEffectiveCircleForPeriod({
+          user,
+          year: dateInfo.year,
+          month: dateInfo.month,
+        });
+
+      const gestorWhatsapp =
+        await findGestorWhatsappByCircle(user.circle);
 
       const {
         firstDate,
@@ -1414,7 +1437,7 @@ const getUserMonthlyAttendanceByDni =
       const meetings =
         await Meeting.find({
           circle:
-            user.circle,
+            effectiveCircle,
 
           active: true,
 
@@ -1471,6 +1494,9 @@ const getUserMonthlyAttendanceByDni =
             user.username,
 
           circle:
+            effectiveCircle,
+
+          currentCircle:
             user.circle,
 
           job:

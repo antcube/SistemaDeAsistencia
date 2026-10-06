@@ -3,6 +3,10 @@ const User = require("../models/User");
 const Attendance = require("../models/Attendance");
 
 const {
+  buildEffectiveCircleMap,
+} = require("./memberCircleHistoryService");
+
+const {
   generateMeetingsForMonth,
 } = require("./scheduleService");
 
@@ -325,19 +329,35 @@ const getMonthlyCircleReport =
           )
       );
 
-    const userQuery = {};
-
-    if (circle) {
-      userQuery.circle =
-        circle;
-    }
-
-    const users =
-      await User.find(
-        userQuery
-      ).sort({
+    const allUsers =
+      await User.find({}).sort({
         name: 1,
       });
+
+    const effectiveCircleByUser =
+      await buildEffectiveCircleMap({
+        users: allUsers,
+        year,
+        month,
+      });
+
+    const normalizedRequestedCircle =
+      String(circle || "")
+        .trim()
+        .toLowerCase();
+
+    const users = circle
+      ? allUsers.filter((user) =>
+          String(
+            effectiveCircleByUser.get(
+              String(user._id)
+            ) || ""
+          )
+            .trim()
+            .toLowerCase() ===
+          normalizedRequestedCircle
+        )
+      : allUsers;
 
     const meetingIds =
       meetings.map(
@@ -458,6 +478,11 @@ const getMonthlyCircleReport =
          * que fueron creados para un círculo concreto
          * también respetan el círculo de Meeting.
          */
+        const effectiveCircle =
+          effectiveCircleByUser.get(
+            String(user._id)
+          ) || user.circle || "";
+
         const userMeetings =
           meetings.filter(
             (meeting) =>
@@ -467,7 +492,7 @@ const getMonthlyCircleReport =
                 .trim()
                 .toLowerCase() ===
               String(
-                user.circle || ""
+                effectiveCircle
               )
                 .trim()
                 .toLowerCase()
@@ -957,6 +982,9 @@ const getMonthlyCircleReport =
             username:
               user.username,
             circle:
+              effectiveCircle,
+
+            currentCircle:
               user.circle,
             job: user.job,
             rangeChangeDate: user.rangeChangeDate || null,
@@ -967,7 +995,8 @@ const getMonthlyCircleReport =
 
           name: user.name,
           doc: user.doc,
-          circle: user.circle,
+          circle: effectiveCircle,
+          currentCircle: user.circle,
 
           categories,
 

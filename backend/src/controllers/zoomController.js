@@ -1,4 +1,4 @@
-            const XLSX = require("xlsx");
+const XLSX = require("xlsx");
 
             const User = require("../models/User");
             const Circle = require("../models/Circle");
@@ -1796,7 +1796,7 @@
                     "zoom",
 
                   description:
-                    `Procesamiento Zoom de ${sessionType} del ${date}: ${present} asistencias aplicadas, ${unmatched} correos no encontrados. Los miembros que no pasaron el filtro quedaron sin cambios.`,
+                    `Procesamiento Zoom de ${sessionType} del ${date}: ${present} asistencias aplicadas, ${unmatched} correos no encontrados.${zoomMeetingChanges.filter((item) => item.wasCreated).length ? ` Se crearon automáticamente ${zoomMeetingChanges.filter((item) => item.wasCreated).length} reunión(es) porque no existían en el calendario.` : ""} Los miembros que no pasaron el filtro quedaron sin cambios.`,
 
                   targetId:
                     `${sessionType}-${date}`,

@@ -1,4 +1,5 @@
 const Circle = require("../models/Circle");
+const { createAuditLog } = require("../services/auditService");
 
 const {
   isGlobalAdministrator,
@@ -9,6 +10,11 @@ const {
 const {
   ensureDefaultSchedules,
 } = require("../services/scheduleService");
+
+const circleSnapshot = (circle) => ({
+  name: circle.name || "",
+  active: Boolean(circle.active),
+});
 
 /**
  * ============================================================
@@ -185,6 +191,7 @@ const createCircle = async (
       if (!existingCircle.active) {
         existingCircle.active = true;
 
+        const before = circleSnapshot(existingCircle);
         const circle =
           await existingCircle.save();
 
@@ -198,6 +205,12 @@ const createCircle = async (
             scheduleError
           );
         }
+
+        await createAuditLog({
+          admin: req.user, action: "RESTORE_CIRCLE", module: "circles",
+          description: `Se reactivó el círculo ${circle.name}.`, targetId: circle._id, targetName: circle.name, circle: circle.name, reversible: true,
+          metadata: { before, after: circleSnapshot(circle) },
+        });
 
         return res.status(200).json({
           ...circle.toObject(),
@@ -250,6 +263,12 @@ const createCircle = async (
       );
     }
 
+    await createAuditLog({
+      admin: req.user, action: "CREATE_CIRCLE", module: "circles",
+      description: `Se creó el círculo ${circle.name}.`, targetId: circle._id, targetName: circle.name, circle: circle.name, reversible: true,
+      metadata: { after: circleSnapshot(circle) },
+    });
+
     res.status(201).json(
       circle
     );
@@ -298,6 +317,8 @@ const updateCircle = async (
           "Círculo no encontrado",
       });
     }
+
+    const before = circleSnapshot(circle);
 
     const {
       name,
@@ -379,6 +400,12 @@ const updateCircle = async (
       }
     }
 
+    await createAuditLog({
+      admin: req.user, action: "UPDATE_CIRCLE", module: "circles",
+      description: `Se actualizó el círculo ${updatedCircle.name}.`, targetId: updatedCircle._id, targetName: updatedCircle.name, circle: updatedCircle.name, reversible: true,
+      metadata: { before, after: circleSnapshot(updatedCircle) },
+    });
+
     res.json(
       updatedCircle
     );
@@ -430,10 +457,18 @@ const deleteCircle = async (
       });
     }
 
+    const before = circleSnapshot(circle);
+
     circle.active =
       false;
 
     await circle.save();
+
+    await createAuditLog({
+      admin: req.user, action: "DELETE_CIRCLE", module: "circles",
+      description: `Se desactivó el círculo ${circle.name}.`, targetId: circle._id, targetName: circle.name, circle: circle.name, reversible: true,
+      metadata: { before, after: circleSnapshot(circle) },
+    });
 
     res.json({
       message:

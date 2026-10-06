@@ -1527,11 +1527,21 @@ const AttendancePortal = () => {
     const counts = { attended: 0, justified: 0, absent: 0 };
 
     (categoryMeetings || []).forEach((meeting) => {
-      const status = getTimelineStatus(meeting);
+      // Los indicadores de la cabecera cuentan únicamente estados realmente
+      // registrados. Una reunión sin registro todavía no es asistencia,
+      // justificación ni falta, aunque el calendario ya tenga la sesión creada.
+      if (!meeting?.hasAttendanceRecord) return;
 
-      if (status === "attended") counts.attended += 1;
-      else if (status === "justified") counts.justified += 1;
-      else if (status === "absent") counts.absent += 1;
+      const status = normalizeStatus(meeting.status);
+
+      if (status === "Asistió" || status === "Clase Presencial") {
+        counts.attended += 1;
+      } else if (status === "Justificado") {
+        if (meeting.justificationValidity === "extra") counts.absent += 1;
+        else counts.justified += 1;
+      } else if (status === "No asistió") {
+        counts.absent += 1;
+      }
     });
 
     return counts;

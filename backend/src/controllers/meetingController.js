@@ -2,6 +2,7 @@ const Meeting = require("../models/Meeting");
 const Circle = require("../models/Circle");
 const User = require("../models/User");
 const Attendance = require("../models/Attendance");
+const { createAuditLog } = require("../services/auditService");
 
 const {
   getMeetingsForMonth,
@@ -11,6 +12,29 @@ const {
   canManageGlobal,
   canManageCircle,
 } = require("../middleware/permissionMiddleware");
+
+const meetingSnapshot = (meeting) => ({
+  title: meeting.title || "",
+  type: meeting.type || "",
+  circle: meeting.circle || "",
+  host: meeting.host || "",
+  date: meeting.date || "",
+  time: meeting.time || "",
+  endTime: meeting.endTime || "",
+  location: meeting.location || "",
+  active: Boolean(meeting.active),
+  deletedAt: meeting.deletedAt || null,
+  deletedBy: meeting.deletedBy || "",
+  deletedBySchedule: Boolean(meeting.deletedBySchedule),
+  deletedByScheduleChange: Boolean(meeting.deletedByScheduleChange),
+  replacementScheduleId: meeting.replacementScheduleId || null,
+  manuallyRescheduled: Boolean(meeting.manuallyRescheduled),
+  originalScheduleDate: meeting.originalScheduleDate || "",
+  originalScheduleTime: meeting.originalScheduleTime || "",
+  qrActive: Boolean(meeting.qrActive),
+  qrStartTimestamp: meeting.qrStartTimestamp || null,
+  qrEndTimestamp: meeting.qrEndTimestamp || null,
+});
 
 const VALID_TYPES = [
   "CIRCULO DE LIDERAZGO",
@@ -296,6 +320,7 @@ const createMeeting = async (req, res) => {
     }).sort({ deletedAt: -1, updatedAt: -1 });
 
     if (deletedMeeting) {
+      const before = meetingSnapshot(deletedMeeting);
       deletedMeeting.title = title;
       deletedMeeting.type = type;
       deletedMeeting.circle = circle;
@@ -318,6 +343,18 @@ const createMeeting = async (req, res) => {
       deletedMeeting.qrEndTimestamp = null;
       await deletedMeeting.save();
 
+      await createAuditLog({
+        admin: req.user,
+        action: "RESTORE_MEETING",
+        module: "meetings",
+        description: `Se restauró la reunión ${deletedMeeting.title} del ${deletedMeeting.date}.`,
+        targetId: deletedMeeting._id,
+        targetName: deletedMeeting.title,
+        circle: deletedMeeting.circle,
+        reversible: true,
+        metadata: { before, after: meetingSnapshot(deletedMeeting), meetingDate: deletedMeeting.date, meetingTime: deletedMeeting.time, meetingType: deletedMeeting.type, meetingTitle: deletedMeeting.title },
+      });
+
       return res.status(200).json({
         message: "La reunión eliminada anteriormente fue restaurada conservando sus datos.",
         restored: true,
@@ -326,17 +363,19 @@ const createMeeting = async (req, res) => {
     }
 
     const meeting = await Meeting.create({
-      title,
-      type,
-      circle,
-      host,
-      date,
-      time,
-      endTime,
-      location,
-      scheduleId: null,
-      active: true,
-      createdBy: req.user.adminId,
+      title, type, circle, host, date, time, endTime, location, scheduleId: null, active: true, createdBy: req.user.adminId,
+    });
+
+    await createAuditLog({
+      admin: req.user,
+      action: "CREATE_MEETING",
+      module: "meetings",
+      description: `Se creó la reunión ${meeting.title} (${meeting.type}) del ${meeting.date}${meeting.time ? ` a las ${meeting.time}` : ""}.`,
+      targetId: meeting._id,
+      targetName: meeting.title,
+      circle: meeting.circle,
+      reversible: true,
+      metadata: { after: meetingSnapshot(meeting), meetingDate: meeting.date, meetingTime: meeting.time, meetingType: meeting.type, meetingTitle: meeting.title },
     });
 
     return res.status(201).json({
@@ -349,6 +388,231 @@ const createMeeting = async (req, res) => {
 
     return res.status(500).json({
       message: "Error creando reunión.",
+    });
+  }
+};
+
+
+/**
+ * ============================================================
+ * CREAR REUNIONES EN LOTE (UNA SOLA ACCIÓN DE AUDITORÍA)
+ * ============================================================
+ *
+ * Se usa cuando una misma acción crea la misma reunión para
+ * varios círculos (por ejemplo ANUNCIOS CORPORATIVOS globales).
+ * La operación completa genera UN solo registro en Bitácora y
+ * UN solo botón Deshacer.
+ */
+const createMeetingsBatch = async (req, res) => {
+  try {
+    const {
+      title,
+      type,
+      circles,
+      host = "",
+      date,
+      time = "",
+      endTime = "",
+      location = "",
+    } = req.body;
+
+    const cleanCircles = [
+      ...new Set(
+        (Array.isArray(circles) ? circles : [])
+          .map((item) => String(item || "").trim())
+          .filter(Boolean)
+      ),
+    ];
+
+    if (!title || !type || !cleanCircles.length || !date) {
+      return res.status(400).json({
+        message: "Faltan campos obligatorios.",
+      });
+    }
+
+    if (!VALID_TYPES.includes(type)) {
+      return res.status(400).json({
+        message: "Tipo de reunión no válido.",
+      });
+    }
+
+    if (!isValidDate(date)) {
+      return res.status(400).json({
+        message: "La fecha no es válida.",
+      });
+    }
+
+    if (
+      !cleanCircles.every((circle) =>
+        hasCirclePermission(req, circle)
+      )
+    ) {
+      return res.status(403).json({
+        message: "No tienes permisos para uno o más círculos.",
+      });
+    }
+
+    const activeCircles = await Circle.find({
+      name: { $in: cleanCircles },
+      active: true,
+    })
+      .select("name")
+      .lean();
+
+    const activeNames = new Set(
+      activeCircles.map((item) => String(item.name || "").trim())
+    );
+
+    const missing = cleanCircles.filter(
+      (circle) => !activeNames.has(circle)
+    );
+
+    if (missing.length) {
+      return res.status(400).json({
+        message: `Los siguientes círculos no existen o están inactivos: ${missing.join(", ")}.`,
+      });
+    }
+
+    const allActiveCircles = await Circle.find({ active: true })
+      .select("name")
+      .lean();
+
+    const allActiveNames = allActiveCircles
+      .map((item) => String(item.name || "").trim())
+      .filter(Boolean);
+
+    const isAllCircles =
+      allActiveNames.length > 0 &&
+      cleanCircles.length === allActiveNames.length &&
+      allActiveNames.every((name) => cleanCircles.includes(name));
+
+    const affectedMeetings = [];
+    const meetings = [];
+
+    for (const circle of cleanCircles) {
+      const deletedMeeting = await Meeting.findOne({
+        circle,
+        type,
+        date,
+        time,
+        active: false,
+        deletedBySchedule: { $ne: true },
+        deletedByScheduleChange: { $ne: true },
+      }).sort({ deletedAt: -1, updatedAt: -1 });
+
+      if (deletedMeeting) {
+        const before = meetingSnapshot(deletedMeeting);
+
+        deletedMeeting.title = title;
+        deletedMeeting.type = type;
+        deletedMeeting.circle = circle;
+        deletedMeeting.host = host;
+        deletedMeeting.date = date;
+        deletedMeeting.time = time;
+        deletedMeeting.endTime = endTime;
+        deletedMeeting.location = location;
+        deletedMeeting.active = true;
+        deletedMeeting.deletedAt = null;
+        deletedMeeting.deletedBy = "";
+        deletedMeeting.deletedBySchedule = false;
+        deletedMeeting.deletedByScheduleChange = false;
+        deletedMeeting.replacementScheduleId = null;
+        deletedMeeting.manuallyRescheduled = false;
+        deletedMeeting.originalScheduleDate = "";
+        deletedMeeting.originalScheduleTime = "";
+        deletedMeeting.qrActive = false;
+        deletedMeeting.qrStartTimestamp = null;
+        deletedMeeting.qrEndTimestamp = null;
+        await deletedMeeting.save();
+
+        affectedMeetings.push({
+          meetingId: String(deletedMeeting._id),
+          mode: "RESTORED",
+          before,
+          after: meetingSnapshot(deletedMeeting),
+          circle,
+        });
+        meetings.push(deletedMeeting);
+        continue;
+      }
+
+      const existingMeeting = await Meeting.findOne({
+        circle,
+        type,
+        date,
+        time,
+        active: true,
+      });
+
+      if (existingMeeting) {
+        meetings.push(existingMeeting);
+        continue;
+      }
+
+      const meeting = await Meeting.create({
+        title,
+        type,
+        circle,
+        host,
+        date,
+        time,
+        endTime,
+        location,
+        scheduleId: null,
+        active: true,
+        createdBy: req.user.adminId,
+      });
+
+      affectedMeetings.push({
+        meetingId: String(meeting._id),
+        mode: "CREATED",
+        before: null,
+        after: meetingSnapshot(meeting),
+        circle,
+      });
+      meetings.push(meeting);
+    }
+
+    if (affectedMeetings.length) {
+      const scopeLabel = isAllCircles
+        ? "todos los círculos activos"
+        : `${cleanCircles.length} círculo(s)`;
+
+      await createAuditLog({
+        admin: req.user,
+        action: "CREATE_MEETINGS_BATCH",
+        module: "meetings",
+        description: `Se creó ${title} (${type}) para ${scopeLabel}, fecha ${date}${time ? ` a las ${time}` : ""}.`,
+        targetId: "",
+        targetName: title,
+        circle: isAllCircles ? "GLOBAL" : cleanCircles.join(", "),
+        reversible: true,
+        metadata: {
+          affectedMeetings,
+          meetingIds: affectedMeetings.map((item) => item.meetingId),
+          circles: cleanCircles,
+          scope: isAllCircles ? "ALL_CIRCLES" : "MULTI_CIRCLE",
+          meetingDate: date,
+          meetingTime: time,
+          meetingType: type,
+          meetingTitle: title,
+          affectedCount: affectedMeetings.length,
+        },
+      });
+    }
+
+    return res.status(201).json({
+      message: isAllCircles
+        ? `Reunión creada para todos los círculos activos (${meetings.length}).`
+        : `Reuniones procesadas correctamente (${meetings.length}).`,
+      meetings,
+      affectedCount: affectedMeetings.length,
+      scope: isAllCircles ? "ALL_CIRCLES" : "MULTI_CIRCLE",
+    });
+  } catch (error) {
+    console.error("Error creando reuniones en lote:", error);
+    return res.status(500).json({
+      message: "Error creando reuniones en lote.",
     });
   }
 };
@@ -374,16 +638,9 @@ const updateMeeting = async (req, res) => {
       });
     }
 
-    const {
-      title,
-      type,
-      circle,
-      host,
-      date,
-      time,
-      endTime,
-      location,
-    } = req.body;
+    const before = meetingSnapshot(meeting);
+
+    const { title, type, circle, host, date, time, endTime, location } = req.body;
 
     if (title !== undefined) {
       meeting.title = title;
@@ -438,6 +695,13 @@ const updateMeeting = async (req, res) => {
 
     await meeting.save();
 
+    await createAuditLog({
+      admin: req.user, action: "UPDATE_MEETING", module: "meetings",
+      description: `Se actualizó la reunión ${meeting.title} del ${meeting.date}.`,
+      targetId: meeting._id, targetName: meeting.title, circle: meeting.circle, reversible: true,
+      metadata: { before, after: meetingSnapshot(meeting), meetingDate: meeting.date, meetingTime: meeting.time, meetingType: meeting.type, meetingTitle: meeting.title },
+    });
+
     return res.json({
       message: "Reunión actualizada correctamente.",
       meeting,
@@ -475,6 +739,8 @@ const deleteMeeting = async (req, res) => {
       });
     }
 
+    const before = meetingSnapshot(meeting);
+
     meeting.active = false;
     meeting.deletedAt = new Date();
     meeting.deletedBy = req.user.adminId;
@@ -484,6 +750,13 @@ const deleteMeeting = async (req, res) => {
     meeting.replacementScheduleId = null;
 
     await meeting.save();
+
+    await createAuditLog({
+      admin: req.user, action: "DELETE_MEETING", module: "meetings",
+      description: `Se eliminó la reunión ${meeting.title} (${meeting.type}) del ${meeting.date}.`,
+      targetId: meeting._id, targetName: meeting.title, circle: meeting.circle, reversible: true,
+      metadata: { before, after: meetingSnapshot(meeting), meetingDate: meeting.date, meetingTime: meeting.time, meetingType: meeting.type, meetingTitle: meeting.title },
+    });
 
     return res.json({
       message: "Reunión eliminada correctamente.",
@@ -531,11 +804,20 @@ const restoreMeeting = async (req, res) => {
       });
     }
 
+    const before = meetingSnapshot(meeting);
+
     meeting.active = true;
     meeting.deletedAt = null;
     meeting.deletedBy = "";
 
     await meeting.save();
+
+    await createAuditLog({
+      admin: req.user, action: "RESTORE_MEETING", module: "meetings",
+      description: `Se restauró la reunión ${meeting.title} del ${meeting.date}.`,
+      targetId: meeting._id, targetName: meeting.title, circle: meeting.circle, reversible: true,
+      metadata: { before, after: meetingSnapshot(meeting), meetingDate: meeting.date, meetingTime: meeting.time, meetingType: meeting.type, meetingTitle: meeting.title },
+    });
 
     return res.json({
       message: "Reunión restaurada correctamente.",
@@ -574,6 +856,7 @@ const moveMeeting = async (req, res) => {
       return res.status(403).json({ message: "No tienes permisos para esta reunión." });
     }
 
+    const before = meetingSnapshot(meeting);
     const { date, time = "", endTime = "" } = req.body;
 
     if (!date || !isValidDate(date)) {
@@ -615,6 +898,13 @@ const moveMeeting = async (req, res) => {
     meeting.qrEndTimestamp = null;
 
     await meeting.save();
+
+    await createAuditLog({
+      admin: req.user, action: "MOVE_MEETING", module: "meetings",
+      description: `Se cambió la fecha/hora de ${meeting.title} a ${meeting.date} ${meeting.time}.`,
+      targetId: meeting._id, targetName: meeting.title, circle: meeting.circle, reversible: true,
+      metadata: { before, after: meetingSnapshot(meeting), meetingDate: meeting.date, meetingTime: meeting.time, meetingType: meeting.type, meetingTitle: meeting.title },
+    });
 
     return res.json({
       message: "La sesión fue cambiada de día y horario correctamente.",
@@ -676,11 +966,20 @@ const activateQr = async (req, res) => {
         durationMinutes * 60 * 1000
     );
 
+    const before = meetingSnapshot(meeting);
+
     meeting.qrActive = true;
     meeting.qrStartTimestamp = start;
     meeting.qrEndTimestamp = end;
 
     await meeting.save();
+
+    await createAuditLog({
+      admin: req.user, action: "ACTIVATE_QR", module: "meetings",
+      description: `Se activó el QR de ${meeting.title} del ${meeting.date}.`,
+      targetId: meeting._id, targetName: meeting.title, circle: meeting.circle, reversible: true,
+      metadata: { before, after: meetingSnapshot(meeting), meetingDate: meeting.date, meetingTime: meeting.time, meetingType: meeting.type, meetingTitle: meeting.title },
+    });
 
     return res.json({
       message: "QR activado correctamente.",
@@ -719,10 +1018,19 @@ const deactivateQr = async (req, res) => {
       });
     }
 
+    const before = meetingSnapshot(meeting);
+
     meeting.qrActive = false;
     meeting.qrEndTimestamp = new Date();
 
     await meeting.save();
+
+    await createAuditLog({
+      admin: req.user, action: "DEACTIVATE_QR", module: "meetings",
+      description: `Se desactivó el QR de ${meeting.title} del ${meeting.date}.`,
+      targetId: meeting._id, targetName: meeting.title, circle: meeting.circle, reversible: true,
+      metadata: { before, after: meetingSnapshot(meeting), meetingDate: meeting.date, meetingTime: meeting.time, meetingType: meeting.type, meetingTitle: meeting.title },
+    });
 
     return res.json({
       message: "QR desactivado correctamente.",
@@ -753,6 +1061,7 @@ const deactivateQr = async (req, res) => {
  */
 const deleteAllCorporateAnnouncements = async (req, res) => {
   try {
+    const affected = await Meeting.find({ type: "ANUNCIOS CORPORATIVOS", active: true }).select("_id title type circle date time active deletedAt deletedBy deletedBySchedule deletedByScheduleChange replacementScheduleId").lean();
     const result = await Meeting.updateMany(
       {
         type: "ANUNCIOS CORPORATIVOS",
@@ -769,6 +1078,13 @@ const deleteAllCorporateAnnouncements = async (req, res) => {
         },
       }
     );
+
+    await createAuditLog({
+      admin: req.user, action: "DELETE_ALL_CORPORATE_ANNOUNCEMENTS", module: "meetings",
+      description: `Se desactivaron ${result.modifiedCount} reuniones de ANUNCIOS CORPORATIVOS.`,
+      targetName: "ANUNCIOS CORPORATIVOS", circle: "GLOBAL", reversible: result.modifiedCount > 0,
+      metadata: { affectedMeetings: affected, meetingType: "ANUNCIOS CORPORATIVOS", affectedCount: result.modifiedCount },
+    });
 
     return res.json({
       message:
@@ -799,6 +1115,7 @@ module.exports = {
   getMeetingById,
   getPublicQrMeeting,
   createMeeting,
+  createMeetingsBatch,
   updateMeeting,
   deleteMeeting,
   deleteAllCorporateAnnouncements,

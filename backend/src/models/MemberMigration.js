@@ -23,6 +23,27 @@ const migrationSessionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    attendanceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Attendance",
+      default: null,
+    },
+
+    wasCreated: {
+      type: Boolean,
+      default: false,
+    },
+
+    previousAttendance: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+
+    afterUpdatedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { _id: false }
 );
@@ -65,6 +86,24 @@ const memberMigrationSchema = new mongoose.Schema(
       default: [],
     },
 
+    // Mes desde el cual el cambio de círculo entra en vigencia.
+    // Formato: YYYY-MM. Permite programar migraciones futuras sin
+    // reescribir el historial de meses anteriores.
+    effectivePeriod: {
+      type: String,
+      trim: true,
+      match: /^\d{4}-\d{2}$/,
+      index: true,
+      default: "",
+    },
+
+    status: {
+      type: String,
+      enum: ["SCHEDULED", "APPLIED", "CANCELLED"],
+      default: "APPLIED",
+      index: true,
+    },
+
     migratedBy: {
       type: String,
       trim: true,
@@ -74,6 +113,17 @@ const memberMigrationSchema = new mongoose.Schema(
     migratedAt: {
       type: Date,
       default: Date.now,
+    },
+
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
+
+    cancelledBy: {
+      type: String,
+      trim: true,
+      default: "",
     },
   },
   {

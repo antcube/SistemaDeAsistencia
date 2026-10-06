@@ -435,27 +435,29 @@ const Calendar = () => {
       else if (
         form.scheduleMode === "DATE"
       ) {
-        for (const circle of selectedCircles) {
+        const meetingPayload = {
+          title:
+            form.type ===
+            "ANUNCIOS CORPORATIVOS"
+              ? "ANUNCIOS CORPORATIVOS"
+              : form.title,
+          type: form.type,
+          host: form.host,
+          date: form.date,
+          time: form.time,
+          endTime: form.endTime,
+          location: form.location,
+        };
+
+        if (selectedCircles.length > 1) {
+          await meetingService.createMeetingsBatch({
+            ...meetingPayload,
+            circles: selectedCircles,
+          });
+        } else {
           await meetingService.createMeeting({
-            title:
-              form.type ===
-              "ANUNCIOS CORPORATIVOS"
-                ? "ANUNCIOS CORPORATIVOS"
-                : form.title,
-
-            type: form.type,
-
-            circle,
-
-            host: form.host,
-
-            date: form.date,
-
-            time: form.time,
-
-            endTime: form.endTime,
-
-            location: form.location,
+            ...meetingPayload,
+            circle: selectedCircles[0],
           });
         }
       }
@@ -484,35 +486,35 @@ const Calendar = () => {
           );
         }
 
-        for (const circle of selectedCircles) {
-          await scheduleService.createSchedule({
-            name:
-              form.title ||
-              `${form.type} - ${circle}`,
+        await scheduleService.createSchedule({
+          name:
+            form.title ||
+            (selectedCircles.length > 1
+              ? form.type
+              : `${form.type} - ${selectedCircles[0]}`),
 
-            circles: [circle],
+          circles: selectedCircles,
 
-            type: form.type,
+          type: form.type,
 
-            title:
-              form.type ===
-              "ANUNCIOS CORPORATIVOS"
-                ? "ANUNCIOS CORPORATIVOS"
-                : form.title,
+          title:
+            form.type ===
+            "ANUNCIOS CORPORATIVOS"
+              ? "ANUNCIOS CORPORATIVOS"
+              : form.title,
 
-            host: form.host,
+          host: form.host,
 
-            time: form.time,
+          time: form.time,
 
-            endTime: form.endTime,
+          endTime: form.endTime,
 
-            location: form.location,
+          location: form.location,
 
-            weekdays,
+          weekdays,
 
-            startDate: form.date,
-          });
-        }
+          startDate: form.date,
+        });
       }
 
       setShowMeetingForm(false);
