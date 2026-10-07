@@ -6,6 +6,8 @@ import { useAuth } from "../context/AuthContext";
 import CircleManager from "../components/CircleManager";
 import MemberMigrationPanel from "../components/MemberMigrationPanel";
 
+const API_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/+$/, "");
+
 const WEEKDAYS = [
   { value: 1, label: "Lunes" },
   { value: 2, label: "Martes" },
@@ -231,7 +233,7 @@ const Programaciones = () => {
         localStorage.getItem("accessToken") ||
         "";
 
-      const response = await fetch("/api/meetings/anuncios-corporativos", {
+      const response = await fetch(`${API_URL}/meetings/anuncios-corporativos`, {
         method: "DELETE",
         headers: token
           ? { Authorization: `Bearer ${token}` }
