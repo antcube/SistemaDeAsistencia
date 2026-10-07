@@ -1553,7 +1553,7 @@ const getUserMonthlyAttendanceByDni =
                 status:
                   normalizeStatus(
                     record?.status ||
-                      "No asistió"
+                      "Pendiente"
                   ),
 
                 // Indica si existe un registro real de asistencia para

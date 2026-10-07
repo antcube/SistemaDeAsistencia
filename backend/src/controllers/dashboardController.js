@@ -28,6 +28,7 @@ const normalizeStatus = (value) => {
   const status = normalize(value);
   if (status === "ASISTIO" || status === "CLASE PRESENCIAL") return "ATTENDED";
   if (status === "JUSTIFICADO" || status === "FALTA JUSTIFICADA") return "JUSTIFIED";
+  if (status === "PENDIENTE" || !status) return "PENDING";
   return "ABSENT";
 };
 
@@ -61,6 +62,41 @@ const formatDate = (value) => {
 };
 
 const isVirtualCircle = (circle) => normalize(circle).includes("VIRTUAL");
+
+
+const buildValidJustificationKeys = (users, sessions, recordMap) => {
+  const validKeys = new Set();
+
+  users.forEach((user) => {
+    const leadership = [];
+    const general = [];
+
+    sessions.forEach((session) => {
+      const key = `${String(session.meeting._id)}|${String(user._id)}`;
+      const record = recordMap.get(key);
+      if (!record || normalizeStatus(record.status) !== "JUSTIFIED") return;
+
+      if (session.category === "CIRCULO DE LIDERAZGO") leadership.push(session);
+      else if (VALID_BONUS_CATEGORIES.includes(session.category)) general.push(session);
+    });
+
+    const sorter = (a, b) =>
+      String(a.meeting.date).localeCompare(String(b.meeting.date)) ||
+      String(a.meeting.time || "").localeCompare(String(b.meeting.time || ""));
+
+    leadership.sort(sorter);
+    general.sort(sorter);
+
+    leadership.slice(0, 1).forEach((session) =>
+      validKeys.add(`${String(session.meeting._id)}|${String(user._id)}`)
+    );
+    general.slice(0, 3).forEach((session) =>
+      validKeys.add(`${String(session.meeting._id)}|${String(user._id)}`)
+    );
+  });
+
+  return validKeys;
+};
 
 const buildMemberStats = (user, sessions, recordMap) => {
   const leadershipJs = [];
@@ -109,7 +145,7 @@ const buildMemberStats = (user, sessions, recordMap) => {
     scheduled += 1;
 
     if (!record) {
-      absent += 1;
+      pending += 1;
       return;
     }
 
@@ -120,7 +156,7 @@ const buildMemberStats = (user, sessions, recordMap) => {
         attended += 1;
         justifiedValid += 1;
       } else {
-        absent += 1;
+        // J excedida: incumple la regla de bono, pero NO es una falta oficial.
         justifiedExtra += 1;
       }
     } else if (status === "ATTENDED") {
@@ -160,7 +196,11 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
     ? sessions
     : sessions.filter((session) => getWeekOfMonth(session.meeting.date) === selectedWeek);
 
+  // Las J rojas permanecen en Justificados, pero no cuentan como asistencia efectiva.
+  const validJustificationKeys = buildValidJustificationKeys(users, filteredSessions, recordMap);
+
   const status = { attended: 0, absent: 0, justified: 0 };
+  let effectiveAttendedTotal = 0;
   let totalSessionRates = 0;
   let sessionCount = 0;
 
@@ -168,32 +208,38 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
     let attended = 0;
     let absent = 0;
     let justified = 0;
+    let effectiveAttended = 0;
 
     users.forEach((user) => {
       const record = recordMap.get(`${String(session.meeting._id)}|${String(user._id)}`);
       if (!record) {
-        const date = new Date(`${session.meeting.date}T23:59:59`);
-        const now = new Date();
-        now.setHours(23, 59, 59, 999);
-        if (date <= now) absent += 1;
+        // Sin Attendance real no existe falta oficial.
         return;
       }
 
       const current = normalizeStatus(record.status);
-      if (current === "ATTENDED") attended += 1;
-      else if (current === "JUSTIFIED") justified += 1;
-      else absent += 1;
+      const recordKey = `${String(session.meeting._id)}|${String(user._id)}`;
+      if (current === "ATTENDED") {
+        attended += 1;
+        effectiveAttended += 1;
+      } else if (current === "JUSTIFIED") {
+        justified += 1;
+        if (validJustificationKeys.has(recordKey)) effectiveAttended += 1;
+      } else if (current === "ABSENT") {
+        absent += 1;
+      }
     });
 
     const resolved = attended + absent + justified;
     if (resolved > 0) {
-      totalSessionRates += ((attended + justified) / resolved) * 100;
+      totalSessionRates += (effectiveAttended / resolved) * 100;
       sessionCount += 1;
     }
 
     status.attended += attended;
     status.absent += absent;
     status.justified += justified;
+    effectiveAttendedTotal += effectiveAttended;
   });
 
   const memberStats = users.map((user) => {
@@ -208,7 +254,7 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
   });
 
   const totalResolved = status.attended + status.absent + status.justified;
-  const attendanceRate = totalResolved ? ((status.attended + status.justified) / totalResolved) * 100 : 0;
+  const attendanceRate = totalResolved ? (effectiveAttendedTotal / totalResolved) * 100 : 0;
   const absenceRate = totalResolved ? (status.absent / totalResolved) * 100 : 0;
   const justifiedRate = totalResolved ? (status.justified / totalResolved) * 100 : 0;
   const averageSessionAttendance = sessionCount ? totalSessionRates / sessionCount : 0;
@@ -227,20 +273,27 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
     let attended = 0;
     let absent = 0;
     let justified = 0;
+    let effectiveAttended = 0;
 
     weekSessions.forEach((session) => {
       users.forEach((user) => {
         const record = recordMap.get(`${String(session.meeting._id)}|${String(user._id)}`);
 
         if (!record) {
-          absent += 1;
           return;
         }
 
         const current = normalizeStatus(record.status);
-        if (current === "ATTENDED") attended += 1;
-        else if (current === "JUSTIFIED") justified += 1;
-        else absent += 1;
+        const recordKey = `${String(session.meeting._id)}|${String(user._id)}`;
+        if (current === "ATTENDED") {
+          attended += 1;
+          effectiveAttended += 1;
+        } else if (current === "JUSTIFIED") {
+          justified += 1;
+          if (validJustificationKeys.has(recordKey)) effectiveAttended += 1;
+        } else if (current === "ABSENT") {
+          absent += 1;
+        }
       });
     });
 
@@ -253,7 +306,7 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
       absent,
       justified,
       possibleParticipations,
-      rate: possibleParticipations ? (attended / possibleParticipations) * 100 : 0,
+      rate: possibleParticipations ? (effectiveAttended / possibleParticipations) * 100 : 0,
     };
   });
 
@@ -261,7 +314,7 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
   filteredSessions.forEach((session) => {
     const type = session.category;
     if (!categoryMap.has(type)) {
-      categoryMap.set(type, { type, sessions: 0, attended: 0, absent: 0, justified: 0 });
+      categoryMap.set(type, { type, sessions: 0, attended: 0, absent: 0, justified: 0, effectiveAttended: 0 });
     }
 
     const bucket = categoryMap.get(type);
@@ -271,9 +324,16 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
       const record = recordMap.get(`${String(session.meeting._id)}|${String(user._id)}`);
       if (!record) return;
       const current = normalizeStatus(record.status);
-      if (current === "ATTENDED") bucket.attended += 1;
-      else if (current === "JUSTIFIED") bucket.justified += 1;
-      else bucket.absent += 1;
+      const recordKey = `${String(session.meeting._id)}|${String(user._id)}`;
+      if (current === "ATTENDED") {
+        bucket.attended += 1;
+        bucket.effectiveAttended += 1;
+      } else if (current === "JUSTIFIED") {
+        bucket.justified += 1;
+        if (validJustificationKeys.has(recordKey)) bucket.effectiveAttended += 1;
+      } else if (current === "ABSENT") {
+        bucket.absent += 1;
+      }
     });
   });
 
@@ -287,7 +347,7 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
       ...item,
       possibleParticipations,
       rate: possibleParticipations
-        ? ((item.attended + item.justified) / possibleParticipations) * 100
+        ? (item.effectiveAttended / possibleParticipations) * 100
         : 0,
     };
   }).sort((a, b) => b.rate - a.rate);

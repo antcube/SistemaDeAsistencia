@@ -708,45 +708,17 @@ const getMonthlyCircleReport =
 
           if (!record) {
             /*
-             * Una reunión sin registro permanece Pendiente durante
-             * todo su día. La F recién aparece cuando el día de la
-             * reunión ya terminó.
-             *
-             * Esto es independiente del QR: Procesar Zoom nunca crea
-             * una falta para quien no apareció en un reporte parcial.
+             * REGLA OFICIAL:
+             * Sin un Attendance real no existe una falta oficial.
+             * La sesión permanece Pendiente hasta que se registre un estado.
              */
-            const meetingDate = String(
-              meeting.date || ""
-            ).trim();
+            reportStatus =
+              "Pendiente";
 
-            const todayDate = new Intl.DateTimeFormat("en-CA", {
-              timeZone: "America/Lima",
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-            }).format(now);
+            categoryData.pending +=
+              1;
 
-            const dayHasPassed =
-              Boolean(meetingDate) &&
-              meetingDate < todayDate;
-
-            if (dayHasPassed) {
-              reportStatus =
-                "No asistió";
-
-              categoryData.absent +=
-                1;
-
-              memberAbsent += 1;
-            } else {
-              reportStatus =
-                "Pendiente";
-
-              categoryData.pending +=
-                1;
-
-              memberPending += 1;
-            }
+            memberPending += 1;
           } else {
             const status =
               normalizeStatus(
@@ -803,12 +775,8 @@ const getMonthlyCircleReport =
                 memberJustifiedExtra +=
                   1;
 
-                categoryData.absent +=
-                  1;
-
-                memberAbsent +=
-                  1;
-
+                // J excedida: sigue figurando como Justificado.
+                // Puede invalidar el bono, pero no incrementa Faltas oficiales.
                 reportStatus =
                   "Justificado";
               } else {
@@ -819,12 +787,6 @@ const getMonthlyCircleReport =
                   1;
 
                 memberJustifiedExtra +=
-                  1;
-
-                categoryData.absent +=
-                  1;
-
-                memberAbsent +=
                   1;
               }
             } else if (
