@@ -1,5 +1,7 @@
 import api from "./api";
 
+const API_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/+$/, "");
+
 const zoomService = {
   async getInfo() {
     return api.get(
@@ -17,7 +19,7 @@ const zoomService = {
 
     const response =
       await fetch(
-        "/api/zoom/process",
+        `${API_URL}/zoom/process`,
         {
           method: "POST",
 
