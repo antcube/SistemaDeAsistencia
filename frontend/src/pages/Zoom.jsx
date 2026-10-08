@@ -1,4 +1,4 @@
- import {
+import {
       useEffect,
       useState,
     } from "react";
@@ -45,6 +45,11 @@
       ] = useState("");
 
       const [
+        apiMeetings,
+        setApiMeetings,
+      ] = useState([]);
+
+      const [
         apiDate,
         setApiDate,
       ] = useState("");
@@ -63,6 +68,16 @@
         apiLinkType,
         setApiLinkType,
       ] = useState("");
+
+      const [
+        apiLinkStartTime,
+        setApiLinkStartTime,
+      ] = useState("20:00");
+
+      const [
+        apiLinkEndTime,
+        setApiLinkEndTime,
+      ] = useState("21:00");
 
 
       useEffect(() => {
@@ -85,8 +100,55 @@
             }
           };
 
+        const loadApiConfig =
+          async () => {
+            try {
+              const response =
+                await zoomService.getApiConfig();
+
+              const config =
+                response?.data ||
+                response ||
+                {};
+
+              const meetings =
+                Array.isArray(config.meetings)
+                  ? config.meetings
+                  : [];
+
+              setApiMeetings(meetings);
+
+              if (meetings.length > 0) {
+                setApiMeetingId((current) => current || meetings[0].meetingId || "");
+                setApiLinkType((current) => current || meetings[0].type || "");
+              }
+            } catch (error) {
+              console.error(
+                "Error cargando configuración Zoom API:",
+                error
+              );
+            }
+          };
+
         loadInfo();
+        loadApiConfig();
       }, []);
+
+      const selectedApiMeeting =
+        apiMeetings.find(
+          (item) => String(item.meetingId) === String(apiMeetingId)
+        ) || null;
+
+      const handleApiMeetingChange = (event) => {
+        const meetingId = event.target.value;
+        const selected = apiMeetings.find(
+          (item) => String(item.meetingId) === String(meetingId)
+        );
+
+        setApiMeetingId(meetingId);
+        setApiLinkType(selected?.type || "");
+        setApiResult(null);
+      };
 
       const handleFile = (
         event
@@ -269,6 +331,8 @@
               meetingId: apiMeetingId,
               date: apiDate,
               sessionType: apiLinkType,
+              startTime: apiLinkStartTime,
+              endTime: apiLinkEndTime,
             });
 
             const refreshed = await zoomService.previewApi({
@@ -370,7 +434,7 @@
                 <div>
                   <h3>🔌 Zoom API</h3>
                   <p>
-                    Consulta todas las instancias del mismo Meeting ID en la fecha indicada, suma los minutos por correo y solo aplica asistencia cuando el total llega a 10 minutos.
+                    La API puede trabajar manualmente desde aquí y también de forma automática: 10 minutos después de la hora final del Calendario y una segunda revisión a las 23:30. Suma todas las instancias del mismo Meeting ID y solo aplica asistencia cuando el correo coincide y llega a 10 minutos.
                   </p>
                 </div>
                 <span>Sin faltas automáticas</span>
@@ -379,13 +443,29 @@
               <div className="zoom-api-controls">
                 <label>
                   Meeting ID
-                  <input
+                  <select
                     value={apiMeetingId}
-                    onChange={(event) =>
-                      setApiMeetingId(event.target.value)
-                    }
-                    placeholder="Ej. 123 456 789"
-                    disabled={apiProcessing}
+                    onChange={handleApiMeetingChange}
+                    disabled={apiProcessing || apiMeetings.length === 0}
+                  >
+                    {apiMeetings.length === 0 && (
+                      <option value="">No hay Meeting IDs configurados</option>
+                    )}
+                    {apiMeetings.map((item) => (
+                      <option key={`${item.type}-${item.meetingId}`} value={item.meetingId}>
+                        {item.meetingId}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Pertenece a
+                  <input
+                    value={selectedApiMeeting?.type || apiLinkType || ""}
+                    readOnly
+                    placeholder="Selecciona un Meeting ID"
+                    className="zoom-api-readonly"
                   />
                 </label>
 
@@ -397,6 +477,26 @@
                     onChange={(event) =>
                       setApiDate(event.target.value)
                     }
+                    disabled={apiProcessing}
+                  />
+                </label>
+
+                <label>
+                  Hora de inicio
+                  <input
+                    type="time"
+                    value={apiLinkStartTime}
+                    onChange={(event) => setApiLinkStartTime(event.target.value)}
+                    disabled={apiProcessing}
+                  />
+                </label>
+
+                <label>
+                  Hora de fin
+                  <input
+                    type="time"
+                    value={apiLinkEndTime}
+                    onChange={(event) => setApiLinkEndTime(event.target.value)}
                     disabled={apiProcessing}
                   />
                 </label>
@@ -449,22 +549,22 @@
                   <div className="zoom-link-actions">
                     <label>
                       Tipo de reunión
-                      <select
-                        value={apiLinkType}
-                        onChange={(event) => setApiLinkType(event.target.value)}
-                        disabled={apiProcessing}
-                      >
-                        <option value="HEALTH">HEALTH</option>
-                        <option value="MASTERCLASS">MASTERCLASS</option>
-                        <option value="MENTORIA">MENTORÍA</option>
-                        <option value="ANUNCIOS CORPORATIVOS">ANUNCIOS CORPORATIVOS</option>
-                      </select>
+                      <input
+                        value={apiLinkType || selectedApiMeeting?.type || ""}
+                        readOnly
+                        className="zoom-api-readonly"
+                      />
                     </label>
 
                     <button
                       type="button"
                       onClick={handleApiLink}
-                      disabled={!apiLinkType || apiProcessing}
+                      disabled={
+                        !apiLinkType ||
+                        !apiLinkStartTime ||
+                        !apiLinkEndTime ||
+                        apiProcessing
+                      }
                     >
                       Crear y vincular
                     </button>

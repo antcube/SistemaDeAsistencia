@@ -258,7 +258,16 @@ const getCalendarCoverage = async ({ sessionType, date, allowedCircles }) => {
   };
 };
 
-const createMissingMeetings = async ({ req, zoomDay, selectedType, allowedCircles }) => {
+const isValidTime = (value) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || ""));
+
+const createMissingMeetings = async ({
+  req,
+  zoomDay,
+  selectedType,
+  allowedCircles,
+  startTime,
+  endTime,
+}) => {
   if (!canManageGlobal(req.user)) {
     const error = new Error(
       "Solo el Administrador Principal puede crear reuniones faltantes desde la detección de Zoom."
@@ -285,6 +294,18 @@ const createMissingMeetings = async ({ req, zoomDay, selectedType, allowedCircle
     throw error;
   }
 
+  if (!isValidTime(startTime) || !isValidTime(endTime)) {
+    const error = new Error("Indica una hora de inicio y una hora de fin válidas.");
+    error.status = 400;
+    throw error;
+  }
+
+  if (String(endTime) <= String(startTime)) {
+    const error = new Error("La hora de fin debe ser posterior a la hora de inicio.");
+    error.status = 400;
+    throw error;
+  }
+
   const coverage = await getCalendarCoverage({
     sessionType: normalizedSelectedType,
     date: zoomDay.date,
@@ -301,8 +322,8 @@ const createMissingMeetings = async ({ req, zoomDay, selectedType, allowedCircle
       circle,
       host: "Sistema",
       date: zoomDay.date,
-      time: defaults.time,
-      endTime: defaults.endTime,
+      time: startTime,
+      endTime,
       location: "Zoom",
       active: true,
       createdBy: req.user?.adminId || req.user?.name || "ZOOM API",
@@ -516,10 +537,9 @@ const getConfig = async (req, res) => {
   const meetings = getConfiguredMeetings().map((item) => ({
     type: item.type,
     configured: true,
-    meetingIdMasked:
-      item.meetingId.length <= 4
-        ? item.meetingId
-        : `${item.meetingId.slice(0, 2)}••••${item.meetingId.slice(-2)}`,
+    // El Meeting ID no es una credencial secreta y el frontend lo necesita
+    // completo para ofrecerlo en el selector de reuniones configuradas.
+    meetingId: item.meetingId,
   }));
 
   return res.json({
@@ -568,6 +588,8 @@ const linkMissing = async (req, res) => {
     const meetingId = normalizeMeetingId(req.body?.meetingId);
     const date = String(req.body?.date || "").trim();
     const selectedType = String(req.body?.sessionType || "").trim();
+    const startTime = String(req.body?.startTime || "").trim();
+    const endTime = String(req.body?.endTime || "").trim();
     const zoomDay = await loadZoomDay({ meetingId, date });
     const allowedCircles = await getAllowedCircleNames(req);
 
@@ -576,13 +598,15 @@ const linkMissing = async (req, res) => {
       zoomDay,
       selectedType,
       allowedCircles,
+      startTime,
+      endTime,
     });
 
     await createAuditLog({
       admin: req.user,
       action: "Vinculó reunión detectada por Zoom API",
       module: "zoom",
-      description: `Se vinculó ${zoomDay.sessionType} del ${zoomDay.date}. Se crearon ${created.length} reunión(es) faltante(s) en Calendario.`,
+      description: `Se vinculó ${zoomDay.sessionType} del ${zoomDay.date} (${startTime} - ${endTime}). Se crearon ${created.length} reunión(es) faltante(s) en Calendario.`,
       targetId: `${zoomDay.sessionType}-${zoomDay.date}`,
       targetName: `${zoomDay.sessionType} ${zoomDay.date}`,
       circle: "GLOBAL",
@@ -592,6 +616,8 @@ const linkMissing = async (req, res) => {
         zoomMeetingId: zoomDay.meetingId,
         sessionType: zoomDay.sessionType,
         date: zoomDay.date,
+        startTime,
+        endTime,
         createdMeetings: created.map((meeting) => ({
           id: String(meeting._id),
           circle: meeting.circle,
@@ -609,6 +635,8 @@ const linkMissing = async (req, res) => {
       meetingId: zoomDay.meetingId,
       sessionType: zoomDay.sessionType,
       date: zoomDay.date,
+      startTime,
+      endTime,
       created: created.length,
       createdMeetings: created.map((meeting) => ({
         id: meeting._id,
@@ -775,10 +803,89 @@ const finalize = async (req, res) => {
   }
 };
 
+const SYSTEM_REQ = {
+  user: {
+    adminId: "ADM-001",
+    name: "Zoom Automático",
+    role: "Administrador General",
+    circleScope: [],
+  },
+};
+
+const runAutomaticSync = async ({ meetingId, date, trigger = "AUTO" }) => {
+  const req = SYSTEM_REQ;
+  const zoomDay = await loadZoomDay({
+    meetingId: normalizeMeetingId(meetingId),
+    date: String(date || "").trim(),
+  });
+
+  const directory = await enrichWithDirectory({ req, zoomDay });
+  const coverage = await getCalendarCoverage({
+    sessionType: zoomDay.sessionType,
+    date: zoomDay.date,
+    allowedCircles: directory.allowedCircles,
+  });
+
+  if (!coverage.complete) {
+    return {
+      success: false,
+      skipped: true,
+      linkRequired: true,
+      sessionType: zoomDay.sessionType,
+      date: zoomDay.date,
+      meetingId: zoomDay.meetingId,
+      instances: zoomDay.instances.length,
+      applied: 0,
+      missingCircles: coverage.missingCircles,
+      message: "La sincronización automática quedó pendiente porque faltan reuniones por vincular en el Calendario.",
+    };
+  }
+
+  const changes = await applyAttendance({ req, zoomDay, directory });
+
+  await createAuditLog({
+    admin: req.user,
+    action: "Sincronización automática desde Zoom API",
+    module: "zoom",
+    description: `${trigger}: ${zoomDay.sessionType} ${zoomDay.date}. ${changes.applied.length} asistencia(s) nueva(s); no se generaron faltas.`,
+    targetId: `${zoomDay.sessionType}-${zoomDay.date}`,
+    targetName: `${zoomDay.sessionType} ${zoomDay.date}`,
+    circle: "GLOBAL",
+    reversible: false,
+    metadata: {
+      source: "ZOOM_API_AUTO",
+      trigger,
+      zoomMeetingId: zoomDay.meetingId,
+      sessionType: zoomDay.sessionType,
+      date: zoomDay.date,
+      instances: zoomDay.instances.map((item) => ({
+        uuid: item.uuid,
+        startTime: item.start_time,
+      })),
+      applied: changes.applied.length,
+      alreadyPresent: changes.alreadyPresent.length,
+    },
+  });
+
+  return {
+    success: true,
+    skipped: false,
+    linkRequired: false,
+    sessionType: zoomDay.sessionType,
+    date: zoomDay.date,
+    meetingId: zoomDay.meetingId,
+    instances: zoomDay.instances.length,
+    applied: changes.applied.length,
+    alreadyPresent: changes.alreadyPresent.length,
+    message: "Sincronización automática completada sin generar faltas.",
+  };
+};
+
 module.exports = {
   getConfig,
   preview,
   linkMissing,
   sync,
   finalize,
+  runAutomaticSync,
 };

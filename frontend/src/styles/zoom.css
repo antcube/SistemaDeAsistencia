@@ -991,3 +991,95 @@
     width: 100%;
   }
 }
+
+/* ============================================================
+   VINCULACION ZOOM API - HORARIOS
+============================================================ */
+.zoom-link-actions {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(135px, 0.7fr) minmax(135px, 0.7fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.zoom-link-actions label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.zoom-link-actions input[type="time"],
+.zoom-link-actions select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #1e293b;
+  font-size: 10px;
+  font-weight: 700;
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .zoom-link-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .zoom-link-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* V7: selector de Meeting IDs configurados y categoría detectada */
+.zoom-api-controls select,
+.zoom-api-controls input.zoom-api-readonly,
+.zoom-link-actions input.zoom-api-readonly {
+  width: 100%;
+}
+
+.zoom-api-readonly {
+  cursor: default;
+  font-weight: 700;
+  background: rgba(15, 63, 122, 0.05);
+}
+
+/* V7 layout: ID -> categoria -> fecha -> hora inicio -> hora fin */
+.zoom-api-controls {
+  grid-template-columns: minmax(185px, 1.15fr) minmax(170px, 1fr) minmax(145px, 0.9fr) minmax(120px, 0.75fr) minmax(120px, 0.75fr) auto auto auto;
+}
+
+.zoom-api-controls select,
+.zoom-api-controls input {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #172b4d;
+  outline: none;
+}
+
+@media (max-width: 1180px) {
+  .zoom-api-controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .zoom-api-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .zoom-api-controls {
+    grid-template-columns: 1fr;
+  }
+}
