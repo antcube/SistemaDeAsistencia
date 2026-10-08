@@ -3,7 +3,6 @@ const ZoomAutoSyncRun = require("../models/ZoomAutoSyncRun");
 const { getConfiguredMeetings } = require("./zoomMeetingConfig");
 const { runAutomaticSync } = require("../controllers/zoomApiController");
 
-
 const TIMEZONE = process.env.ZOOM_TIMEZONE || "America/Lima";
 const CHECK_EVERY_MS = 60 * 1000;
 const NIGHTLY_MINUTE = 23 * 60 + 30;
@@ -33,11 +32,35 @@ const getLocalParts = (date = new Date()) => {
 };
 
 const hhmmToMinutes = (value) => {
-  const match = String(value || "").match(/^(\d{2}):(\d{2})$/);
+  const raw = String(value || "").trim().toUpperCase();
+  if (!raw) return null;
+
+  // Formato 24 horas: 17:25 / 05:25
+  let match = raw.match(/^(\d{1,2}):(\d{2})$/);
+  if (match) {
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+    if (hour > 23 || minute > 59) return null;
+    return hour * 60 + minute;
+  }
+
+  // Formato 12 horas usado actualmente por varias programaciones:
+  // 5:25 PM / 7:00 PM / 8:00 AM
+  match = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
   if (!match) return null;
-  const hour = Number(match[1]);
+
+  let hour = Number(match[1]);
   const minute = Number(match[2]);
-  if (hour > 23 || minute > 59) return null;
+  const period = match[3];
+
+  if (hour < 1 || hour > 12 || minute > 59) return null;
+
+  if (period === "AM") {
+    if (hour === 12) hour = 0;
+  } else if (hour !== 12) {
+    hour += 12;
+  }
+
   return hour * 60 + minute;
 };
 
