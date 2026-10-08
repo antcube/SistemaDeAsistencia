@@ -35,7 +35,6 @@ const hhmmToMinutes = (value) => {
   const raw = String(value || "").trim().toUpperCase();
   if (!raw) return null;
 
-  // Formato 24 horas: 17:25 / 05:25
   let match = raw.match(/^(\d{1,2}):(\d{2})$/);
   if (match) {
     const hour = Number(match[1]);
@@ -44,8 +43,6 @@ const hhmmToMinutes = (value) => {
     return hour * 60 + minute;
   }
 
-  // Formato 12 horas usado actualmente por varias programaciones:
-  // 5:25 PM / 7:00 PM / 8:00 AM
   match = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
   if (!match) return null;
 
@@ -64,12 +61,18 @@ const hhmmToMinutes = (value) => {
   return hour * 60 + minute;
 };
 
+const minutesToKey = (minutes) => {
+  const safe = Math.max(0, Number(minutes || 0));
+  const hour = String(Math.floor(safe / 60) % 24).padStart(2, "0");
+  const minute = String(safe % 60).padStart(2, "0");
+  return `${hour}${minute}`;
+};
+
 const canAttemptRun = async ({ meetingId, date, trigger }) => {
   const existing = await ZoomAutoSyncRun.findOne({ meetingId, date, trigger }).lean();
   if (!existing) return true;
   if (existing.status === "success") return false;
 
-  // Si faltaba vinculación o hubo un error, reintenta como máximo cada 10 minutos.
   const lastRun = new Date(existing.ranAt || existing.updatedAt || 0).getTime();
   return Date.now() - lastRun >= 10 * 60 * 1000;
 };
@@ -105,7 +108,7 @@ const executeOnce = async ({ meetingId, sessionType, date, trigger }) => {
     const result = await runAutomaticSync({ meetingId, date, trigger });
     await saveRun({ meetingId, sessionType, date, trigger, result });
     console.log(
-      `[Zoom Auto] ${trigger} ${sessionType} ${date} -> ${result.applied || 0} asistencia(s).`
+      `[Zoom Auto] ${trigger} ${sessionType} ${date} -> ${result.applied || 0} asistencia(s), ${result.instances || 0} instancia(s).`
     );
   } catch (error) {
     await saveRun({ meetingId, sessionType, date, trigger, error }).catch(() => {});
@@ -129,34 +132,47 @@ const runSchedulerTick = async () => {
     date,
     type: { $in: types },
   })
-    .select("type date endTime")
+    .select("type date startTime endTime")
     .lean();
 
-  const latestEndByType = new Map();
+  // Importante: no usamos solo la última hora de fin del día.
+  // Cada horario distinto de una misma categoría genera su propia ejecución.
+  // Así, si ANUNCIOS se realizó dos veces el mismo día con el mismo Meeting ID,
+  // ambas ventanas se procesan y la segunda consulta vuelve a sumar TODAS las
+  // instancias Zoom del día antes de aplicar nuevas asistencias.
+  const endMinutesByType = new Map();
+
   for (const meeting of meetings) {
     const type = normalizeType(meeting.type);
     const endMinute = hhmmToMinutes(meeting.endTime);
     if (endMinute === null) continue;
-    const current = latestEndByType.get(type);
-    if (current === undefined || endMinute > current) {
-      latestEndByType.set(type, endMinute);
+
+    if (!endMinutesByType.has(type)) {
+      endMinutesByType.set(type, new Set());
     }
+    endMinutesByType.get(type).add(endMinute);
   }
 
   for (const config of configured) {
     const type = normalizeType(config.type);
-    const endMinute = latestEndByType.get(type);
+    const endMinutes = [...(endMinutesByType.get(type) || [])].sort((a, b) => a - b);
 
-    if (endMinute !== undefined && minuteOfDay >= endMinute + 10) {
+    for (const endMinute of endMinutes) {
+      if (minuteOfDay < endMinute + 10) continue;
+
+      // El horario forma parte del trigger. Esto evita que una ejecución anterior
+      // del mismo Meeting ID y la misma fecha bloquee una segunda sesión del día.
+      const trigger = `END_PLUS_10_${minutesToKey(endMinute)}`;
+
       await executeOnce({
         meetingId: config.meetingId,
         sessionType: type,
         date,
-        trigger: "END_PLUS_10",
+        trigger,
       });
     }
 
-    if (meetings.some((meeting) => normalizeType(meeting.type) === type) && minuteOfDay >= NIGHTLY_MINUTE) {
+    if (endMinutes.length > 0 && minuteOfDay >= NIGHTLY_MINUTE) {
       await executeOnce({
         meetingId: config.meetingId,
         sessionType: type,
@@ -174,7 +190,7 @@ const startZoomAutoSyncScheduler = () => {
   }
 
   console.log(
-    `[Zoom Auto] Activo. Revisión cada minuto (${TIMEZONE}); primera sync = fin + 10 min; segunda = 23:30.`
+    `[Zoom Auto] Activo. Revisión cada minuto (${TIMEZONE}); cada sesión se sincroniza a fin + 10 min y hay una revisión final a las 23:30.`
   );
 
   setTimeout(() => {
