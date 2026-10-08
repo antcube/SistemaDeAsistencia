@@ -9,6 +9,40 @@ const zoomService = {
     );
   },
 
+  async getApiConfig() {
+    return api.get(
+      "/zoom/api/config"
+    );
+  },
+
+  async previewApi(payload) {
+    return api.post(
+      "/zoom/api/preview",
+      payload
+    );
+  },
+
+  async linkApi(payload) {
+    return api.post(
+      "/zoom/api/link",
+      payload
+    );
+  },
+
+  async syncApi(payload) {
+    return api.post(
+      "/zoom/api/sync",
+      payload
+    );
+  },
+
+  async finalizeApi(payload) {
+    return api.post(
+      "/zoom/api/finalize",
+      payload
+    );
+  },
+
   async processReport(
     formData
   ) {
