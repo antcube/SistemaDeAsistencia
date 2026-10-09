@@ -105,10 +105,66 @@ const normalizeStatus = (
   return status || "No asistió";
 };
 
-// Estado efectivo para la vista de asistencia.
-// - Si existe un registro real, se respeta tal cual.
-// - Si NO existe registro y la fecha ya pasó, se considera falta.
-// - Si NO existe registro y la fecha es hoy o futura, permanece pendiente.
+const parseMeetingEndClockForStatus = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+
+  const match = raw.match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])?$/);
+  if (!match) return null;
+
+  let hour = Number(match[1]);
+  const minute = Number(match[2] || "0");
+  const meridiem = String(match[3] || "").toUpperCase();
+
+  if (!Number.isFinite(hour) || !Number.isFinite(minute) || minute < 0 || minute > 59) {
+    return null;
+  }
+
+  if (meridiem === "AM") {
+    if (hour === 12) hour = 0;
+  } else if (meridiem === "PM") {
+    if (hour < 12) hour += 12;
+  }
+
+  if (hour < 0 || hour > 23) return null;
+
+  return { hour, minute };
+};
+
+const getMeetingEndTimestampForStatus = (meeting) => {
+  const dateKey = String(meeting?.date || "").slice(0, 10);
+  const [yearValue, monthValue, dayValue] = dateKey.split("-").map(Number);
+
+  if (!yearValue || !monthValue || !dayValue) return null;
+
+  let endValue = String(meeting?.endTime || "").trim();
+
+  if (!endValue) {
+    const timeRange = String(meeting?.time || "").trim();
+    if (timeRange.includes("-")) {
+      endValue = timeRange.split("-").pop().trim();
+    }
+  }
+
+  if (!endValue) return null;
+
+  const parsed = parseMeetingEndClockForStatus(endValue);
+  if (!parsed) return null;
+
+  const endDate = new Date(
+    yearValue,
+    monthValue - 1,
+    dayValue,
+    parsed.hour,
+    parsed.minute,
+    0,
+    0
+  );
+
+  const timestamp = endDate.getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
+};
+
 const getEffectiveMeetingStatus = (meeting) => {
   const normalized = normalizeStatus(meeting?.status);
 
@@ -116,18 +172,25 @@ const getEffectiveMeetingStatus = (meeting) => {
     return normalized;
   }
 
-  const dateKey = String(meeting?.date || "").slice(0, 10);
-  const now = new Date();
-  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-
-  // Compatibilidad con respuestas antiguas que todavía no traigan
-  // hasAttendanceRecord: si hay un estado explícito distinto de Pendiente,
-  // se respeta como un registro real.
   if (meeting?.hasAttendanceRecord == null && normalized !== "Pendiente") {
     return normalized;
   }
 
+  const dateKey = String(meeting?.date || "").slice(0, 10);
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
   if (dateKey && dateKey < todayKey) {
+    return "No asistió";
+  }
+
+  if (dateKey && dateKey > todayKey) {
+    return "Pendiente";
+  }
+
+  const endTimestamp = getMeetingEndTimestampForStatus(meeting);
+
+  if (endTimestamp != null && Date.now() >= endTimestamp) {
     return "No asistió";
   }
 
