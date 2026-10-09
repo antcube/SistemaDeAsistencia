@@ -42,6 +42,9 @@ const dashboardRoutes =
 const zoomRoutes =
   require("./routes/zoomRoutes");
 
+const { startZoomAutoSyncScheduler } =
+  require("./services/zoomAutoSyncService");
+
 const app =
   express();
 
@@ -154,6 +157,7 @@ const startServer =
           console.log(
             `Servidor ejecutándose en http://localhost:${PORT}`
           );
+          startZoomAutoSyncScheduler();
         }
       );
     } catch (error) {

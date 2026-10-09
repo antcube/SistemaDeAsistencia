@@ -853,3 +853,233 @@
     transform: none !important;
   }
 }
+
+/* ============================================================
+   ZOOM API - CONVIVE CON EL FILTRO MANUAL
+============================================================ */
+.zoom-api-panel {
+  margin: 0 0 20px;
+  padding: 16px;
+  border: 1px solid #c8d7ef;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.zoom-api-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.zoom-api-heading h3 { margin: 0; color: #172b4d; font-size: 13px; font-weight: 900; }
+.zoom-api-heading p { margin: 5px 0 0; color: #64748b; font-size: 10px; line-height: 1.5; }
+.zoom-api-heading > span { flex: 0 0 auto; padding: 7px 10px; border-radius: 999px; background: #eefbf5; color: #047857; font-size: 9px; font-weight: 900; }
+.zoom-api-controls { display: grid; grid-template-columns: minmax(190px, 1.4fr) minmax(160px, 1fr) auto auto; gap: 10px; align-items: end; }
+.zoom-api-controls label { display: grid; gap: 5px; color: #334155; font-size: 9px; font-weight: 900; }
+.zoom-api-controls input { height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: #172b4d; outline: none; }
+.zoom-api-controls button { height: 38px; padding: 0 14px; border: 0; border-radius: 9px; background: #e8eef8; color: #24446f; font-size: 9px; font-weight: 900; cursor: pointer; }
+.zoom-api-controls .zoom-api-sync-button { background: #2457c5; color: #fff; }
+.zoom-api-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+.zoom-api-result { margin-top: 14px; }
+.zoom-api-summary { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.zoom-api-summary > div { padding: 9px 10px; border: 1px solid #dbe4f0; border-radius: 9px; background: #f8fafc; }
+.zoom-api-summary small, .zoom-api-summary strong { display: block; }
+.zoom-api-summary small { color: #64748b; font-size: 8px; }
+.zoom-api-summary strong { margin-top: 3px; color: #172b4d; font-size: 11px; }
+@media (max-width: 900px) { .zoom-api-controls { grid-template-columns: 1fr 1fr; } .zoom-api-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .zoom-api-heading { display: block; } .zoom-api-heading > span { display: inline-flex; margin-top: 8px; } .zoom-api-controls, .zoom-api-summary { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   ZOOM API - VINCULACIÓN / FINALIZACIÓN
+============================================================ */
+.zoom-api-finalize-button {
+  border-color: #f1b6b6 !important;
+  background: #fff7f7 !important;
+  color: #b42318 !important;
+}
+
+.zoom-api-finalize-button:hover:not(:disabled) {
+  border-color: #e58b8b !important;
+  background: #fff0f0 !important;
+}
+
+.zoom-link-warning {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid #f3c969;
+  border-radius: 12px;
+  background: #fffaf0;
+}
+
+.zoom-link-warning strong {
+  color: #8a5200;
+  font-size: 12px;
+}
+
+.zoom-link-warning p {
+  margin: 6px 0 4px;
+  color: #785b2b;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.zoom-link-warning small {
+  color: #9a6d20;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.zoom-link-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.zoom-link-actions label {
+  display: grid;
+  gap: 5px;
+  color: #6d520f;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.zoom-link-actions select {
+  min-width: 190px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #dfbf6a;
+  border-radius: 8px;
+  background: #fff;
+  color: #27364b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.zoom-link-actions button {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #d39b21;
+  border-radius: 8px;
+  background: #e9ad2b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.zoom-link-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+  .zoom-link-warning,
+  .zoom-link-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .zoom-link-actions select,
+  .zoom-link-actions button {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   VINCULACION ZOOM API - HORARIOS
+============================================================ */
+.zoom-link-actions {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(135px, 0.7fr) minmax(135px, 0.7fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.zoom-link-actions label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.zoom-link-actions input[type="time"],
+.zoom-link-actions select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #1e293b;
+  font-size: 10px;
+  font-weight: 700;
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .zoom-link-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .zoom-link-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* V7: selector de Meeting IDs configurados y categoría detectada */
+.zoom-api-controls select,
+.zoom-api-controls input.zoom-api-readonly,
+.zoom-link-actions input.zoom-api-readonly {
+  width: 100%;
+}
+
+.zoom-api-readonly {
+  cursor: default;
+  font-weight: 700;
+  background: rgba(15, 63, 122, 0.05);
+}
+
+/* V7 layout: ID -> categoria -> fecha -> hora inicio -> hora fin */
+.zoom-api-controls {
+  grid-template-columns: minmax(185px, 1.15fr) minmax(170px, 1fr) minmax(145px, 0.9fr) minmax(120px, 0.75fr) minmax(120px, 0.75fr) auto auto auto;
+}
+
+.zoom-api-controls select,
+.zoom-api-controls input {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #172b4d;
+  outline: none;
+}
+
+@media (max-width: 1180px) {
+  .zoom-api-controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .zoom-api-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .zoom-api-controls {
+    grid-template-columns: 1fr;
+  }
+}

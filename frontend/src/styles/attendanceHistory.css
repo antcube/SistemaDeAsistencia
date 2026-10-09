@@ -981,6 +981,8 @@
 .portal-dark-status-wrap .portal-status.attended { border: 1px solid rgba(54, 193, 150, .18); background: rgba(24, 128, 96, .10); color: #5FBF97; }
 .portal-dark-status-wrap .portal-status.justified { border: 1px solid rgba(215, 173, 71, .18); background: rgba(159, 115, 20, .11); color: #d8b653; }
 .portal-dark-status-wrap .portal-status.justified b { color: #070D20; background: #E0B267; }
+.portal-dark-status-wrap .portal-status.scheduled { border: 1px solid rgba(96, 165, 250, .18); background: rgba(30, 64, 175, .10); color: #93c5fd; }
+.portal-dark-status-wrap .portal-status.scheduled b { color: #bfdbfe; background: rgba(59, 130, 246, .14); }
 .portal-dark-status-wrap .portal-status.absent { border: 1px solid rgba(226, 94, 119, .18); background: rgba(165, 38, 61, .11); color: #D98A93; }
 
 .portal-dark-note { color: #526d8b; font-size: 5px; }
@@ -1130,6 +1132,7 @@
 .attendance-history-view .portal-timeline-dot.empty { width: 8px; height: 8px; flex-basis: 8px; margin-top: 8px; border-color: #31516f; background: #0b1730; }
 .attendance-history-view .portal-timeline-dot.attended { border-color: #63d7b4; background: #57cfa9; color: #07251f; box-shadow: 0 0 9px rgba(81, 205, 167, .22); }
 .attendance-history-view .portal-timeline-dot.justified { border-color: #f0c35d; border-radius: 5px; background: #e0b34e; color: #3a2b08; box-shadow: 0 0 8px rgba(224, 179, 78, .16); }
+.attendance-history-view .portal-timeline-dot.justified-extra { border-color: #fb7185; border-radius: 5px; background: #fb7185; color: #3f0a15; box-shadow: 0 0 8px rgba(251, 113, 133, .18); }
 .attendance-history-view .portal-timeline-dot.absent { border-color: #ef7e91; background: #df657b; color: #3d1019; box-shadow: 0 0 8px rgba(223, 101, 123, .18); }
 .attendance-history-view .portal-timeline-dot.scheduled { width: 10px; height: 10px; flex-basis: 10px; margin-top: 7px; border: 1.5px solid #7db6d9; border-radius: 50%; background: #0b1730; color: transparent; }
 

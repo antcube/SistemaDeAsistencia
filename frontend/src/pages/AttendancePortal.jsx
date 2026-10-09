@@ -105,6 +105,98 @@ const normalizeStatus = (
   return status || "No asistió";
 };
 
+const parseMeetingEndClockForStatus = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+
+  const match = raw.match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])?$/);
+  if (!match) return null;
+
+  let hour = Number(match[1]);
+  const minute = Number(match[2] || "0");
+  const meridiem = String(match[3] || "").toUpperCase();
+
+  if (!Number.isFinite(hour) || !Number.isFinite(minute) || minute < 0 || minute > 59) {
+    return null;
+  }
+
+  if (meridiem === "AM") {
+    if (hour === 12) hour = 0;
+  } else if (meridiem === "PM") {
+    if (hour < 12) hour += 12;
+  }
+
+  if (hour < 0 || hour > 23) return null;
+
+  return { hour, minute };
+};
+
+const getMeetingEndTimestampForStatus = (meeting) => {
+  const dateKey = String(meeting?.date || "").slice(0, 10);
+  const [yearValue, monthValue, dayValue] = dateKey.split("-").map(Number);
+
+  if (!yearValue || !monthValue || !dayValue) return null;
+
+  let endValue = String(meeting?.endTime || "").trim();
+
+  if (!endValue) {
+    const timeRange = String(meeting?.time || "").trim();
+    if (timeRange.includes("-")) {
+      endValue = timeRange.split("-").pop().trim();
+    }
+  }
+
+  if (!endValue) return null;
+
+  const parsed = parseMeetingEndClockForStatus(endValue);
+  if (!parsed) return null;
+
+  const endDate = new Date(
+    yearValue,
+    monthValue - 1,
+    dayValue,
+    parsed.hour,
+    parsed.minute,
+    0,
+    0
+  );
+
+  const timestamp = endDate.getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
+};
+
+const getEffectiveMeetingStatus = (meeting) => {
+  const normalized = normalizeStatus(meeting?.status);
+
+  if (meeting?.hasAttendanceRecord === true) {
+    return normalized;
+  }
+
+  if (meeting?.hasAttendanceRecord == null && normalized !== "Pendiente") {
+    return normalized;
+  }
+
+  const dateKey = String(meeting?.date || "").slice(0, 10);
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+  if (dateKey && dateKey < todayKey) {
+    return "No asistió";
+  }
+
+  if (dateKey && dateKey > todayKey) {
+    return "Pendiente";
+  }
+
+  const endTimestamp = getMeetingEndTimestampForStatus(meeting);
+
+  if (endTimestamp != null && Date.now() >= endTimestamp) {
+    return "No asistió";
+  }
+
+  return "Pendiente";
+};
+
 const normalizeCategory = (
   meeting
 ) => {
@@ -974,8 +1066,8 @@ const AttendancePortal = () => {
       effectiveMeetings.forEach(
         (meeting) => {
           const status =
-            normalizeStatus(
-              meeting.status
+            getEffectiveMeetingStatus(
+              meeting
             );
 
           if (
@@ -1002,15 +1094,6 @@ const AttendancePortal = () => {
 
           if (
             status ===
-              "Justificado" &&
-            meeting.justificationValidity ===
-              "extra"
-          ) {
-            absent++;
-          }
-
-          if (
-            status ===
             "No asistió"
           ) {
             absent++;
@@ -1024,17 +1107,8 @@ const AttendancePortal = () => {
       const completedSessions =
         effectiveMeetings.filter(
           (meeting) => {
-            const rawStatus = String(
-              meeting?.status ??
-                ""
-            )
-              .trim()
-              .toUpperCase();
-
-            return (
-              rawStatus !== "" &&
-              rawStatus !== "PENDIENTE"
-            );
+            const effectiveStatus = getEffectiveMeetingStatus(meeting);
+            return effectiveStatus !== "Pendiente";
           }
         ).length;
 
@@ -1042,9 +1116,16 @@ const AttendancePortal = () => {
         total > 0 &&
         completedSessions === total;
 
+      const hasNegativeJustification = effectiveMeetings.some(
+        (meeting) =>
+          getEffectiveMeetingStatus(meeting) === "Justificado" &&
+          meeting.justificationValidity === "extra"
+      );
+
       const bonus =
         allSessionsCompleted &&
         absent === 0 &&
+        !hasNegativeJustification &&
         attended + presencial === total;
 
       return {
@@ -1203,6 +1284,7 @@ const AttendancePortal = () => {
     if (normalized === "Asistió") return "portal-status attended";
     if (normalized === "Clase Presencial") return "portal-status presencial";
     if (normalized === "Justificado") return "portal-status justified";
+    if (normalized === "Pendiente") return "portal-status scheduled";
     return "portal-status absent";
   };
 
@@ -1234,6 +1316,10 @@ const AttendancePortal = () => {
         return "J";
       }
 
+      if (normalized === "Pendiente") {
+        return "◷";
+      }
+
       return "F";
     };
 
@@ -1263,28 +1349,27 @@ const AttendancePortal = () => {
   // pero también cuenta como asistencia para el porcentaje del círculo.
   const attendedCount = effectiveMeetings.filter((meeting) => {
     if (isFutureMeeting(meeting)) return false;
-    const status = normalizeStatus(meeting.status);
+    const status = getEffectiveMeetingStatus(meeting);
     return status === "Asistió" || status === "Clase Presencial";
   }).length;
 
   const justifiedCount = effectiveMeetings.filter((meeting) => {
     if (isFutureMeeting(meeting)) return false;
-    return normalizeStatus(meeting.status) === "Justificado";
+    return getEffectiveMeetingStatus(meeting) === "Justificado";
   }).length;
 
   const validJustifiedCount = effectiveMeetings.filter((meeting) => {
     if (isFutureMeeting(meeting)) return false;
     return (
-      normalizeStatus(meeting.status) === "Justificado" &&
+      getEffectiveMeetingStatus(meeting) === "Justificado" &&
       meeting.justificationValidity === "valid"
     );
   }).length;
 
   const absentCount = effectiveMeetings.filter((meeting) => {
     if (isFutureMeeting(meeting)) return false;
-    const status = normalizeStatus(meeting.status);
-    return status === "No asistió" ||
-      (status === "Justificado" && meeting.justificationValidity === "extra");
+    const status = getEffectiveMeetingStatus(meeting);
+    return status === "No asistió";
   }).length;
 
   // Este contador representa TODAS las sesiones existentes en el mes,
@@ -1507,15 +1592,12 @@ const AttendancePortal = () => {
       }
     }
 
-    const status = normalizeStatus(meeting.status);
+    const status = getEffectiveMeetingStatus(meeting);
 
-    if (
-      status === "No asistió" ||
-      (status === "Justificado" && meeting.justificationValidity === "extra")
-    ) {
-      return "absent";
+    if (status === "No asistió") return "absent";
+    if (status === "Justificado" && meeting.justificationValidity === "extra") {
+      return "justified-extra";
     }
-
     if (status === "Justificado") return "justified";
     if (status === "Asistió" || status === "Clase Presencial") return "attended";
     if (status === "Pendiente") return "scheduled";
@@ -1527,18 +1609,16 @@ const AttendancePortal = () => {
     const counts = { attended: 0, justified: 0, absent: 0 };
 
     (categoryMeetings || []).forEach((meeting) => {
-      // Los indicadores de la cabecera cuentan únicamente estados realmente
-      // registrados. Una reunión sin registro todavía no es asistencia,
-      // justificación ni falta, aunque el calendario ya tenga la sesión creada.
-      if (!meeting?.hasAttendanceRecord) return;
-
-      const status = normalizeStatus(meeting.status);
+      // El contador usa el estado efectivo de la sesión:
+      // - pasada sin registro => falta
+      // - futura/today sin registro => pendiente, no suma
+      // - J válida o J roja => siempre cuenta como justificación
+      const status = getEffectiveMeetingStatus(meeting);
 
       if (status === "Asistió" || status === "Clase Presencial") {
         counts.attended += 1;
       } else if (status === "Justificado") {
-        if (meeting.justificationValidity === "extra") counts.absent += 1;
-        else counts.justified += 1;
+        counts.justified += 1;
       } else if (status === "No asistió") {
         counts.absent += 1;
       }
@@ -1629,7 +1709,8 @@ const AttendancePortal = () => {
     const meetingsByDate = new Map();
 
     const statusPriority = {
-      absent: 4,
+      absent: 5,
+      "justified-extra": 4,
       justified: 3,
       attended: 2,
       scheduled: 1,
@@ -1820,16 +1901,13 @@ const AttendancePortal = () => {
   const canJustifyMeeting = (meeting) => {
     if (!meeting) return false;
 
-    const normalizedMeetingStatus = normalizeStatus(meeting.status);
-    const isAbsent =
-      normalizedMeetingStatus === "No asistió" ||
-      (normalizedMeetingStatus === "Justificado" && meeting.justificationValidity === "extra");
+    const normalizedMeetingStatus = getEffectiveMeetingStatus(meeting);
+    const isAbsent = normalizedMeetingStatus === "No asistió";
 
     if (!isAbsent) return false;
 
-    // Una justificación marcada como "extra" se muestra como falta,
-    // por lo que conserva el derecho a solicitar justificación mientras
-    // la sesión siga dentro de su plazo de 2 días hábiles.
+    // Las J rojas siguen siendo justificaciones y no se vuelven a tratar
+    // como faltas oficiales. Solo una falta real puede abrir este flujo.
 
     // El plazo empieza cuando termina la sesión según el Calendario.
     // Cada sesión calcula su propio plazo de 2 días hábiles.
@@ -2485,7 +2563,7 @@ const AttendancePortal = () => {
                         {item.isToday && <span className="portal-timeline-today">HOY</span>}
                         <span className={`portal-timeline-dot ${item.status}`}>
                           {item.status === "attended" && "✓"}
-                          {item.status === "justified" && "J"}
+                          {(item.status === "justified" || item.status === "justified-extra") && "J"}
                           {item.status === "absent" && "×"}
                         </span>
                         <strong>{item.day}</strong>
@@ -2585,8 +2663,8 @@ const AttendancePortal = () => {
                         <div className="portal-dark-session-list">
                         {categoryMeetings.map((meeting) => {
                           const futureMeeting = isFutureMeeting(meeting);
-                          const status = normalizeStatus(meeting.status);
-                          const displayStatus = meeting.justificationValidity === "extra" ? "No asistió" : status;
+                          const status = getEffectiveMeetingStatus(meeting);
+                          const displayStatus = status;
 
                           return (
                             <article

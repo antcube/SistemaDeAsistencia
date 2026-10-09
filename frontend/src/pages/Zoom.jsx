@@ -1,4 +1,4 @@
-    import {
+import {
       useEffect,
       useState,
     } from "react";
@@ -39,6 +39,47 @@
         circles: 0,
       });
 
+      const [
+        apiMeetingId,
+        setApiMeetingId,
+      ] = useState("");
+
+      const [
+        apiMeetings,
+        setApiMeetings,
+      ] = useState([]);
+
+      const [
+        apiDate,
+        setApiDate,
+      ] = useState("");
+
+      const [
+        apiProcessing,
+        setApiProcessing,
+      ] = useState(false);
+
+      const [
+        apiResult,
+        setApiResult,
+      ] = useState(null);
+
+      const [
+        apiLinkType,
+        setApiLinkType,
+      ] = useState("");
+
+      const [
+        apiLinkStartTime,
+        setApiLinkStartTime,
+      ] = useState("20:00");
+
+      const [
+        apiLinkEndTime,
+        setApiLinkEndTime,
+      ] = useState("21:00");
+
+
       useEffect(() => {
         const loadInfo =
           async () => {
@@ -59,8 +100,55 @@
             }
           };
 
+        const loadApiConfig =
+          async () => {
+            try {
+              const response =
+                await zoomService.getApiConfig();
+
+              const config =
+                response?.data ||
+                response ||
+                {};
+
+              const meetings =
+                Array.isArray(config.meetings)
+                  ? config.meetings
+                  : [];
+
+              setApiMeetings(meetings);
+
+              if (meetings.length > 0) {
+                setApiMeetingId((current) => current || meetings[0].meetingId || "");
+                setApiLinkType((current) => current || meetings[0].type || "");
+              }
+            } catch (error) {
+              console.error(
+                "Error cargando configuración Zoom API:",
+                error
+              );
+            }
+          };
+
         loadInfo();
+        loadApiConfig();
       }, []);
+
+      const selectedApiMeeting =
+        apiMeetings.find(
+          (item) => String(item.meetingId) === String(apiMeetingId)
+        ) || null;
+
+      const handleApiMeetingChange = (event) => {
+        const meetingId = event.target.value;
+        const selected = apiMeetings.find(
+          (item) => String(item.meetingId) === String(meetingId)
+        );
+
+        setApiMeetingId(meetingId);
+        setApiLinkType(selected?.type || "");
+        setApiResult(null);
+      };
 
       const handleFile = (
         event
@@ -174,6 +262,132 @@
           ? "La fecha se detecta automáticamente. Se buscará esa sesión en el Calendario y, si no existe, se creará para esa fecha."
           : "Selecciona el tipo de sesión y carga el reporte de Zoom.";
 
+      const handleApiPreview =
+        async () => {
+          if (!apiMeetingId || !apiDate) {
+            return;
+          }
+
+          try {
+            setApiProcessing(true);
+            setApiResult(null);
+
+            const response =
+              await zoomService.previewApi({
+                meetingId: apiMeetingId,
+                date: apiDate,
+              });
+
+            setApiResult(response);
+            setApiLinkType(response?.sessionType || "");
+          } catch (error) {
+            setApiResult({
+              error:
+                error?.message ||
+                "No se pudo consultar Zoom API.",
+            });
+          } finally {
+            setApiProcessing(false);
+          }
+        };
+
+      const handleApiSync =
+        async () => {
+          if (!apiMeetingId || !apiDate) {
+            return;
+          }
+
+          try {
+            setApiProcessing(true);
+
+            const response =
+              await zoomService.syncApi({
+                meetingId: apiMeetingId,
+                date: apiDate,
+              });
+
+            setApiResult(response);
+          } catch (error) {
+            setApiResult({
+              error:
+                error?.message ||
+                "No se pudo sincronizar Zoom API.",
+            });
+          } finally {
+            setApiProcessing(false);
+          }
+        };
+
+      const handleApiLink =
+        async () => {
+          if (!apiMeetingId || !apiDate || !apiLinkType) {
+            return;
+          }
+
+          try {
+            setApiProcessing(true);
+
+            await zoomService.linkApi({
+              meetingId: apiMeetingId,
+              date: apiDate,
+              sessionType: apiLinkType,
+              startTime: apiLinkStartTime,
+              endTime: apiLinkEndTime,
+            });
+
+            const refreshed = await zoomService.previewApi({
+              meetingId: apiMeetingId,
+              date: apiDate,
+            });
+
+            setApiResult(refreshed);
+            setApiLinkType(refreshed?.sessionType || apiLinkType);
+          } catch (error) {
+            setApiResult({
+              error:
+                error?.message ||
+                "No se pudo crear y vincular la reunión.",
+            });
+          } finally {
+            setApiProcessing(false);
+          }
+        };
+
+      const handleApiFinalize =
+        async () => {
+          if (!apiMeetingId || !apiDate || apiResult?.linkRequired) {
+            return;
+          }
+
+          const confirmed = window.confirm(
+            "¿Finalizar esta sesión? Se volverán a sumar todas las instancias Zoom del día. Quienes no alcancen 10 minutos y no tengan Asistió, Clase Presencial o Justificado quedarán como No asistió."
+          );
+
+          if (!confirmed) {
+            return;
+          }
+
+          try {
+            setApiProcessing(true);
+
+            const response =
+              await zoomService.finalizeApi({
+                meetingId: apiMeetingId,
+                date: apiDate,
+              });
+
+            setApiResult(response);
+          } catch (error) {
+            setApiResult({
+              error:
+                error?.message ||
+                "No se pudo finalizar la sesión Zoom.",
+            });
+          } finally {
+            setApiProcessing(false);
+          }
+        };
+
       return (
         <section
           id="tab-zoom"
@@ -213,6 +427,200 @@
               <span className="zoom-validation">
                 Validación automática
               </span>
+            </div>
+
+            <div className="zoom-api-panel">
+              <div className="zoom-api-heading">
+                <div>
+                  <h3>🔌 Zoom API</h3>
+                  <p>
+                    La API puede trabajar manualmente desde aquí y también de forma automática: 10 minutos después de la hora final del Calendario y una segunda revisión a las 23:30. Suma todas las instancias del mismo Meeting ID y solo aplica asistencia cuando el correo coincide y llega a 10 minutos.
+                  </p>
+                </div>
+                <span>Sin faltas automáticas</span>
+              </div>
+
+              <div className="zoom-api-controls">
+                <label>
+                  Meeting ID
+                  <select
+                    value={apiMeetingId}
+                    onChange={handleApiMeetingChange}
+                    disabled={apiProcessing || apiMeetings.length === 0}
+                  >
+                    {apiMeetings.length === 0 && (
+                      <option value="">No hay Meeting IDs configurados</option>
+                    )}
+                    {apiMeetings.map((item) => (
+                      <option key={`${item.type}-${item.meetingId}`} value={item.meetingId}>
+                        {item.meetingId}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Pertenece a
+                  <input
+                    value={selectedApiMeeting?.type || apiLinkType || ""}
+                    readOnly
+                    placeholder="Selecciona un Meeting ID"
+                    className="zoom-api-readonly"
+                  />
+                </label>
+
+                <label>
+                  Fecha de la sesión
+                  <input
+                    type="date"
+                    value={apiDate}
+                    onChange={(event) =>
+                      setApiDate(event.target.value)
+                    }
+                    disabled={apiProcessing}
+                  />
+                </label>
+
+                <label>
+                  Hora de inicio
+                  <input
+                    type="time"
+                    value={apiLinkStartTime}
+                    onChange={(event) => setApiLinkStartTime(event.target.value)}
+                    disabled={apiProcessing}
+                  />
+                </label>
+
+                <label>
+                  Hora de fin
+                  <input
+                    type="time"
+                    value={apiLinkEndTime}
+                    onChange={(event) => setApiLinkEndTime(event.target.value)}
+                    disabled={apiProcessing}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleApiPreview}
+                  disabled={!apiMeetingId || !apiDate || apiProcessing}
+                >
+                  {apiProcessing ? "Consultando..." : "Probar sin aplicar"}
+                </button>
+
+                <button
+                  type="button"
+                  className="zoom-api-sync-button"
+                  onClick={handleApiSync}
+                  disabled={!apiMeetingId || !apiDate || apiProcessing || apiResult?.linkRequired}
+                >
+                  Sincronizar asistencias
+                </button>
+
+                <button
+                  type="button"
+                  className="zoom-api-finalize-button"
+                  onClick={handleApiFinalize}
+                  disabled={!apiMeetingId || !apiDate || apiProcessing || apiResult?.linkRequired}
+                >
+                  Finalizar sesión
+                </button>
+              </div>
+
+              {apiResult?.error && (
+                <div className="zoom-error">{apiResult.error}</div>
+              )}
+
+              {apiResult && !apiResult.error && apiResult.linkRequired && (
+                <div className="zoom-link-warning">
+                  <div>
+                    <strong>⚠ Falta vinculación con el Calendario</strong>
+                    <p>
+                      Zoom detectó {apiResult.sessionType || "esta sesión"} del {apiResult.date || apiDate},
+                      pero faltan reuniones de Calendario para {apiResult.missingCircles?.length || 0} círculo(s).
+                      No se aplicará ninguna asistencia ni falta hasta vincularla.
+                    </p>
+                    {Array.isArray(apiResult.missingCircles) && apiResult.missingCircles.length > 0 && (
+                      <small>Faltan: {apiResult.missingCircles.join(", ")}</small>
+                    )}
+                  </div>
+
+                  <div className="zoom-link-actions">
+                    <label>
+                      Tipo de reunión
+                      <input
+                        value={apiLinkType || selectedApiMeeting?.type || ""}
+                        readOnly
+                        className="zoom-api-readonly"
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={handleApiLink}
+                      disabled={
+                        !apiLinkType ||
+                        !apiLinkStartTime ||
+                        !apiLinkEndTime ||
+                        apiProcessing
+                      }
+                    >
+                      Crear y vincular
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {apiResult && !apiResult.error && (
+                <div className="zoom-api-result">
+                  <div className="zoom-api-summary">
+                    <div><small>Categoría</small><strong>{apiResult.sessionType || "—"}</strong></div>
+                    <div><small>Instancias</small><strong>{apiResult.instances ?? 0}</strong></div>
+                    <div><small>Correos</small><strong>{apiResult.emails ?? 0}</strong></div>
+                    <div><small>Coincidencias</small><strong>{apiResult.matched ?? 0}</strong></div>
+                    <div><small>≥ 10 min</small><strong>{apiResult.qualified ?? 0}</strong></div>
+                    <div><small>Aplicadas</small><strong>{apiResult.applied ?? 0}</strong></div>
+                  </div>
+
+                  {Array.isArray(apiResult.results) && apiResult.results.length > 0 && (
+                    <div className="zoom-results-table-wrapper">
+                      <table className="zoom-results-table">
+                        <thead>
+                          <tr>
+                            <th>Miembro</th>
+                            <th>Correo</th>
+                            <th>Círculo</th>
+                            <th>Entradas</th>
+                            <th>Minutos</th>
+                            <th>Resultado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {apiResult.results.map((item, index) => (
+                            <tr key={`${item.email}-${index}`}>
+                              <td>{item.name || item.zoomName || "—"}</td>
+                              <td>{item.email || "—"}</td>
+                              <td>{item.circle || "—"}</td>
+                              <td>{item.entries ?? item.instanceCount ?? 0}</td>
+                              <td>{item.totalMinutes ?? 0}</td>
+                              <td>
+                                {["sync", "finalize"].includes(apiResult.mode) && item.willApply ? (
+                                  <span className="zoom-status-present">✓ ASISTIÓ</span>
+                                ) : item.willApply ? (
+                                  <span className="zoom-status-present">✓ CUMPLE</span>
+                                ) : (
+                                  <span className="zoom-status-absent">SIN CAMBIOS</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* ======================================================

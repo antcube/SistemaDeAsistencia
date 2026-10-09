@@ -4,6 +4,7 @@ const multer = require("multer");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const zoomController = require("../controllers/zoomController");
+const zoomApiController = require("../controllers/zoomApiController");
 
 const router =
   express.Router();
@@ -70,6 +71,37 @@ const upload =
       }
     },
   });
+
+
+router.get(
+  "/api/config",
+  authMiddleware,
+  zoomApiController.getConfig
+);
+
+router.post(
+  "/api/preview",
+  authMiddleware,
+  zoomApiController.preview
+);
+
+router.post(
+  "/api/link",
+  authMiddleware,
+  zoomApiController.linkMissing
+);
+
+router.post(
+  "/api/sync",
+  authMiddleware,
+  zoomApiController.sync
+);
+
+router.post(
+  "/api/finalize",
+  authMiddleware,
+  zoomApiController.finalize
+);
 
 router.get(
   "/info",
