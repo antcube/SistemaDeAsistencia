@@ -24,7 +24,9 @@ const getLocalParts = (date = new Date()) => {
     hourCycle: "h23",
   }).formatToParts(date);
 
-  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const map = Object.fromEntries(
+    parts.map((part) => [part.type, part.value])
+  );
 
   return {
     date: `${map.year}-${map.month}-${map.day}`,
@@ -34,6 +36,7 @@ const getLocalParts = (date = new Date()) => {
 
 const hhmmToMinutes = (value) => {
   const raw = String(value || "").trim().toUpperCase();
+
   if (!raw) return null;
 
   let match = raw.match(/^(\d{1,2}):(\d{2})$/);
@@ -42,7 +45,16 @@ const hhmmToMinutes = (value) => {
     const hour = Number(match[1]);
     const minute = Number(match[2]);
 
-    if (hour > 23 || minute > 59) return null;
+    if (
+      !Number.isFinite(hour) ||
+      !Number.isFinite(minute) ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      return null;
+    }
 
     return hour * 60 + minute;
   }
@@ -55,10 +67,21 @@ const hhmmToMinutes = (value) => {
   const minute = Number(match[2]);
   const period = match[3];
 
-  if (hour < 1 || hour > 12 || minute > 59) return null;
+  if (
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute) ||
+    hour < 1 ||
+    hour > 12 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return null;
+  }
 
   if (period === "AM") {
-    if (hour === 12) hour = 0;
+    if (hour === 12) {
+      hour = 0;
+    }
   } else if (hour !== 12) {
     hour += 12;
   }
@@ -66,24 +89,61 @@ const hhmmToMinutes = (value) => {
   return hour * 60 + minute;
 };
 
-const canAttemptRun = async ({ meetingId, date, trigger }) => {
+const minutesToTriggerSuffix = (minutes) => {
+  const hour = Math.floor(minutes / 60);
+  const minute = minutes % 60;
+
+  return `${String(hour).padStart(2, "0")}${String(minute).padStart(
+    2,
+    "0"
+  )}`;
+};
+
+const canAttemptRun = async ({
+  meetingId,
+  date,
+  trigger,
+}) => {
   const existing = await ZoomAutoSyncRun.findOne({
     meetingId,
     date,
     trigger,
   }).lean();
 
-  if (!existing) return true;
-  if (existing.status === "success") return false;
+  if (!existing) {
+    return true;
+  }
 
-  const lastRun = new Date(existing.ranAt || existing.updatedAt || 0).getTime();
+  if (existing.status === "success") {
+    return false;
+  }
 
-  return Date.now() - lastRun >= 10 * 60 * 1000;
+  const lastRun = new Date(
+    existing.ranAt ||
+      existing.updatedAt ||
+      0
+  ).getTime();
+
+  return (
+    Date.now() - lastRun >=
+    10 * 60 * 1000
+  );
 };
 
-const saveRun = async ({ meetingId, sessionType, date, trigger, result, error }) => {
+const saveRun = async ({
+  meetingId,
+  sessionType,
+  date,
+  trigger,
+  result,
+  error,
+}) => {
   await ZoomAutoSyncRun.findOneAndUpdate(
-    { meetingId, date, trigger },
+    {
+      meetingId,
+      date,
+      trigger,
+    },
     {
       $set: {
         sessionType,
@@ -92,28 +152,63 @@ const saveRun = async ({ meetingId, sessionType, date, trigger, result, error })
           : result?.linkRequired
             ? "pending_link"
             : "success",
-        applied: Number(result?.applied || 0),
-        instances: Number(result?.instances || 0),
+        applied: Number(
+          result?.applied || 0
+        ),
+        instances: Number(
+          result?.instances || 0
+        ),
         message: error
-          ? String(error.message || error)
-          : String(result?.message || ""),
+          ? String(
+              error.message || error
+            )
+          : String(
+              result?.message || ""
+            ),
         ranAt: new Date(),
       },
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    {
+      upsert: true,
+      new: true,
+      setDefaultsOnInsert: true,
+    }
   );
 };
 
-const executeOnce = async ({ meetingId, sessionType, date, trigger }) => {
-  const key = `${meetingId}:${date}:${trigger}`;
+const executeOnce = async ({
+  meetingId,
+  sessionType,
+  date,
+  trigger,
+}) => {
+  const key =
+    `${meetingId}:${date}:${trigger}`;
 
-  if (runningKeys.has(key)) return;
-  if (!(await canAttemptRun({ meetingId, date, trigger }))) return;
+  if (runningKeys.has(key)) {
+    return;
+  }
+
+  const allowed =
+    await canAttemptRun({
+      meetingId,
+      date,
+      trigger,
+    });
+
+  if (!allowed) {
+    return;
+  }
 
   runningKeys.add(key);
 
   try {
-    const result = await runAutomaticSync({ meetingId, date, trigger });
+    const result =
+      await runAutomaticSync({
+        meetingId,
+        date,
+        trigger,
+      });
 
     await saveRun({
       meetingId,
@@ -124,7 +219,11 @@ const executeOnce = async ({ meetingId, sessionType, date, trigger }) => {
     });
 
     console.log(
-      `[Zoom Auto] ${trigger} ${sessionType} ${date} ID ${meetingId} -> ${result.applied || 0} asistencia(s), ${result.instances || 0} instancia(s).`
+      `[Zoom Auto] ${trigger} ${sessionType} ${date} ID ${meetingId} -> ${
+        result?.applied || 0
+      } asistencia(s), ${
+        result?.instances || 0
+      } instancia(s).`
     );
   } catch (error) {
     await saveRun({
@@ -145,89 +244,191 @@ const executeOnce = async ({ meetingId, sessionType, date, trigger }) => {
 };
 
 const runSchedulerTick = async () => {
-  const { date, minuteOfDay } = getLocalParts();
-  const configured = getConfiguredMeetings();
-
-  if (!configured.length) return;
-
-  const types = [...new Set(configured.map((item) => normalizeType(item.type)))];
-
-  const meetings = await Meeting.find({
-    active: true,
+  const {
     date,
-    type: { $in: types },
-  })
-    .select("type date endTime")
-    .lean();
+    minuteOfDay,
+  } = getLocalParts();
 
-  const endMinuteByType = new Map();
+  const configured =
+    getConfiguredMeetings();
 
-  for (const meeting of meetings) {
-    const type = normalizeType(meeting.type);
-    const endMinute = hhmmToMinutes(meeting.endTime);
-
-    if (endMinute === null) continue;
-
-    const current = endMinuteByType.get(type);
-
-    if (current === undefined || endMinute > current) {
-      endMinuteByType.set(type, endMinute);
-    }
-  }
-
-  for (const config of configured) {
-    const type = normalizeType(config.type);
-    const endMinute = endMinuteByType.get(type);
-
-    if (endMinute === undefined) continue;
-
-    if (minuteOfDay >= endMinute + 10) {
-      await executeOnce({
-        meetingId: config.meetingId,
-        sessionType: type,
-        date,
-        trigger: "END_PLUS_10",
-      });
-    }
-
-    if (minuteOfDay >= NIGHTLY_MINUTE) {
-      await executeOnce({
-        meetingId: config.meetingId,
-        sessionType: type,
-        date,
-        trigger: "NIGHTLY_2330",
-      });
-    }
-  }
-};
-
-const startZoomAutoSyncScheduler = () => {
-  if (
-    String(process.env.ZOOM_AUTO_SYNC_ENABLED || "true").toLowerCase() ===
-    "false"
-  ) {
-    console.log("[Zoom Auto] Desactivado por ZOOM_AUTO_SYNC_ENABLED=false");
+  if (!configured.length) {
     return;
   }
 
-  console.log(
-    `[Zoom Auto] Activo. Revisión cada minuto (${TIMEZONE}); una sesión se identifica por fecha + Meeting ID, primera sync = fin + 10 min y revisión final = 23:30.`
-  );
+  const types = [
+    ...new Set(
+      configured.map((item) =>
+        normalizeType(item.type)
+      )
+    ),
+  ];
 
-  setTimeout(() => {
-    runSchedulerTick().catch((error) =>
-      console.error("[Zoom Auto] Error inicial:", error.message)
-    );
-  }, 5000);
+  const meetings =
+    await Meeting.find({
+      active: true,
+      date,
+      type: {
+        $in: types,
+      },
+    })
+      .select(
+        "type date endTime"
+      )
+      .lean();
 
-  const timer = setInterval(() => {
-    runSchedulerTick().catch((error) =>
-      console.error("[Zoom Auto] Error scheduler:", error.message)
-    );
-  }, CHECK_EVERY_MS);
+  const endMinutesByType =
+    new Map();
 
-  if (typeof timer.unref === "function") timer.unref();
+  for (const meeting of meetings) {
+    const type =
+      normalizeType(
+        meeting.type
+      );
+
+    const endMinute =
+      hhmmToMinutes(
+        meeting.endTime
+      );
+
+    if (endMinute === null) {
+      continue;
+    }
+
+    if (
+      !endMinutesByType.has(type)
+    ) {
+      endMinutesByType.set(
+        type,
+        new Set()
+      );
+    }
+
+    endMinutesByType
+      .get(type)
+      .add(endMinute);
+  }
+
+  for (const config of configured) {
+    const type =
+      normalizeType(
+        config.type
+      );
+
+    const meetingId =
+      String(
+        config.meetingId || ""
+      ).trim();
+
+    if (!meetingId) {
+      continue;
+    }
+
+    const endMinutes =
+      endMinutesByType.get(type);
+
+    if (
+      endMinutes &&
+      endMinutes.size
+    ) {
+      const sortedEndMinutes = [
+        ...endMinutes,
+      ].sort(
+        (a, b) => a - b
+      );
+
+      for (
+        const endMinute
+        of sortedEndMinutes
+      ) {
+        const syncMinute =
+          endMinute + 5;
+
+        if (
+          minuteOfDay <
+          syncMinute
+        ) {
+          continue;
+        }
+
+        const trigger =
+          `END_PLUS_5_${minutesToTriggerSuffix(
+            endMinute
+          )}`;
+
+        await executeOnce({
+          meetingId,
+          sessionType: type,
+          date,
+          trigger,
+        });
+      }
+    }
+
+    if (
+      minuteOfDay >=
+      NIGHTLY_MINUTE
+    ) {
+      await executeOnce({
+        meetingId,
+        sessionType: type,
+        date,
+        trigger:
+          "NIGHTLY_2330",
+      });
+    }
+  }
 };
+
+const startZoomAutoSyncScheduler =
+  () => {
+    if (
+      String(
+        process.env
+          .ZOOM_AUTO_SYNC_ENABLED ||
+          "true"
+      ).toLowerCase() ===
+      "false"
+    ) {
+      console.log(
+        "[Zoom Auto] Desactivado por ZOOM_AUTO_SYNC_ENABLED=false"
+      );
+
+      return;
+    }
+
+    console.log(
+      `[Zoom Auto] Activo. Revisión cada minuto (${TIMEZONE}); misma fecha + Meeting ID se procesa como una sola reunión lógica, cada hora final genera una revisión a +5 min y existe revisión final a las 23:30.`
+    );
+
+    setTimeout(() => {
+      runSchedulerTick().catch(
+        (error) =>
+          console.error(
+            "[Zoom Auto] Error inicial:",
+            error.message
+          )
+      );
+    }, 5000);
+
+    const timer =
+      setInterval(() => {
+        runSchedulerTick().catch(
+          (error) =>
+            console.error(
+              "[Zoom Auto] Error scheduler:",
+              error.message
+            )
+        );
+      }, CHECK_EVERY_MS);
+
+    if (
+      typeof timer.unref ===
+      "function"
+    ) {
+      timer.unref();
+    }
+  };
 
 module.exports = {
   startZoomAutoSyncScheduler,
