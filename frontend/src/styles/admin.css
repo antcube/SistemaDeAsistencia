@@ -310,113 +310,152 @@
 }
 
 /* =========================================================
-   MENÚ ADMINISTRACIÓN
+   MENÚ DE PERFIL
 ========================================================= */
 
 .cc-admin-menu {
   position: absolute;
-
   top: calc(100% + 10px);
   right: 0;
-
-  width: 205px;
-
-  padding: 6px;
-
-  background: #ffffff;
-
-  border: 1px solid #e2e8f0;
-
-  border-radius: 12px;
-
+  width: 220px;
+  padding: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 16px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(248, 251, 255, 0.98) 100%
+    );
   box-shadow:
-    0 14px 35px
-    rgba(15, 23, 42, 0.16);
-
+    0 22px 48px rgba(15, 23, 42, 0.16),
+    0 8px 18px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(18px);
   z-index: 1100;
+  animation: cc-admin-menu-enter 0.18s ease-out;
 }
 
-.cc-admin-menu-title {
-  padding:
-    5px 10px 6px;
-
-  color: #94a3b8;
-
-  font-size: 9px;
-
-  line-height: 1;
-
-  font-weight: 800;
-
-  text-transform: uppercase;
-
-  letter-spacing:
-    0.06em;
+.cc-admin-menu-glow {
+  position: absolute;
+  top: -34px;
+  right: -26px;
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
+  background: rgba(36, 87, 197, 0.08);
+  filter: blur(24px);
+  pointer-events: none;
 }
 
-.cc-admin-menu a {
-  width: 100%;
-
-  min-height: 44px;
-
+.cc-admin-menu-list {
+  position: relative;
+  z-index: 1;
   display: flex;
-
-  align-items: center;
-
-  gap: 10px;
-
-  padding:
-    7px 10px;
-
-  border-radius: 8px;
-
-  color: #334155;
-
-  font-size: 12px;
-
-  line-height: 1.2;
-
-  font-weight: 600;
-
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.cc-admin-menu a:hover {
-  background: #f1f5f9;
+.cc-admin-menu-link {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 650;
+  text-decoration: none;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
 
-  color: #0f172a;
+.cc-admin-menu-link:hover {
+  border-color: #dbe7f8;
+  background: #f4f8ff;
+  color: #173b7a;
+  transform: translateX(2px);
+}
+
+.cc-admin-menu-link.active {
+  border-color: #c9daf8;
+  background:
+    linear-gradient(
+      135deg,
+      #edf4ff 0%,
+      #f7faff 100%
+    );
+  color: #1749ad;
+  box-shadow:
+    inset 3px 0 0 #2457c5,
+    0 4px 12px rgba(36, 87, 197, 0.08);
 }
 
 .cc-menu-icon {
-  width: 28px;
-
-  height: 28px;
-
-  min-width: 28px;
-
-  border:
-    1px solid
-    #e2e8f0;
-
-  border-radius: 7px;
-
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border: 1px solid #e1e8f3;
+  border-radius: 9px;
   display: inline-flex;
-
   align-items: center;
-
   justify-content: center;
-
-  background: #f8fafc;
-
-  color: #475569;
+  background: #ffffff;
+  color: #64748b;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.04);
+  transition:
+    background 0.16s ease,
+    color 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease;
 }
 
-.cc-menu-icon svg {
-  width: 14px;
+.cc-admin-menu-link:hover .cc-menu-icon {
+  border-color: #cadbf5;
+  background: #eaf2ff;
+  color: #2457c5;
+  transform: scale(1.03);
+}
 
-  height: 14px;
+.cc-admin-menu-link.active .cc-menu-icon {
+  border-color: #bcd2f7;
+  background: #dfeaff;
+  color: #1749ad;
+}
+
+.cc-menu-label {
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+}
+
+.cc-avatar-button.is-open {
+  border-color: #9db9eb;
+  background: #dfe9fb;
+  color: #173b7a;
+  box-shadow:
+    0 0 0 4px rgba(36, 87, 197, 0.08),
+    0 5px 14px rgba(15, 23, 42, 0.10);
+}
+
+@keyframes cc-admin-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* =========================================================
@@ -2686,5 +2725,249 @@
   .audit-scroll-container {
     max-height: min(480px, calc(100vh - 360px));
     min-height: 240px;
+  }
+}
+
+/* =========================================================
+   IDENTIDAD DE MARCA - HEADER
+========================================================= */
+
+.cc-header-inner {
+  position: relative;
+}
+
+.cc-logo {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 5px;
+  border-radius: 13px;
+  background:
+    linear-gradient(
+      145deg,
+      #edf4ff 0%,
+      #ffffff 55%,
+      #e7eefc 100%
+    );
+  border: 1px solid #d4e0f3;
+  box-shadow:
+    0 6px 16px rgba(23, 59, 122, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.cc-logo-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cc-brand-title {
+  gap: 5px;
+}
+
+.cc-brand-badge {
+  display: none !important;
+}
+
+.cc-department-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 13px;
+  border: 1px solid #d8e4f6;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(248, 251, 255, 0.98) 0%,
+      rgba(239, 246, 255, 0.98) 100%
+    );
+  color: #274b87;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow:
+    0 3px 8px rgba(15, 23, 42, 0.04),
+    0 8px 20px rgba(36, 87, 197, 0.06);
+  transform: translate(-50%, -50%);
+}
+
+.cc-department-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #2f6df2;
+  box-shadow:
+    0 0 0 4px rgba(47, 109, 242, 0.10);
+}
+
+@media (max-width: 980px) {
+  .cc-department-badge {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .cc-logo {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    padding: 4px;
+  }
+}
+
+/* =========================================================
+   LOGO SE ORIGINAL - SIN FONDO AGREGADO
+========================================================= */
+
+.cc-logo {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.cc-logo-image {
+  display: block;
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  object-position: center;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+@media (max-width: 640px) {
+  .cc-logo {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+  }
+
+  .cc-logo-image {
+    width: 46px;
+    height: 46px;
+  }
+}
+
+
+/* =========================================================
+   AJUSTE FINAL - LOGO SE MÁS GRANDE
+========================================================= */
+
+.cc-logo {
+  width: 60px;
+  height: 60px;
+  min-width: 60px;
+}
+
+.cc-logo-image {
+  width: 60px;
+  height: 60px;
+}
+
+@media (max-width: 640px) {
+  .cc-logo {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+  }
+
+  .cc-logo-image {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+
+/* =========================================================
+   AJUSTE FINAL HEADER - CONTENIDO DENTRO DE LOS LIMITES
+========================================================= */
+
+.cc-header {
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.cc-header-inner {
+  width: calc(100% - 40px);
+  max-width: 1240px;
+  height: 64px;
+  margin: 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.cc-header-brand,
+.cc-header-right {
+  min-width: 0;
+}
+
+.cc-header-brand {
+  flex-shrink: 1;
+}
+
+.cc-header-right {
+  flex-shrink: 0;
+}
+
+.cc-logo {
+  width: 58px;
+  height: 46px;
+  min-width: 58px;
+  flex-shrink: 0;
+}
+
+.cc-logo-image {
+  width: 58px;
+  height: 46px;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.cc-logout-button {
+  flex-shrink: 0;
+}
+
+@media (max-width: 1100px) {
+  .cc-header-inner {
+    width: calc(100% - 28px);
+  }
+
+  .cc-department-badge {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .cc-header-inner {
+    width: calc(100% - 20px);
+    height: 60px;
+  }
+
+  .cc-logo {
+    width: 52px;
+    height: 40px;
+    min-width: 52px;
+  }
+
+  .cc-logo-image {
+    width: 52px;
+    height: 40px;
   }
 }

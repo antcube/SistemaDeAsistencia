@@ -5,6 +5,14 @@ import {
   useState,
 } from "react";
 
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileSpreadsheet,
+  LoaderCircle,
+  Target,
+} from "lucide-react";
+
 import reportService from "../services/reportService";
 import circleService from "../services/circleService";
 import { useAuth } from "../context/AuthContext";
@@ -241,6 +249,9 @@ const MonthlyReport = () => {
 
   const [error, setError] =
     useState("");
+
+  const [exportingExcel, setExportingExcel] =
+    useState(false);
 
   /*
    * Los gestores solamente deben recibir los círculos
@@ -727,16 +738,9 @@ const MonthlyReport = () => {
       return;
     }
 
-    const button = document.getElementById(
-      "monthly-report-download-excel"
-    );
-
     try {
-      if (button) {
-        button.disabled = true;
-        button.dataset.originalText = button.innerHTML;
-        button.innerHTML = "⏳ Preparando Excel...";
-      }
+      setExportingExcel(true);
+      setError("");
 
       const ExcelJS = await loadExcelJS();
       const workbook = new ExcelJS.Workbook();
@@ -1605,10 +1609,7 @@ while (
           "No se pudo generar el Excel del reporte."
       );
     } finally {
-      if (button) {
-        button.disabled = false;
-        button.innerHTML = "📊 Descargar Excel";
-      }
+      setExportingExcel(false);
     }
   };
 
@@ -1642,33 +1643,43 @@ while (
 
           <div className="monthly-report-month">
 
-            <button
-              type="button"
-              onClick={() =>
-                moveMonth(-1)
-              }
-              className="navigation-arrow"
-              aria-label="Mes anterior"
-            >
-              ‹
-            </button>
+            <div className="monthly-report-month-navigation">
 
-            <div className="monthly-report-title">
-              <h2>
-                {reportTitle}
-              </h2>
+              <button
+                type="button"
+                onClick={() =>
+                  moveMonth(-1)
+                }
+                className="navigation-arrow"
+                aria-label="Mes anterior"
+              >
+                <ChevronLeft
+                  className="monthly-report-arrow-icon"
+                  strokeWidth={3}
+                />
+              </button>
+
+              <div className="monthly-report-title">
+                <h2>
+                  {reportTitle}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  moveMonth(1)
+                }
+                className="navigation-arrow"
+                aria-label="Mes siguiente"
+              >
+                <ChevronRight
+                  className="monthly-report-arrow-icon"
+                  strokeWidth={3}
+                />
+              </button>
+
             </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                moveMonth(1)
-              }
-              className="navigation-arrow"
-              aria-label="Mes siguiente"
-            >
-              ›
-            </button>
 
             <button
               type="button"
@@ -1684,7 +1695,13 @@ while (
                 );
               }}
             >
-              Hoy
+              <span className="monthly-report-today-icon">
+                <Target
+                  size={15}
+                  strokeWidth={2.2}
+                />
+              </span>
+              <span>Hoy</span>
             </button>
 
           </div>
@@ -1694,11 +1711,34 @@ while (
             <button
               id="monthly-report-download-excel"
               type="button"
-              className="secondary-button monthly-report-download-btn"
+              className="monthly-report-download-btn"
               onClick={downloadExcel}
-              disabled={loading || !filteredMembers.length}
+              disabled={
+                loading ||
+                exportingExcel ||
+                !filteredMembers.length
+              }
             >
-              📊 Descargar Excel
+              <span className="monthly-report-download-icon">
+                {exportingExcel ? (
+                  <LoaderCircle
+                    size={16}
+                    strokeWidth={2.2}
+                    className="monthly-report-download-spinner"
+                  />
+                ) : (
+                  <FileSpreadsheet
+                    size={16}
+                    strokeWidth={2.1}
+                  />
+                )}
+              </span>
+
+              <span>
+                {exportingExcel
+                  ? "Preparando Excel..."
+                  : "Descargar Excel"}
+              </span>
             </button>
 
           </div>

@@ -13,6 +13,7 @@ const CalendarGrid = ({
   month,
   meetings = [],
   loading = false,
+  todayFocusKey = 0,
   onMeetingClick,
   onCreateMeeting,
 }) => {
@@ -57,7 +58,11 @@ const CalendarGrid = ({
 
             return (
               <CalendarDay
-                key={dateKey}
+                key={`${dateKey}-${
+                  isTodayDate(day.date)
+                    ? todayFocusKey
+                    : 0
+                }`}
                 date={dateKey}
                 dayNumber={
                   day.date.getDate()
@@ -68,6 +73,10 @@ const CalendarGrid = ({
                 isToday={isTodayDate(
                   day.date
                 )}
+                focusToday={
+                  isTodayDate(day.date) &&
+                  todayFocusKey > 0
+                }
                 meetings={
                   meetingsByDate[
                     dateKey

@@ -1,61 +1,6 @@
 import { NavLink } from "react-router-dom";
+import { CalendarRange, FileText } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-
-const CalendarIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-[16px] w-[16px]"
-  >
-    <rect
-      x="3"
-      y="4.5"
-      width="18"
-      height="16"
-      rx="2.5"
-    />
-
-    <path d="M7 2.5v4M17 2.5v4M3 9h18" />
-  </svg>
-);
-
-const ChartIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-[16px] w-[16px]"
-  >
-    <path d="M4 19V5M4 19h16" />
-
-    <rect
-      x="7"
-      y="12"
-      width="3"
-      height="5"
-      rx=".5"
-    />
-
-    <rect
-      x="12"
-      y="9"
-      width="3"
-      height="8"
-      rx=".5"
-    />
-
-    <rect
-      x="17"
-      y="6"
-      width="3"
-      height="11"
-      rx=".5"
-    />
-  </svg>
-);
 
 const VideoIcon = () => (
   <svg
@@ -103,13 +48,13 @@ const adminItems = [
   {
     to: "/calendar",
     label: "Calendario de Reuniones",
-    icon: CalendarIcon,
+    icon: CalendarRange,
   },
 
   {
     to: "/reports",
     label: "Reporte Mensual",
-    icon: ChartIcon,
+    icon: FileText,
   },
 
   {
@@ -129,13 +74,13 @@ const managerItems = [
   {
     to: "/calendar",
     label: "Calendario de Reuniones",
-    icon: CalendarIcon,
+    icon: CalendarRange,
   },
 
   {
     to: "/reports",
     label: "Reporte Mensual",
-    icon: ChartIcon,
+    icon: FileText,
   },
 
   {
@@ -196,7 +141,10 @@ const Sidebar = () => {
                 isActive,
               }) => (
                 <>
-                  <Icon />
+                  <Icon
+                    className="h-[16px] w-[16px]"
+                    strokeWidth={1.9}
+                  />
 
                   <span>
                     {label}
