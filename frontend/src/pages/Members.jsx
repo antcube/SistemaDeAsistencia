@@ -5,9 +5,9 @@ import {
 
 import userService from "../services/userService";
 import circleService from "../services/circleService";
-import importService from "../services/importService";
 import { useAuth } from "../context/AuthContext";
 import NewAmbassadorModal from "../components/NewAmbassadorModal";
+import ExcelImportModal from "../components/ExcelImportModal";
 
 const EMPTY_FORM = {
   doc: "",
@@ -121,9 +121,14 @@ const Members = () => {
   const [form, setForm] =
     useState(EMPTY_FORM);
 
+  const [fileInputKey, setFileInputKey] =
+    useState(0);
+
   const [columnView, setColumnView] =
     useState(0);
 
+  const [excelImportOpen, setExcelImportOpen] = useState(false);
+  const [pendingExcelFile, setPendingExcelFile] = useState(null);
   const [newAmbassadorOpen, setNewAmbassadorOpen] = useState(false);
 
   /*
@@ -459,20 +464,16 @@ const Members = () => {
     };
 
 
-  const handleDownload =
-    async () => {
-      try {
-        setError("");
+  const handleUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-        await importService.downloadTemplate();
-      } catch (err) {
-        setError(
-          err?.message ||
-            "No se pudo descargar la plantilla."
-        );
-      }
-    };
-
+    setError("");
+    setMessage("");
+    setPendingExcelFile(file);
+    setExcelImportOpen(true);
+    setFileInputKey((value) => value + 1);
+  };
 
 
 
@@ -690,17 +691,19 @@ const Members = () => {
             </div>
           )}
 
-          {/* PLANTILLA */}
+          {/* SUBIR EXCEL */}
 
-          <button
-            type="button"
-            onClick={
-              handleDownload
-            }
-            className="h-10 rounded-lg border border-emerald-300 bg-white px-4 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50"
-          >
-            📥 Plantilla Excel
-          </button>
+          <label className="flex h-10 cursor-pointer items-center justify-center rounded-lg border border-emerald-600 bg-emerald-600 px-4 text-xs font-bold text-white transition hover:bg-emerald-700">
+            📤 Subir con Excel
+
+            <input
+              key={fileInputKey}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleUpload}
+              hidden
+            />
+          </label>
 
           {isGeneralAdmin && (
             <button
@@ -1127,6 +1130,24 @@ const Members = () => {
       {/* =======================================================
           GESTOR DE CÍRCULOS — SOLO ADMIN PRINCIPAL
       ======================================================== */}
+
+      {excelImportOpen && pendingExcelFile && (
+        <ExcelImportModal
+          file={pendingExcelFile}
+          circles={circles}
+          onClose={() => {
+            setExcelImportOpen(false);
+            setPendingExcelFile(null);
+          }}
+          onCompleted={async (result) => {
+            setMessage(`Importación completada: ${result.inserted || 0} miembros agregados. ${result.updated || 0} actualizados. ${result.skipped || 0} omitidos.`);
+            setExcelImportOpen(false);
+            setPendingExcelFile(null);
+            setPage(1);
+            await loadUsers();
+          }}
+        />
+      )}
 
       {newAmbassadorOpen && isGeneralAdmin && (
         <NewAmbassadorModal

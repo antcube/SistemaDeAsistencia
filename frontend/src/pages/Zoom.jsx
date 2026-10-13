@@ -120,7 +120,13 @@ import {
 
               if (meetings.length > 0) {
                 setApiMeetingId((current) => current || meetings[0].meetingId || "");
-                setApiLinkType((current) => current || meetings[0].type || "");
+                setApiLinkType(
+                  (current) =>
+                    current ||
+                    meetings[0]?.types?.[0] ||
+                    meetings[0]?.type ||
+                    ""
+                );
               }
             } catch (error) {
               console.error(
@@ -139,6 +145,14 @@ import {
           (item) => String(item.meetingId) === String(apiMeetingId)
         ) || null;
 
+      const selectedApiTypes =
+        Array.isArray(selectedApiMeeting?.types) &&
+        selectedApiMeeting.types.length > 0
+          ? selectedApiMeeting.types
+          : selectedApiMeeting?.type
+            ? [selectedApiMeeting.type]
+            : [];
+
       const handleApiMeetingChange = (event) => {
         const meetingId = event.target.value;
         const selected = apiMeetings.find(
@@ -146,7 +160,11 @@ import {
         );
 
         setApiMeetingId(meetingId);
-        setApiLinkType(selected?.type || "");
+        setApiLinkType(
+          selected?.types?.[0] ||
+            selected?.type ||
+            ""
+        );
         setApiResult(null);
       };
 
@@ -276,6 +294,7 @@ import {
               await zoomService.previewApi({
                 meetingId: apiMeetingId,
                 date: apiDate,
+                sessionType: apiLinkType,
               });
 
             setApiResult(response);
@@ -304,6 +323,7 @@ import {
               await zoomService.syncApi({
                 meetingId: apiMeetingId,
                 date: apiDate,
+                sessionType: apiLinkType,
               });
 
             setApiResult(response);
@@ -338,6 +358,7 @@ import {
             const refreshed = await zoomService.previewApi({
               meetingId: apiMeetingId,
               date: apiDate,
+              sessionType: apiLinkType,
             });
 
             setApiResult(refreshed);
@@ -374,6 +395,7 @@ import {
               await zoomService.finalizeApi({
                 meetingId: apiMeetingId,
                 date: apiDate,
+                sessionType: apiLinkType,
               });
 
             setApiResult(response);
@@ -452,8 +474,8 @@ import {
                       <option value="">No hay Meeting IDs configurados</option>
                     )}
                     {apiMeetings.map((item) => (
-                      <option key={`${item.type}-${item.meetingId}`} value={item.meetingId}>
-                        {item.meetingId}
+                      <option key={item.key || `${item.type}-${item.meetingId}`} value={item.meetingId}>
+                        {item.meetingId} — {item.label || item.type}
                       </option>
                     ))}
                   </select>
@@ -461,10 +483,40 @@ import {
 
                 <label>
                   Pertenece a
+                  {selectedApiTypes.length > 1 ? (
+                    <select
+                      value={apiLinkType}
+                      onChange={(event) => {
+                        setApiLinkType(event.target.value);
+                        setApiResult(null);
+                      }}
+                      disabled={apiProcessing}
+                    >
+                      {selectedApiTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={selectedApiMeeting?.label || apiLinkType || ""}
+                      readOnly
+                      placeholder="Selecciona un Meeting ID"
+                      className="zoom-api-readonly"
+                    />
+                  )}
+                </label>
+
+                <label>
+                  Alcance
                   <input
-                    value={selectedApiMeeting?.type || apiLinkType || ""}
+                    value={
+                      selectedApiMeeting?.circles?.length
+                        ? selectedApiMeeting.circles.join(", ")
+                        : "General"
+                    }
                     readOnly
-                    placeholder="Selecciona un Meeting ID"
                     className="zoom-api-readonly"
                   />
                 </label>

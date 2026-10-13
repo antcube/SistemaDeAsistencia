@@ -29,6 +29,154 @@ const JUSTIFICATION_LIMITS = {
   GENERAL: 3,
 };
 
+const DOCUMENT_TYPES = {
+  DNI: {
+    value: "DNI",
+    label: "DNI",
+    maxLength: 8,
+    numericOnly: true,
+  },
+  CE: {
+    value: "CE",
+    label: "CARNET DE EXTRANJERIA",
+    maxLength: 9,
+    numericOnly: false,
+  },
+  PASAPORTE: {
+    value: "PASAPORTE",
+    label: "PASAPORTE",
+    maxLength: 9,
+    numericOnly: false,
+  },
+};
+
+const normalizeDocumentType = (value) => {
+  const normalized = String(value || "DNI")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, " ");
+
+  if (normalized === "DNI") {
+    return "DNI";
+  }
+
+  if (
+    normalized === "CE" ||
+    normalized === "CARNET DE EXTRANJERIA" ||
+    normalized === "CARNET EXTRANJERIA"
+  ) {
+    return "CE";
+  }
+
+  if (normalized === "PASAPORTE" || normalized === "PASSPORT") {
+    return "PASAPORTE";
+  }
+
+  return "";
+};
+
+const sanitizeDocumentNumber = (documentType, value) => {
+  const normalizedType = normalizeDocumentType(documentType);
+  const raw = String(value || "").trim().toUpperCase();
+
+  if (normalizedType === "DNI") {
+    return raw.replace(/\D/g, "").slice(0, 8);
+  }
+
+  return raw.replace(/[^A-Z0-9]/g, "").slice(0, 9);
+};
+
+const validateDocumentNumber = (documentType, value) => {
+  const normalizedType = normalizeDocumentType(documentType);
+
+  if (!normalizedType) {
+    return {
+      valid: false,
+      message: "Selecciona un tipo de documento válido.",
+    };
+  }
+
+  const normalizedNumber = sanitizeDocumentNumber(normalizedType, value);
+
+  if (normalizedType === "DNI") {
+    if (!/^\d{8}$/.test(normalizedNumber)) {
+      return {
+        valid: false,
+        message: "El DNI debe tener exactamente 8 números.",
+      };
+    }
+  } else if (!/^[A-Z0-9]{1,9}$/.test(normalizedNumber)) {
+    return {
+      valid: false,
+      message:
+        normalizedType === "CE"
+          ? "El Carnet de Extranjería debe tener como máximo 9 caracteres entre letras y números."
+          : "El Pasaporte debe tener como máximo 9 caracteres entre letras y números.",
+    };
+  }
+
+  return {
+    valid: true,
+    documentType: normalizedType,
+    documentNumber: normalizedNumber,
+    label: DOCUMENT_TYPES[normalizedType].label,
+  };
+};
+
+const escapeRegex = (value) => {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+const buildDocumentLookupRegex = (documentType, documentNumber) => {
+  const escapedNumber = escapeRegex(documentNumber);
+
+  if (documentType === "DNI") {
+    return new RegExp(
+      `^\\s*(?:(?:DNI)[\\s:.-]*)?${escapedNumber}\\s*$`,
+      "i"
+    );
+  }
+
+  if (documentType === "CE") {
+    return new RegExp(
+      `^\\s*(?:(?:CE|CARNET\\s+DE\\s+EXTRANJER[IÍ]A|CARNET\\s+EXTRANJER[IÍ]A|NIE)[\\s:.-]*)?${escapedNumber}\\s*$`,
+      "i"
+    );
+  }
+
+  return new RegExp(
+    `^\\s*(?:(?:PASAPORTE|PASSPORT)[\\s:.-]*)?${escapedNumber}\\s*$`,
+    "i"
+  );
+};
+
+const findUserByDocument = async (documentType, documentNumber) => {
+  const validation = validateDocumentNumber(documentType, documentNumber);
+
+  if (!validation.valid) {
+    return {
+      user: null,
+      validation,
+    };
+  }
+
+  const user = await User.findOne({
+    doc: {
+      $regex: buildDocumentLookupRegex(
+        validation.documentType,
+        validation.documentNumber
+      ),
+    },
+  });
+
+  return {
+    user,
+    validation,
+  };
+};
+
 /**
  * ============================================================
  * NORMALIZAR ESTADO
@@ -1374,6 +1522,7 @@ const getUserMonthlyAttendanceByDni =
     try {
       const {
         dni,
+        documentType = "DNI",
         year,
         month,
       } = req.query;
@@ -1385,7 +1534,7 @@ const getUserMonthlyAttendanceByDni =
       ) {
         return res.status(400).json({
           message:
-            "dni, year y month son obligatorios.",
+            "documento, year y month son obligatorios.",
         });
       }
 
@@ -1402,16 +1551,26 @@ const getUserMonthlyAttendanceByDni =
         });
       }
 
-      const user =
-        await User.findOne({
-          doc:
-            String(dni).trim(),
+      const documentLookup =
+        await findUserByDocument(
+          documentType,
+          dni
+        );
+
+      if (!documentLookup.validation.valid) {
+        return res.status(400).json({
+          message:
+            documentLookup.validation.message,
         });
+      }
+
+      const user =
+        documentLookup.user;
 
       if (!user) {
         return res.status(404).json({
           message:
-            "No se encontró ningún miembro con ese DNI.",
+            "No se encontró ningún miembro con ese documento.",
         });
       }
 
@@ -1486,6 +1645,15 @@ const getUserMonthlyAttendanceByDni =
 
           doc:
             user.doc,
+
+          documentType:
+            documentLookup.validation.documentType,
+
+          documentTypeLabel:
+            documentLookup.validation.label,
+
+          documentNumber:
+            documentLookup.validation.documentNumber,
 
           name:
             user.name,
@@ -1622,6 +1790,7 @@ const registerAttendanceByQr =
       const {
         meetingId,
         dni,
+        documentType = "DNI",
       } = req.body;
 
       if (
@@ -1630,7 +1799,7 @@ const registerAttendanceByQr =
       ) {
         return res.status(400).json({
           message:
-            "meetingId y dni son obligatorios.",
+            "meetingId y documento son obligatorios.",
         });
       }
 
@@ -1714,16 +1883,26 @@ const registerAttendanceByQr =
        * --------------------------------------------------------
        */
 
-      const user =
-        await User.findOne({
-          doc:
-            String(dni).trim(),
+      const documentLookup =
+        await findUserByDocument(
+          documentType,
+          dni
+        );
+
+      if (!documentLookup.validation.valid) {
+        return res.status(400).json({
+          message:
+            documentLookup.validation.message,
         });
+      }
+
+      const user =
+        documentLookup.user;
 
       if (!user) {
         return res.status(404).json({
           message:
-            "No se encontró ningún miembro con ese DNI.",
+            "No se encontró ningún miembro con ese documento.",
         });
       }
 
@@ -1889,6 +2068,15 @@ const registerAttendanceByQr =
         user: {
           doc:
             user.doc,
+
+          documentType:
+            documentLookup.validation.documentType,
+
+          documentTypeLabel:
+            documentLookup.validation.label,
+
+          documentNumber:
+            documentLookup.validation.documentNumber,
 
           name:
             user.name,

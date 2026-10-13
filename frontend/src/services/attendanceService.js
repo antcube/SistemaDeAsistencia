@@ -53,7 +53,8 @@ const attendanceService = {
   async getUserAttendance(
     doc,
     year,
-    month
+    month,
+    documentType = "DNI"
   ) {
     const params =
       new URLSearchParams();
@@ -61,6 +62,11 @@ const attendanceService = {
     params.set(
       "dni",
       String(doc).trim()
+    );
+
+    params.set(
+      "documentType",
+      String(documentType || "DNI").trim()
     );
 
     params.set(
@@ -178,13 +184,15 @@ const attendanceService = {
 
   async registerByQr(
     meetingId,
-    dni
+    dni,
+    documentType = "DNI"
   ) {
     return api.post(
       "/attendance/qr",
       {
         meetingId,
         dni,
+        documentType,
       }
     );
   },

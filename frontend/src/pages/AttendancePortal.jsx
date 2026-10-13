@@ -55,6 +55,69 @@ const GENERAL_JUSTIFICATION_CATEGORIES = [
   "ANUNCIOS CORPORATIVOS",
 ];
 
+const DOCUMENT_TYPES = [
+  {
+    value: "DNI",
+    label: "DNI",
+    maxLength: 8,
+    inputMode: "numeric",
+    placeholder: "77777777",
+  },
+  {
+    value: "CE",
+    label: "CARNET DE EXTRANJERÍA",
+    maxLength: 9,
+    inputMode: "text",
+    placeholder: "ABC123456",
+  },
+  {
+    value: "PASAPORTE",
+    label: "PASAPORTE",
+    maxLength: 9,
+    inputMode: "text",
+    placeholder: "AB1234567",
+  },
+];
+
+const getDocumentConfig = (documentType) => {
+  return (
+    DOCUMENT_TYPES.find(
+      (item) => item.value === documentType
+    ) || DOCUMENT_TYPES[0]
+  );
+};
+
+const sanitizeDocumentValue = (documentType, value) => {
+  const config = getDocumentConfig(documentType);
+  const raw = String(value || "").toUpperCase();
+
+  if (documentType === "DNI") {
+    return raw.replace(/\D/g, "").slice(0, config.maxLength);
+  }
+
+  return raw.replace(/[^A-Z0-9]/g, "").slice(0, config.maxLength);
+};
+
+const validateDocumentValue = (documentType, value) => {
+  const normalized = sanitizeDocumentValue(documentType, value);
+
+  if (documentType === "DNI") {
+    if (!/^\d{8}$/.test(normalized)) {
+      return "El DNI debe tener exactamente 8 números.";
+    }
+
+    return "";
+  }
+
+  if (!/^[A-Z0-9]{1,9}$/.test(normalized)) {
+    return documentType === "CE"
+      ? "El Carnet de Extranjería debe tener como máximo 9 caracteres entre letras y números."
+      : "El Pasaporte debe tener como máximo 9 caracteres entre letras y números.";
+  }
+
+  return "";
+};
+
 const LEADERSHIP_JUSTIFICATION_LIMIT = 1;
 const GENERAL_JUSTIFICATION_LIMIT = 3;
 
@@ -277,8 +340,14 @@ const AttendancePortal = () => {
       today.getMonth() + 1
     );
 
+  const [documentType, setDocumentType] =
+    useState("DNI");
+
   const [dni, setDni] =
     useState("");
+
+  const [searchedDocumentType, setSearchedDocumentType] =
+    useState("DNI");
 
   const [searchedDni, setSearchedDni] =
     useState("");
@@ -338,6 +407,9 @@ const AttendancePortal = () => {
 
   const [qrMeeting, setQrMeeting] =
     useState(null);
+
+  const [qrDocumentType, setQrDocumentType] =
+    useState("DNI");
 
   const [qrDni, setQrDni] =
     useState("");
@@ -480,9 +552,10 @@ const AttendancePortal = () => {
       event.preventDefault();
 
       const cleanDni =
-        String(
-          qrDni || ""
-        ).trim();
+        sanitizeDocumentValue(
+          qrDocumentType,
+          qrDni
+        );
 
       const meetingId =
         qrMeeting?._id ||
@@ -496,9 +569,15 @@ const AttendancePortal = () => {
         return;
       }
 
-      if (!cleanDni) {
+      const documentValidationError =
+        validateDocumentValue(
+          qrDocumentType,
+          cleanDni
+        );
+
+      if (documentValidationError) {
         setQrError(
-          "Ingresa tu DNI para registrar tu asistencia."
+          documentValidationError
         );
         setQrDuplicate(false);
         setQrUsername("");
@@ -555,7 +634,8 @@ const AttendancePortal = () => {
         const response =
           await attendanceService.registerByQr(
             meetingId,
-            cleanDni
+            cleanDni,
+            qrDocumentType
           );
 
         const data =
@@ -579,7 +659,7 @@ const AttendancePortal = () => {
         if (data?.alreadyRegistered) {
           setQrDuplicate(true);
           setQrError(
-            "Este DNI ya registró su asistencia en esta sesión. Su estado fue actualizado a Asistió."
+            "Este documento ya registró su asistencia en esta sesión. Su estado fue actualizado a Asistió."
           );
           setQrSuccess("");
         } else {
@@ -658,16 +738,24 @@ const AttendancePortal = () => {
         dniToSearch =
           searchedDni,
         yearToLoad = year,
-        monthToLoad = month
+        monthToLoad = month,
+        documentTypeToSearch = searchedDocumentType || documentType
       ) => {
         const cleanDni =
-          String(
-            dniToSearch || ""
-          ).trim();
+          sanitizeDocumentValue(
+            documentTypeToSearch,
+            dniToSearch
+          );
 
-        if (!cleanDni) {
+        const documentValidationError =
+          validateDocumentValue(
+            documentTypeToSearch,
+            cleanDni
+          );
+
+        if (documentValidationError) {
           setError(
-            "Ingresa tu DNI para consultar tu asistencia."
+            documentValidationError
           );
           setLoginButtonError(true);
           window.setTimeout(() => setLoginButtonError(false), 650);
@@ -688,7 +776,8 @@ const AttendancePortal = () => {
             await attendanceService.getUserAttendance(
               cleanDni,
               yearToLoad,
-              monthToLoad
+              monthToLoad,
+              documentTypeToSearch
             );
 
           const data =
@@ -710,6 +799,10 @@ const AttendancePortal = () => {
 
           setSearchedDni(
             cleanDni
+          );
+
+          setSearchedDocumentType(
+            documentTypeToSearch
           );
 
           // Cada carga exitosa representa la última actualización
@@ -739,6 +832,8 @@ const AttendancePortal = () => {
       },
       [
         searchedDni,
+        searchedDocumentType,
+        documentType,
         year,
         month,
       ]
@@ -749,7 +844,10 @@ const AttendancePortal = () => {
       event.preventDefault();
 
       await loadAttendance(
-        dni
+        dni,
+        year,
+        month,
+        documentType
       );
     };
 
@@ -760,7 +858,10 @@ const AttendancePortal = () => {
       }
 
       await loadAttendance(
-        searchedDni
+        searchedDni,
+        year,
+        month,
+        searchedDocumentType
       );
     };
 
@@ -799,7 +900,8 @@ const AttendancePortal = () => {
       loadAttendance(
         searchedDni,
         nextYear,
-        nextMonth
+        nextMonth,
+        searchedDocumentType
       );
     }
   };
@@ -833,7 +935,8 @@ const AttendancePortal = () => {
         const response = await attendanceService.getUserAttendance(
           searchedDni,
           checkYear,
-          checkMonth
+          checkMonth,
+          searchedDocumentType
         );
 
         const data = response?.data || response;
@@ -2103,13 +2206,38 @@ const AttendancePortal = () => {
                   <span>QR ACTIVO PARA REGISTRO</span>
                 </div>
 
+                <div className="qr-document-type-field">
+                  <label htmlFor="qr-document-type">
+                    TIPO DE DOCUMENTO
+                  </label>
+
+                  <select
+                    id="qr-document-type"
+                    value={qrDocumentType}
+                    onChange={(event) => {
+                      setQrDocumentType(event.target.value);
+                      setQrDni("");
+                      setQrError("");
+                      setQrSuccess("");
+                      setQrDuplicate(false);
+                      setQrUsername("");
+                    }}
+                  >
+                    {DOCUMENT_TYPES.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <label htmlFor="qr-attendance-dni">
-                  DNI / N° DE DOCUMENTO
+                  NÚMERO DE DOCUMENTO
                 </label>
 
                 <div className="attendance-portal-input-wrap">
                   <span className="qr-dni-icon-wrap">
-                    <img src={dniIcon} alt="DNI" className="qr-dni-icon" />
+                    <img src={dniIcon} alt="Documento" className="qr-dni-icon" />
                   </span>
 
                   <input
@@ -2117,16 +2245,21 @@ const AttendancePortal = () => {
                     type="text"
                     value={qrDni}
                     onChange={(event) => {
-                      setQrDni(event.target.value.replace(/\D/g, ""));
+                      setQrDni(
+                        sanitizeDocumentValue(
+                          qrDocumentType,
+                          event.target.value
+                        )
+                      );
                       setQrError("");
                       setQrSuccess("");
                       setQrDuplicate(false);
                       setQrUsername("");
                     }}
-                    placeholder="Ingresa tu DNI"
-                    maxLength={12}
+                    placeholder={getDocumentConfig(qrDocumentType).placeholder}
+                    maxLength={getDocumentConfig(qrDocumentType).maxLength}
                     autoComplete="off"
-                    inputMode="numeric"
+                    inputMode={getDocumentConfig(qrDocumentType).inputMode}
                     autoFocus
                   />
                 </div>
@@ -2143,7 +2276,7 @@ const AttendancePortal = () => {
                     <div>
                       <strong>
                         {qrError.toLowerCase().includes("no se encontró")
-                          ? "DNI NO ENCONTRADO"
+                          ? "DOCUMENTO NO ENCONTRADO"
                           : "NO SE PUDO REGISTRAR"}
                       </strong>
                       <small>{qrError}</small>
@@ -2174,7 +2307,7 @@ const AttendancePortal = () => {
                         <span className="qr-alert-icon">✓</span>
                         <div>
                           <strong>ASISTENCIA YA REGISTRADA</strong>
-                          <small>Este DNI ya registró su asistencia en esta sesión.</small>
+                          <small>Este documento ya registró su asistencia en esta sesión.</small>
                         </div>
                       </div>
                     ) : (
@@ -2251,7 +2384,7 @@ const AttendancePortal = () => {
                   </h1>
 
                   <p>
-                    Ingresa con tu DNI para consultar tu historial de
+                    Selecciona tu tipo de documento e ingresa el número para consultar tu historial de
                     asistencias.
                   </p>
                 </div>
@@ -2260,13 +2393,36 @@ const AttendancePortal = () => {
                   onSubmit={handleSubmit}
                   className="attendance-portal-form attendance-login-form"
                 >
+                  <div className="attendance-document-type-field">
+                    <label htmlFor="attendance-document-type">
+                      Tipo de documento
+                    </label>
+
+                    <select
+                      id="attendance-document-type"
+                      value={documentType}
+                      onChange={(event) => {
+                        setDocumentType(event.target.value);
+                        setDni("");
+                        setError("");
+                        setLoginButtonError(false);
+                      }}
+                    >
+                      {DOCUMENT_TYPES.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <label htmlFor="attendance-dni">
-                    DNI / N° de documento
+                    Número de documento
                   </label>
 
                   <div className="attendance-login-input-wrap">
                     <div className="attendance-login-input-icon">
-                    <img src={dniIcon} alt="DNI Icon" className="attendance-dni-icon" />
+                    <img src={dniIcon} alt="Documento" className="attendance-dni-icon" />
                     </div>
 
                     <input
@@ -2274,12 +2430,17 @@ const AttendancePortal = () => {
                       type="text"
                       value={dni}
                       onChange={(event) =>
-                        setDni(event.target.value)
+                        setDni(
+                          sanitizeDocumentValue(
+                            documentType,
+                            event.target.value
+                          )
+                        )
                       }
-                      placeholder="Ingresa tu DNI"
-                      maxLength={12}
+                      placeholder={getDocumentConfig(documentType).placeholder}
+                      maxLength={getDocumentConfig(documentType).maxLength}
                       autoComplete="off"
-                      inputMode="numeric"
+                      inputMode={getDocumentConfig(documentType).inputMode}
                     />
                   </div>
 
@@ -2369,6 +2530,10 @@ const AttendancePortal = () => {
   setMember(null);
   setMeetings([]);
   setSearched(false);
+  setSearchedDni("");
+  setSearchedDocumentType("DNI");
+  setDocumentType("DNI");
+  setDni("");
   setError("");
 }}>
   <LogOut size={16} />
@@ -2384,7 +2549,7 @@ const AttendancePortal = () => {
               <div>
                 <span className="portal-eyebrow">Hola de nuevo</span>
                 <h1>{member.name || member.nombre || "Embajador"}</h1>
-                <p>DNI {searchedDni}</p>
+                <p>{getDocumentConfig(searchedDocumentType).label} {searchedDni}</p>
               </div>
             </div>
 
