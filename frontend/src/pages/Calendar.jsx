@@ -66,6 +66,7 @@ const Calendar = () => {
   const today = new Date();
 
   const isMainAdmin =
+    String(admin?.role || "").trim() === "Administrador General" ||
     String(admin?.adminId || "").trim() === "ADM-001";
 
   const isCircleManager =

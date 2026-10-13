@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
+  BadgeDollarSign,
   BookText,
   CalendarClock,
   ChartColumnBig,
@@ -42,11 +43,13 @@ const Header = () => {
       .toUpperCase() ||
     "AP";
 
-  const isMainAdmin =
+  const isGeneralAdmin =
+    String(
+      admin?.role || ""
+    ).trim() === "Administrador General" ||
     String(
       admin?.adminId || ""
-    ).trim() ===
-    "ADM-001";
+    ).trim() === "ADM-001";
 
   const isCircleManager =
     String(
@@ -75,6 +78,11 @@ const Header = () => {
       to: "/programaciones",
       label: "Programaciones",
       icon: CalendarClock,
+    },
+    {
+      to: "/bonos",
+      label: "Bonos",
+      icon: BadgeDollarSign,
     },
     {
       to: "/audit",
@@ -168,7 +176,7 @@ const Header = () => {
                   {initials}
                 </button>
 
-                {open && isMainAdmin && (
+                {open && isGeneralAdmin && (
 
                   <div className="cc-admin-menu">
 

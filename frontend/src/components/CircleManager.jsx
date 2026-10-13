@@ -18,7 +18,9 @@ const CircleManager = ({ onClose, onCirclesChanged }) => {
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [deletingMembers, setDeletingMembers] = useState(false);
 
-  const isMainAdmin = String(admin?.adminId || "").trim() === "ADM-001";
+  const isMainAdmin =
+    String(admin?.role || "").trim() === "Administrador General" ||
+    String(admin?.adminId || "").trim() === "ADM-001";
 
   const loadCircles = async () => {
     try {

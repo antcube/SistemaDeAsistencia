@@ -15,6 +15,7 @@ import AdminUsers from "./pages/AdminUsers.jsx";
 import Programaciones from "./pages/Programaciones.jsx";
 import Audit from "./pages/Audit.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import Bonos from "./pages/Bonos.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AdminLayout from "./components/AdminLayout.jsx";
@@ -86,6 +87,11 @@ const App = () => {
             <Route
               path="/programaciones"
               element={<Programaciones />}
+            />
+
+            <Route
+              path="/bonos"
+              element={<Bonos />}
             />
 
             <Route

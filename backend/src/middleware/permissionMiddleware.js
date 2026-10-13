@@ -3,7 +3,10 @@ const isGlobalAdministrator = (user) => {
     return false;
   }
 
-  return String(user.adminId || "").trim() === "ADM-001";
+  const role = String(user.role || "").trim();
+  const adminId = String(user.adminId || "").trim();
+
+  return role === "Administrador General" || adminId === "ADM-001";
 };
 
 const isCircleManager = (user) => {
@@ -96,7 +99,7 @@ const canManageAttendance = (user, circle) => {
 const requireGlobalAdministrator = (req, res, next) => {
   if (!isGlobalAdministrator(req.user)) {
     return res.status(403).json({
-      message: "No tienes permisos de Administrador Principal.",
+      message: "No tienes permisos de Administrador General.",
     });
   }
 

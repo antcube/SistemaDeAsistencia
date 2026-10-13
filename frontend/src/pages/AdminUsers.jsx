@@ -79,6 +79,7 @@ const AdminUsers = () => {
   const { admin: currentAdmin } = useAuth();
 
   const isMainAdmin =
+    String(currentAdmin?.role || "").trim() === "Administrador General" ||
     String(currentAdmin?.adminId || "").trim() === "ADM-001";
 
   const summary = useMemo(() => {

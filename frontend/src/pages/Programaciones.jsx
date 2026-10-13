@@ -235,6 +235,7 @@ const Programaciones = () => {
     useState("");
 
   const isMainAdmin =
+    String(admin?.role || "").trim() === "Administrador General" ||
     String(admin?.adminId || "").trim() === "ADM-001";
 
   const assignedCircleNames = useMemo(() => {

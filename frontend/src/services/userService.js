@@ -58,6 +58,13 @@ const userService = {
     );
   },
 
+  async registerNewAmbassador(id, admissionDate) {
+    return api.post(
+      `/users/${id}/ambassador-trial`,
+      { admissionDate }
+    );
+  },
+
   async createUser(data) {
     return api.post(
       "/users",

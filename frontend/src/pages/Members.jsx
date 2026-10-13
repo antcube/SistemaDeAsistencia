@@ -7,7 +7,7 @@ import userService from "../services/userService";
 import circleService from "../services/circleService";
 import importService from "../services/importService";
 import { useAuth } from "../context/AuthContext";
-import ExcelImportModal from "../components/ExcelImportModal";
+import NewAmbassadorModal from "../components/NewAmbassadorModal";
 
 const EMPTY_FORM = {
   doc: "",
@@ -121,14 +121,10 @@ const Members = () => {
   const [form, setForm] =
     useState(EMPTY_FORM);
 
-  const [fileInputKey, setFileInputKey] =
-    useState(0);
-
   const [columnView, setColumnView] =
     useState(0);
 
-  const [excelImportOpen, setExcelImportOpen] = useState(false);
-  const [pendingExcelFile, setPendingExcelFile] = useState(null);
+  const [newAmbassadorOpen, setNewAmbassadorOpen] = useState(false);
 
   /*
    * =========================================================
@@ -136,16 +132,16 @@ const Members = () => {
    * =========================================================
    */
 
-  const isMainAdmin =
-    String(admin?.adminId || "").trim() ===
-    "ADM-001";
+  const isGeneralAdmin =
+    String(admin?.role || "").trim() === "Administrador General" ||
+    String(admin?.adminId || "").trim() === "ADM-001";
 
   const isCircleManager =
     String(admin?.role || "").trim() ===
     "Gestor de Círculo";
 
   const canManageMembers =
-    isMainAdmin ||
+    isGeneralAdmin ||
     isCircleManager;
 
   // Separa los círculos para el Administrador Principal.
@@ -209,7 +205,7 @@ const Members = () => {
           await userService.getUsers({
             search,
             circle,
-            mode: isMainAdmin ? memberMode : "",
+            mode: isGeneralAdmin ? memberMode : "",
             page,
             limit: 50,
           });
@@ -424,9 +420,9 @@ const Members = () => {
 
   const handleDelete =
     async (user) => {
-      if (!isMainAdmin) {
+      if (!isGeneralAdmin) {
         setError(
-          "Solo el Administrador Principal puede eliminar miembros."
+          "Solo un Administrador General puede eliminar miembros."
         );
 
         return;
@@ -477,16 +473,7 @@ const Members = () => {
       }
     };
 
-  const handleUpload = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
 
-    setError("");
-    setMessage("");
-    setPendingExcelFile(file);
-    setExcelImportOpen(true);
-    setFileInputKey((value) => value + 1);
-  };
 
 
   if (!canManageMembers) {
@@ -551,14 +538,14 @@ const Members = () => {
                 setSearch(event.target.value);
                 setPage(1);
               }}
-              placeholder="Buscar por DNI, nombre, rango, círculo..."
+              placeholder="Buscar por DNI, nombre, usuario, correo, rango o círculo..."
               className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
           {/* FILTRO DE CÍRCULOS */}
 
-          {isMainAdmin ? (
+          {isGeneralAdmin ? (
             <div className="relative lg:w-[205px] lg:shrink-0">
               <button
                 type="button"
@@ -715,23 +702,15 @@ const Members = () => {
             📥 Plantilla Excel
           </button>
 
-          {/* SUBIR EXCEL */}
-
-          <label className="flex h-10 cursor-pointer items-center justify-center rounded-lg border border-emerald-600 bg-emerald-600 px-4 text-xs font-bold text-white transition hover:bg-emerald-700">
-            📤 Subir con Excel
-
-            <input
-              key={
-                fileInputKey
-              }
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={
-                handleUpload
-              }
-              hidden
-            />
-          </label>
+          {isGeneralAdmin && (
+            <button
+              type="button"
+              onClick={() => setNewAmbassadorOpen(true)}
+              className="h-10 rounded-lg border border-violet-300 bg-violet-50 px-4 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
+            >
+              ✦ Embajador nuevo
+            </button>
+          )}
 
           {/* NUEVO MIEMBRO */}
 
@@ -1072,7 +1051,7 @@ const Members = () => {
                                   📋
                                 </button>
 
-                                {isMainAdmin && (
+                                {isGeneralAdmin && (
                                   <button
                                     type="button"
                                     onClick={() => openEdit(user)}
@@ -1084,7 +1063,7 @@ const Members = () => {
                                   </button>
                                 )}
 
-                                {isMainAdmin && (
+                                {isGeneralAdmin && (
                                   <button
                                     type="button"
                                     onClick={() => handleDelete(user)}
@@ -1149,19 +1128,11 @@ const Members = () => {
           GESTOR DE CÍRCULOS — SOLO ADMIN PRINCIPAL
       ======================================================== */}
 
-      {excelImportOpen && pendingExcelFile && (
-        <ExcelImportModal
-          file={pendingExcelFile}
-          circles={circles}
-          onClose={() => {
-            setExcelImportOpen(false);
-            setPendingExcelFile(null);
-          }}
-          onCompleted={async (result) => {
-            setMessage(`Importación completada: ${result.inserted || 0} miembros agregados. ${result.updated || 0} actualizados. ${result.skipped || 0} omitidos.`);
-            setExcelImportOpen(false);
-            setPendingExcelFile(null);
-            setPage(1);
+      {newAmbassadorOpen && isGeneralAdmin && (
+        <NewAmbassadorModal
+          onClose={() => setNewAmbassadorOpen(false)}
+          onSaved={async () => {
+            setMessage("Embajador nuevo registrado correctamente. El periodo de prueba se evaluará desde el mes siguiente a su fecha de ingreso.");
             await loadUsers();
           }}
         />

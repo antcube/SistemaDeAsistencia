@@ -64,6 +64,12 @@ const userSchema = new mongoose.Schema(
       default: [],
     },
 
+    ambassadorAdmissionDate: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+
     email: {
     type: String,
     trim: true,
