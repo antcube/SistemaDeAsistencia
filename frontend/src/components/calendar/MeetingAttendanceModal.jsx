@@ -66,7 +66,9 @@ const MeetingAttendanceModal = ({
   const [moveSaving, setMoveSaving] = useState(false);
 
   const isModerator = String(admin?.role || "").trim() === "Moderador";
-  const isMainAdmin = String(admin?.adminId || "").trim() === "ADM-001";
+  const isMainAdmin =
+    String(admin?.role || "").trim() === "Administrador General" ||
+    String(admin?.adminId || "").trim() === "ADM-001";
   const isCircleManager = String(admin?.role || "").trim() === "Gestor de Círculo";
   const canManageAttendance = isMainAdmin || isCircleManager;
 

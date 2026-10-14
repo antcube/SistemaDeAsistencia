@@ -183,7 +183,7 @@ const executeOnce = async ({
   trigger,
 }) => {
   const key =
-    `${meetingId}:${date}:${trigger}`;
+    `${meetingId}:${sessionType}:${date}:${trigger}`;
 
   if (runningKeys.has(key)) {
     return;
@@ -206,6 +206,7 @@ const executeOnce = async ({
     const result =
       await runAutomaticSync({
         meetingId,
+        sessionType,
         date,
         trigger,
       });
@@ -243,14 +244,22 @@ const executeOnce = async ({
   }
 };
 
-const runSchedulerTick = async () => {
-  const {
-    date,
-    minuteOfDay,
-  } = getLocalParts();
+const normalizeCircle = (value) =>
+  String(value || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 
-  const configured =
-    getConfiguredMeetings();
+const triggerTypeKey = (value) =>
+  normalizeType(value)
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+const runSchedulerTick = async () => {
+  const { date, minuteOfDay } = getLocalParts();
+
+  const configured = getConfiguredMeetings();
 
   if (!configured.length) {
     return;
@@ -258,103 +267,77 @@ const runSchedulerTick = async () => {
 
   const types = [
     ...new Set(
-      configured.map((item) =>
-        normalizeType(item.type)
+      configured.flatMap((item) =>
+        (Array.isArray(item.types) ? item.types : [item.type])
+          .map(normalizeType)
+          .filter(Boolean)
       )
     ),
   ];
 
-  const meetings =
-    await Meeting.find({
-      active: true,
-      date,
-      type: {
-        $in: types,
-      },
-    })
-      .select(
-        "type date endTime"
-      )
-      .lean();
-
-  const endMinutesByType =
-    new Map();
-
-  for (const meeting of meetings) {
-    const type =
-      normalizeType(
-        meeting.type
-      );
-
-    const endMinute =
-      hhmmToMinutes(
-        meeting.endTime
-      );
-
-    if (endMinute === null) {
-      continue;
-    }
-
-    if (
-      !endMinutesByType.has(type)
-    ) {
-      endMinutesByType.set(
-        type,
-        new Set()
-      );
-    }
-
-    endMinutesByType
-      .get(type)
-      .add(endMinute);
-  }
+  const meetings = await Meeting.find({
+    active: true,
+    date,
+    type: { $in: types },
+  })
+    .select("type date endTime circle")
+    .lean();
 
   for (const config of configured) {
-    const type =
-      normalizeType(
-        config.type
-      );
-
-    const meetingId =
-      String(
-        config.meetingId || ""
-      ).trim();
+    const meetingId = String(config.meetingId || "").trim();
 
     if (!meetingId) {
       continue;
     }
 
-    const endMinutes =
-      endMinutesByType.get(type);
+    const configTypes = (Array.isArray(config.types)
+      ? config.types
+      : [config.type]
+    )
+      .map(normalizeType)
+      .filter(Boolean);
 
-    if (
-      endMinutes &&
-      endMinutes.size
-    ) {
-      const sortedEndMinutes = [
-        ...endMinutes,
-      ].sort(
-        (a, b) => a - b
-      );
+    const circleScope = Array.isArray(config.circles)
+      ? config.circles.map(normalizeCircle).filter(Boolean)
+      : [];
 
-      for (
-        const endMinute
-        of sortedEndMinutes
-      ) {
-        const syncMinute =
-          endMinute + 5;
+    for (const type of configTypes) {
+      const relevantMeetings = meetings.filter((meeting) => {
+        if (normalizeType(meeting.type) !== type) {
+          return false;
+        }
 
-        if (
-          minuteOfDay <
-          syncMinute
-        ) {
+        if (circleScope.length === 0) {
+          return true;
+        }
+
+        return circleScope.includes(normalizeCircle(meeting.circle));
+      });
+
+      if (relevantMeetings.length === 0) {
+        continue;
+      }
+
+      const endMinutes = [
+        ...new Set(
+          relevantMeetings
+            .map((meeting) => hhmmToMinutes(meeting.endTime))
+            .filter((value) => value !== null)
+        ),
+      ].sort((a, b) => a - b);
+
+      const typeKey = triggerTypeKey(type);
+
+      for (const endMinute of endMinutes) {
+        const syncMinute = endMinute + 5;
+
+        if (minuteOfDay < syncMinute) {
           continue;
         }
 
-        const trigger =
-          `END_PLUS_5_${minutesToTriggerSuffix(
-            endMinute
-          )}`;
+        const trigger = `${typeKey}_END_PLUS_5_${minutesToTriggerSuffix(
+          endMinute
+        )}`;
 
         await executeOnce({
           meetingId,
@@ -363,19 +346,15 @@ const runSchedulerTick = async () => {
           trigger,
         });
       }
-    }
 
-    if (
-      minuteOfDay >=
-      NIGHTLY_MINUTE
-    ) {
-      await executeOnce({
-        meetingId,
-        sessionType: type,
-        date,
-        trigger:
-          "NIGHTLY_2330",
-      });
+      if (minuteOfDay >= NIGHTLY_MINUTE) {
+        await executeOnce({
+          meetingId,
+          sessionType: type,
+          date,
+          trigger: `${typeKey}_NIGHTLY_2330`,
+        });
+      }
     }
   }
 };

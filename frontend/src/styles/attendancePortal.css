@@ -527,3 +527,263 @@ body,
     margin: 12px 0 0 0 !important;
   }
 }
+
+
+.attendance-document-type-field {
+  width: 100%;
+  margin: 0 0 12px;
+}
+
+.attendance-document-type-field label {
+  display: block;
+  margin: 0 0 8px;
+  color: rgba(211, 225, 248, 0.78);
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.attendance-document-type-field select {
+  width: 100%;
+  height: 46px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 38px 0 13px;
+  border: 1px solid rgba(80, 140, 215, 0.20);
+  border-radius: 8px;
+  outline: none;
+  background: #020A1B;
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.attendance-document-type-field select:hover {
+  border-color: rgba(80, 140, 215, 0.32);
+}
+
+.attendance-document-type-field select:focus {
+  border-color: rgba(74, 187, 255, 0.65);
+  box-shadow: 0 0 0 3px rgba(74, 187, 255, 0.08);
+}
+
+.attendance-document-type-field select option {
+  background: #020A1B;
+  color: #FFFFFF;
+}
+
+/* =========================================================
+   AJUSTE DE LAYOUT - PORTAL DEL EMBAJADOR
+   Mantiene todos los estilos existentes y evita recortes al
+   agregar el selector de tipo de documento.
+   ========================================================= */
+.attendance-portal-login.attendance-history-login-view {
+  padding: 28px 20px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.attendance-login-shell {
+  width: 100% !important;
+  max-width: 484px !important;
+  margin: auto !important;
+  transform: none !important;
+  justify-content: flex-start !important;
+}
+
+.attendance-login-logo-space {
+  height: auto !important;
+  min-height: 92px !important;
+  margin: 0 0 16px !important;
+  justify-content: flex-end !important;
+}
+
+.attendance-login-logo {
+  width: 242px !important;
+  max-width: 78% !important;
+  margin-bottom: 8px !important;
+}
+
+.attendance-login-card {
+  width: 100% !important;
+  max-width: 484px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 42px 42px 30px !important;
+  overflow: visible !important;
+}
+
+.attendance-login-header {
+  margin: 0 0 26px !important;
+}
+
+.attendance-login-header h1 {
+  font-size: 30px !important;
+  line-height: 1.15 !important;
+}
+
+.attendance-login-header p {
+  max-width: 340px !important;
+  margin-top: 12px !important;
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+}
+
+.attendance-login-form {
+  gap: 0 !important;
+}
+
+.attendance-document-type-field {
+  width: 100% !important;
+  margin: 0 0 18px !important;
+}
+
+.attendance-document-type-field label,
+.attendance-login-form > label {
+  display: block !important;
+  margin: 0 0 8px !important;
+  color: rgba(211, 225, 248, 0.82) !important;
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+  font-weight: 500 !important;
+}
+
+.attendance-document-type-field select,
+.attendance-login-input-wrap input {
+  width: 100% !important;
+  height: 50px !important;
+  min-height: 50px !important;
+  border-radius: 9px !important;
+}
+
+.attendance-document-type-field select {
+  padding: 0 42px 0 16px !important;
+  font-size: 14px !important;
+}
+
+.attendance-login-input-wrap {
+  margin: 0 !important;
+}
+
+.attendance-login-input-wrap input {
+  padding-left: 43px !important;
+  font-size: 15px !important;
+}
+
+.attendance-login-form .attendance-login-tailwind-button {
+  width: 100% !important;
+  height: 50px !important;
+  min-height: 50px !important;
+  margin: 16px 0 0 !important;
+  border-radius: 9px !important;
+  flex: 0 0 auto !important;
+}
+
+.attendance-login-footer {
+  margin-top: 20px !important;
+  padding-bottom: 0 !important;
+  font-size: 11px !important;
+}
+
+@media (max-height: 720px) and (min-width: 521px) {
+  .attendance-portal-login.attendance-history-login-view {
+    align-items: flex-start !important;
+    padding-top: 18px !important;
+    padding-bottom: 18px !important;
+  }
+
+  .attendance-login-logo-space {
+    min-height: 72px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .attendance-login-logo {
+    width: 210px !important;
+  }
+
+  .attendance-login-card {
+    padding-top: 30px !important;
+    padding-bottom: 24px !important;
+  }
+
+  .attendance-login-header {
+    margin-bottom: 18px !important;
+  }
+
+  .attendance-login-header h1 {
+    font-size: 27px !important;
+  }
+
+  .attendance-login-header p {
+    margin-top: 8px !important;
+    line-height: 1.5 !important;
+  }
+
+  .attendance-document-type-field {
+    margin-bottom: 14px !important;
+  }
+
+  .attendance-document-type-field select,
+  .attendance-login-input-wrap input,
+  .attendance-login-form .attendance-login-tailwind-button {
+    height: 46px !important;
+    min-height: 46px !important;
+  }
+
+  .attendance-login-footer {
+    margin-top: 15px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .attendance-portal-login.attendance-history-login-view {
+    align-items: flex-start !important;
+    padding: 18px 14px !important;
+  }
+
+  .attendance-login-shell {
+    max-width: 390px !important;
+  }
+
+  .attendance-login-logo-space {
+    min-height: 76px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .attendance-login-logo {
+    width: 205px !important;
+  }
+
+  .attendance-login-card {
+    max-width: 100% !important;
+    padding: 30px 22px 24px !important;
+  }
+
+  .attendance-login-header {
+    margin-bottom: 22px !important;
+  }
+
+  .attendance-login-header h1 {
+    font-size: 24px !important;
+  }
+
+  .attendance-login-header p {
+    max-width: 300px !important;
+    font-size: 12px !important;
+    line-height: 1.55 !important;
+  }
+
+  .attendance-document-type-field label,
+  .attendance-login-form > label {
+    font-size: 12px !important;
+  }
+
+  .attendance-document-type-field select,
+  .attendance-login-input-wrap input,
+  .attendance-login-form .attendance-login-tailwind-button {
+    height: 46px !important;
+    min-height: 46px !important;
+  }
+}

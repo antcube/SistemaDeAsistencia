@@ -42,6 +42,9 @@ const dashboardRoutes =
 const zoomRoutes =
   require("./routes/zoomRoutes");
 
+const bonusRoutes =
+  require("./routes/bonusRoutes");
+
 const { startZoomAutoSyncScheduler } =
   require("./services/zoomAutoSyncService");
 
@@ -114,6 +117,11 @@ app.use(
 app.use(
   "/api/dashboard",
   dashboardRoutes
+);
+
+app.use(
+  "/api/bonuses",
+  bonusRoutes
 );
 
 // ============================================================

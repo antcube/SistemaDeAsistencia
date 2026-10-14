@@ -9,6 +9,15 @@ import meetingService from "../services/meetingService";
 import circleService from "../services/circleService";
 import scheduleService from "../services/scheduleService";
 import { useAuth } from "../context/AuthContext";
+import {
+  Building2,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  Monitor,
+  Target,
+  Trash,
+} from "lucide-react";
 
 import MeetingAttendanceModal from "../components/calendar/MeetingAttendanceModal";
 
@@ -57,6 +66,7 @@ const Calendar = () => {
   const today = new Date();
 
   const isMainAdmin =
+    String(admin?.role || "").trim() === "Administrador General" ||
     String(admin?.adminId || "").trim() === "ADM-001";
 
   const isCircleManager =
@@ -76,6 +86,9 @@ const Calendar = () => {
    * Se obtiene dinámicamente desde MongoDB.
    */
   const [selectedCircle, setSelectedCircle] = useState("");
+  const [circleMenuOpen, setCircleMenuOpen] = useState(false);
+  const [circleMenuMode, setCircleMenuMode] = useState("");
+  const circleMenuRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -86,6 +99,29 @@ const Calendar = () => {
   const [openMeeting, setOpenMeeting] = useState(null);
   const [attendanceRefreshKey, setAttendanceRefreshKey] =
     useState(0);
+  const [todayFocusKey, setTodayFocusKey] = useState(0);
+
+  useEffect(() => {
+    if (!circleMenuOpen) {
+      return;
+    }
+
+    const handleOutsideClick = (event) => {
+      if (
+        circleMenuRef.current &&
+        !circleMenuRef.current.contains(event.target)
+      ) {
+        setCircleMenuOpen(false);
+        setCircleMenuMode("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [circleMenuOpen]);
 
   /*
    * ============================================================
@@ -346,9 +382,43 @@ const Calendar = () => {
    * ============================================================
    */
   const goToday = () => {
-    setYear(today.getFullYear());
-    setMonth(today.getMonth() + 1);
+    const current = new Date();
+
+    setYear(current.getFullYear());
+    setMonth(current.getMonth() + 1);
+    setTodayFocusKey((value) => value + 1);
   };
+
+  useEffect(() => {
+    if (!todayFocusKey || loading) {
+      return;
+    }
+
+    const current = new Date();
+    const isCurrentMonth =
+      year === current.getFullYear() &&
+      month === current.getMonth() + 1;
+
+    if (!isCurrentMonth) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const todayCell = document.querySelector(
+        ".calendar-day-today"
+      );
+
+      todayCell?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    }, 80);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [todayFocusKey, loading, year, month]);
 
   /*
    * ============================================================
@@ -703,6 +773,27 @@ const Calendar = () => {
     }
   };
 
+  const presencialCircles = circles.filter((circle) => {
+    const name = getCircleName(circle);
+    return name && !/virtual/i.test(name);
+  });
+
+  const virtualCircles = circles.filter((circle) => {
+    const name = getCircleName(circle);
+    return name && /virtual/i.test(name);
+  });
+
+  const visibleCircleGroup =
+    circleMenuMode === "virtuales"
+      ? virtualCircles
+      : presencialCircles;
+
+  const selectedCircleLabel =
+    String(selectedCircle || "").trim() ||
+    (circles.length
+      ? "Seleccionar círculo"
+      : "Sin círculos disponibles");
+
   return (
     <section className="bg-transparent">
       <div className="mx-auto w-full max-w-[1420px] px-4 py-5">
@@ -712,61 +803,210 @@ const Calendar = () => {
             ===================================================== */}
         <div className="mb-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#d4deed] bg-white p-4 shadow-[0_12px_34px_rgba(0,0,0,.17)]">
 
-          <div className="min-w-0 flex-1">
-            <MonthSelector
-              year={year}
-              month={month}
-              onPrevious={() =>
-                changeMonth(-1)
-              }
-              onNext={() =>
-                changeMonth(1)
-              }
-              onToday={goToday}
-            />
-          </div>
+          <MonthSelector
+            year={year}
+            month={month}
+            onPrevious={() =>
+              changeMonth(-1)
+            }
+            onNext={() =>
+              changeMonth(1)
+            }
+          />
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            className="calendar-today-button"
+            onClick={goToday}
+            aria-label="Ir al mes actual"
+          >
+            <span className="calendar-today-icon-wrap">
+              <Target
+                className="calendar-today-icon"
+                strokeWidth={2.15}
+              />
+            </span>
+            <span>Hoy</span>
+          </button>
+
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
 
             {/* =================================================
                 SELECTOR DE CÍRCULO
                 ================================================= */}
-            <select
-              value={selectedCircle}
-              onChange={(event) => {
-                setSelectedCircle(
-                  event.target.value
-                );
-              }}
-              disabled={
-                loading || saving
-              }
-              className="h-10 min-w-[190px] rounded-lg border border-[#c8d4e5] bg-white px-3 text-xs font-semibold text-[#173b7a] outline-none focus:border-[#3f6fcb] focus:ring-2 focus:ring-[#2457c5]/15"
+            <div
+              ref={circleMenuRef}
+              className="relative w-[210px] shrink-0"
             >
-              {circles.length === 0 ? (
-                <option value="">
-                  Sin círculos disponibles
-                </option>
-              ) : (
-                circles.map((circle) => {
-                  const name =
-                    getCircleName(circle);
-
-                  if (!name) {
-                    return null;
+              <button
+                type="button"
+                onClick={() => {
+                  if (loading || saving || circles.length === 0) {
+                    return;
                   }
 
-                  return (
-                    <option
-                      key={name}
-                      value={name}
-                    >
-                      {name}
-                    </option>
-                  );
-                })
+                  setCircleMenuOpen((open) => !open);
+
+                  if (circleMenuOpen) {
+                    setCircleMenuMode("");
+                  }
+                }}
+                disabled={loading || saving || circles.length === 0}
+                className={`group flex h-10 w-full items-center justify-between gap-3 rounded-xl border bg-white px-3.5 text-left text-xs font-bold outline-none transition ${
+                  circleMenuOpen
+                    ? "border-[#4f7ee8] ring-4 ring-[#2457c5]/10"
+                    : "border-[#c8d4e5] hover:border-[#9eb2cf] hover:shadow-sm"
+                } ${
+                  loading || saving || circles.length === 0
+                    ? "cursor-not-allowed bg-slate-50 text-slate-400"
+                    : "text-[#173b7a]"
+                }`}
+                aria-haspopup="menu"
+                aria-expanded={circleMenuOpen}
+              >
+                <span className="min-w-0 truncate">
+                  {selectedCircleLabel}
+                </span>
+
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-[#6880a2] transition-transform duration-200 ${
+                    circleMenuOpen ? "rotate-180" : ""
+                  }`}
+                  strokeWidth={2}
+                />
+              </button>
+
+              {circleMenuOpen && (
+                <div className="absolute left-0 top-[46px] z-[80] w-[250px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+                  {!circleMenuMode ? (
+                    <div className="p-2">
+                      <div className="px-2 pb-2 pt-1">
+                        <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-400">
+                          Tipo de círculo
+                        </div>
+                        <div className="mt-1 text-[11px] leading-4 text-slate-500">
+                          Primero elige la modalidad.
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setCircleMenuMode("presenciales")}
+                        className="group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-blue-50"
+                      >
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#2457c5] transition group-hover:bg-blue-100">
+                          <Building2 className="h-[17px] w-[17px]" strokeWidth={1.9} />
+                        </span>
+
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-xs font-extrabold text-slate-800">
+                            Presenciales
+                          </span>
+                          <span className="mt-0.5 block text-[10px] text-slate-400">
+                            {presencialCircles.length} círculo{presencialCircles.length === 1 ? "" : "s"}
+                          </span>
+                        </span>
+
+                        <ChevronDown
+                          className="-rotate-90 text-slate-400"
+                          size={15}
+                          strokeWidth={2}
+                        />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCircleMenuMode("virtuales")}
+                        className="group mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-violet-50"
+                      >
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 transition group-hover:bg-violet-100">
+                          <Monitor className="h-[17px] w-[17px]" strokeWidth={1.9} />
+                        </span>
+
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-xs font-extrabold text-slate-800">
+                            Virtuales
+                          </span>
+                          <span className="mt-0.5 block text-[10px] text-slate-400">
+                            {virtualCircles.length} círculo{virtualCircles.length === 1 ? "" : "s"}
+                          </span>
+                        </span>
+
+                        <ChevronDown
+                          className="-rotate-90 text-slate-400"
+                          size={15}
+                          strokeWidth={2}
+                        />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setCircleMenuMode("")}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white hover:text-[#2457c5] hover:shadow-sm"
+                          aria-label="Volver a modalidades"
+                        >
+                          <ChevronLeft size={16} strokeWidth={2.1} />
+                        </button>
+
+                        <div>
+                          <div className="text-[11px] font-extrabold text-slate-800">
+                            {circleMenuMode === "virtuales"
+                              ? "Círculos virtuales"
+                              : "Círculos presenciales"}
+                          </div>
+                          <div className="text-[9px] text-slate-400">
+                            Selecciona el círculo a visualizar
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="max-h-[280px] overflow-y-auto p-2">
+                        {visibleCircleGroup.length > 0 ? (
+                          visibleCircleGroup.map((circle) => {
+                            const name = getCircleName(circle);
+                            const active =
+                              String(selectedCircle).trim().toLowerCase() ===
+                              String(name).trim().toLowerCase();
+
+                            return (
+                              <button
+                                key={name}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedCircle(name);
+                                  setCircleMenuOpen(false);
+                                  setCircleMenuMode("");
+                                }}
+                                className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-semibold transition ${
+                                  active
+                                    ? "bg-[#edf4ff] text-[#2457c5]"
+                                    : "text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                <span className="truncate">{name}</span>
+
+                                {active && (
+                                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2457c5] text-white">
+                                    <Check size={12} strokeWidth={2.5} />
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className="px-3 py-6 text-center text-[11px] text-slate-400">
+                            No hay círculos en esta modalidad.
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
-            </select>
+            </div>
 
             {/* Crear/eliminar reuniones y Masterclass es exclusivo del Administrador Principal. */}
             {isMainAdmin && (
@@ -792,7 +1032,10 @@ const Calendar = () => {
                   disabled={saving}
                   className="h-10 rounded-lg border border-rose-200 bg-rose-50 px-4 text-xs font-bold text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  🗑️ Eliminar Masterclass
+                  <span className="inline-flex items-center gap-2">
+                    <Trash className="h-[15px] w-[15px]" strokeWidth={1.9} />
+                    Eliminar Masterclass
+                  </span>
                 </button>
               </>
             )}
@@ -818,6 +1061,7 @@ const Calendar = () => {
             month={month}
             meetings={meetings}
             loading={loading}
+            todayFocusKey={todayFocusKey}
             onMeetingClick={
               openMeetingAct
             }

@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import {
+  BadgeDollarSign,
+  BookText,
+  CalendarClock,
+  ChartColumnBig,
+  House,
+  LogOut,
+  ShieldUser,
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import seLogo from "../assets/se.svg";
 
 const Header = () => {
   const {
@@ -33,17 +43,53 @@ const Header = () => {
       .toUpperCase() ||
     "AP";
 
-  const isMainAdmin =
+  const isGeneralAdmin =
+    String(
+      admin?.role || ""
+    ).trim() === "Administrador General" ||
     String(
       admin?.adminId || ""
-    ).trim() ===
-    "ADM-001";
+    ).trim() === "ADM-001";
 
   const isCircleManager =
     String(
       admin?.role || ""
     ).trim() ===
     "Gestor de Círculo";
+
+  const menuItems = [
+    {
+      to: "/",
+      label: "General",
+      icon: House,
+      end: true,
+    },
+    {
+      to: "/dashboard",
+      label: "Dashboard",
+      icon: ChartColumnBig,
+    },
+    {
+      to: "/admins",
+      label: "Admins",
+      icon: ShieldUser,
+    },
+    {
+      to: "/programaciones",
+      label: "Programaciones",
+      icon: CalendarClock,
+    },
+    {
+      to: "/bonos",
+      label: "Bonos",
+      icon: BadgeDollarSign,
+    },
+    {
+      to: "/audit",
+      label: "Bitácora",
+      icon: BookText,
+    },
+  ];
 
   return (
     <header className="cc-header">
@@ -53,9 +99,11 @@ const Header = () => {
         <div className="cc-header-brand">
 
           <div className="cc-logo">
-            <span>
-              ▣
-            </span>
+            <img
+              src={seLogo}
+              alt="SE"
+              className="cc-logo-image"
+            />
           </div>
 
           <div className="cc-brand-text">
@@ -65,12 +113,8 @@ const Header = () => {
               Círculos De
 
               <strong>
-              Liderazgo
+                Liderazgo
               </strong>
-
-              <span className="cc-brand-badge">
-                soy.embajador
-              </span>
 
             </div>
 
@@ -80,6 +124,11 @@ const Header = () => {
 
           </div>
 
+        </div>
+
+        <div className="cc-department-badge">
+          <span className="cc-department-dot" />
+          <span>Departamento de Ventas Pariscorp</span>
         </div>
 
         <div className="cc-header-right">
@@ -100,11 +149,6 @@ const Header = () => {
 
             {isCircleManager ? (
 
-              /*
-               * El Gestor no tiene menú de administración.
-               * Sus iniciales son únicamente visuales.
-               */
-
               <div
                 className="cc-avatar-button"
                 aria-label="Perfil del Gestor de Círculo"
@@ -119,100 +163,59 @@ const Header = () => {
 
                 <button
                   type="button"
-                  className="cc-avatar-button"
+                  className={`cc-avatar-button ${open ? "is-open" : ""}`}
                   onClick={() =>
                     setOpen(
                       (value) =>
                         !value
                     )
                   }
-                  aria-label="Abrir menú de administración"
+                  aria-label="Abrir menú"
+                  aria-expanded={open}
                 >
                   {initials}
                 </button>
 
-                {open && (
+                {open && isGeneralAdmin && (
 
                   <div className="cc-admin-menu">
 
-                    <div className="cc-admin-menu-title">
-                      ADMINISTRACIÓN
+                    <div className="cc-admin-menu-glow" />
+
+                    <div className="cc-admin-menu-list">
+
+                      {menuItems.map((item) => {
+                        const Icon = item.icon;
+
+                        return (
+                          <NavLink
+                            key={item.to}
+                            to={item.to}
+                            end={item.end}
+                            onClick={() =>
+                              setOpen(false)
+                            }
+                            className={({ isActive }) =>
+                              isActive
+                                ? "cc-admin-menu-link active"
+                                : "cc-admin-menu-link"
+                            }
+                          >
+                            <span className="cc-menu-icon">
+                              <Icon
+                                className="h-[16px] w-[16px]"
+                                strokeWidth={1.9}
+                              />
+                            </span>
+
+                            <span className="cc-menu-label">
+                              {item.label}
+                            </span>
+                          </NavLink>
+                        );
+                      })}
+
                     </div>
-
-                    {isMainAdmin && (
-                      <NavLink
-                        to="/"
-                        onClick={() =>
-                          setOpen(false)
-                        }
-                      >
-                        <span>
-                          ⌂
-                        </span>
-
-                        General
-                      </NavLink>
-                    )}
-
-                    {isMainAdmin && (
-                      <NavLink
-                        to="/dashboard"
-                        onClick={() =>
-                          setOpen(false)
-                        }
-                      >
-                        <span>
-                          ◫
-                        </span>
-
-                        Dashboard
-                      </NavLink>
-                    )}
-
-                    {isMainAdmin && (
-                      <NavLink
-                        to="/admins"
-                        onClick={() =>
-                          setOpen(false)
-                        }
-                      >
-                        <span>
-                          ♙
-                        </span>
-
-                        Usuarios Admin
-                      </NavLink>
-                    )}
-
-                    {isMainAdmin && (
-                      <NavLink
-                        to="/programaciones"
-                        onClick={() =>
-                          setOpen(false)
-                        }
-                      >
-                        <span>
-                          ↻
-                        </span>
-
-                        Programaciones
-                      </NavLink>
-                    )}
-
-                    {isMainAdmin && (
-                      <NavLink
-                        to="/audit"
-                        onClick={() =>
-                          setOpen(false)
-                        }
-                      >
-                        <span>
-                          ▤
-                        </span>
-
-                        Bitácora
-                      </NavLink>
-                    )}
 
                   </div>
 
@@ -231,7 +234,10 @@ const Header = () => {
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
           >
-            ⇥
+            <LogOut
+              className="h-[17px] w-[17px]"
+              strokeWidth={1.9}
+            />
           </button>
 
         </div>

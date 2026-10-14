@@ -25,6 +25,11 @@ const MINIMUM_MINUTES = 10;
 const DEFAULT_TIMEZONE = process.env.ZOOM_TIMEZONE || "America/Lima";
 
 const SESSION_DEFAULTS = {
+  "CIRCULO DE LIDERAZGO": {
+    title: "CÍRCULO DE LIDERAZGO",
+    time: "20:00",
+    endTime: "21:00",
+  },
   HEALTH: { title: "HEALTH", time: "19:00", endTime: "20:00" },
   MASTERCLASS: { title: "MASTERCLASS", time: "19:00", endTime: "20:00" },
   MENTORIA: { title: "MENTORIA", time: "20:00", endTime: "21:00" },
@@ -58,20 +63,36 @@ const dateInTimezone = (value, timeZone = DEFAULT_TIMEZONE) => {
   return `${map.year}-${map.month}-${map.day}`;
 };
 
-const getAllowedCircleNames = async (req) => {
+const normalizeCircleName = (value) =>
+  String(value || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const getAllowedCircleNames = async (req, zoomCircleScope = []) => {
   const activeCircles = await Circle.find({ active: true }).sort({ name: 1 }).lean();
 
-  if (canManageGlobal(req.user)) {
-    return activeCircles.map((circle) => String(circle.name || "").trim()).filter(Boolean);
-  }
-
-  const scope = getCircleScope(req.user);
-  const allowed = new Set(scope.map((circle) => String(circle || "").trim().toUpperCase()));
-
-  return activeCircles
-    .filter((circle) => allowed.has(String(circle.name || "").trim().toUpperCase()))
+  let circles = activeCircles
     .map((circle) => String(circle.name || "").trim())
     .filter(Boolean);
+
+  if (!canManageGlobal(req.user)) {
+    const scope = getCircleScope(req.user);
+    const allowed = new Set(scope.map(normalizeCircleName));
+    circles = circles.filter((circle) => allowed.has(normalizeCircleName(circle)));
+  }
+
+  const configuredScope = Array.isArray(zoomCircleScope)
+    ? zoomCircleScope.map(String).map((circle) => circle.trim()).filter(Boolean)
+    : [];
+
+  if (configuredScope.length > 0) {
+    const configured = new Set(configuredScope.map(normalizeCircleName));
+    circles = circles.filter((circle) => configured.has(normalizeCircleName(circle)));
+  }
+
+  return circles;
 };
 
 const ensureCanProcess = async (req) => {
@@ -93,18 +114,67 @@ const assertValidDate = (date) => {
   }
 };
 
-const loadZoomDay = async ({ meetingId, date }) => {
-  const configured = getSessionTypeByMeetingId(meetingId);
+const resolveSessionType = async ({ configured, date, preferredType }) => {
+  const normalizedPreferred = normalizeType(preferredType);
+  const allowedTypes = Array.isArray(configured?.types)
+    ? configured.types.map(normalizeType)
+    : [];
+
+  if (normalizedPreferred && allowedTypes.includes(normalizedPreferred)) {
+    return normalizedPreferred;
+  }
+
+  if (allowedTypes.length === 1) {
+    return allowedTypes[0];
+  }
+
+  const meetings = await Meeting.find({
+    active: true,
+    date,
+    type: { $in: allowedTypes },
+  })
+    .select("type")
+    .lean();
+
+  const detectedTypes = [
+    ...new Set(
+      meetings
+        .map((meeting) => normalizeType(meeting.type))
+        .filter((type) => allowedTypes.includes(type))
+    ),
+  ];
+
+  if (detectedTypes.length === 1) {
+    return detectedTypes[0];
+  }
+
+  const error = new Error(
+    `Este Meeting ID puede usarse para ${allowedTypes.join(
+      " o "
+    )}. Selecciona la categoría correcta para esta fecha.`
+  );
+  error.status = 400;
+  throw error;
+};
+
+const loadZoomDay = async ({ meetingId, date, sessionType = "" }) => {
+  const configured = getSessionTypeByMeetingId(meetingId, sessionType);
 
   if (!configured) {
     const error = new Error(
-      "Ese Meeting ID no está configurado para HEALTH, MASTERCLASS, MENTORIA o ANUNCIOS CORPORATIVOS."
+      "Ese Meeting ID no está configurado para CÍRCULO DE LIDERAZGO, HEALTH, MASTERCLASS, MENTORIA o ANUNCIOS CORPORATIVOS."
     );
     error.status = 400;
     throw error;
   }
 
   assertValidDate(date);
+
+  const resolvedType = await resolveSessionType({
+    configured,
+    date,
+    preferredType: sessionType || configured.type,
+  });
 
   const instances = await listPastInstances(configured.meetingId);
   const dayInstances = instances.filter(
@@ -166,7 +236,10 @@ const loadZoomDay = async ({ meetingId, date }) => {
 
   return {
     meetingId: configured.meetingId,
-    sessionType: configured.type,
+    sessionType: resolvedType,
+    allowedTypes: configured.types || [resolvedType],
+    circleScope: configured.circles || [],
+    configLabel: configured.label || resolvedType,
     date,
     timezone: DEFAULT_TIMEZONE,
     instances: dayInstances,
@@ -177,7 +250,7 @@ const loadZoomDay = async ({ meetingId, date }) => {
 };
 
 const enrichWithDirectory = async ({ req, zoomDay }) => {
-  const allowedCircles = await getAllowedCircleNames(req);
+  const allowedCircles = await getAllowedCircleNames(req, zoomDay.circleScope);
 
   if (!allowedCircles.length) {
     const error = new Error("No tienes círculos disponibles para procesar Zoom.");
@@ -535,10 +608,13 @@ const buildCommonResponse = ({ zoomDay, directory, coverage }) => ({
 
 const getConfig = async (req, res) => {
   const meetings = getConfiguredMeetings().map((item) => ({
+    key: item.key,
+    label: item.label,
     type: item.type,
+    types: item.types,
+    circles: item.circles,
+    isGeneral: item.isGeneral,
     configured: true,
-    // El Meeting ID no es una credencial secreta y el frontend lo necesita
-    // completo para ofrecerlo en el selector de reuniones configuradas.
     meetingId: item.meetingId,
   }));
 
@@ -555,7 +631,11 @@ const preview = async (req, res) => {
 
     const meetingId = normalizeMeetingId(req.body?.meetingId);
     const date = String(req.body?.date || "").trim();
-    const zoomDay = await loadZoomDay({ meetingId, date });
+    const zoomDay = await loadZoomDay({
+      meetingId,
+      date,
+      sessionType: String(req.body?.sessionType || "").trim(),
+    });
     const directory = await enrichWithDirectory({ req, zoomDay });
     const coverage = await getCalendarCoverage({
       sessionType: zoomDay.sessionType,
@@ -590,8 +670,12 @@ const linkMissing = async (req, res) => {
     const selectedType = String(req.body?.sessionType || "").trim();
     const startTime = String(req.body?.startTime || "").trim();
     const endTime = String(req.body?.endTime || "").trim();
-    const zoomDay = await loadZoomDay({ meetingId, date });
-    const allowedCircles = await getAllowedCircleNames(req);
+    const zoomDay = await loadZoomDay({
+      meetingId,
+      date,
+      sessionType: String(req.body?.sessionType || "").trim(),
+    });
+    const allowedCircles = await getAllowedCircleNames(req, zoomDay.circleScope);
 
     const created = await createMissingMeetings({
       req,
@@ -660,7 +744,11 @@ const sync = async (req, res) => {
 
     const meetingId = normalizeMeetingId(req.body?.meetingId);
     const date = String(req.body?.date || "").trim();
-    const zoomDay = await loadZoomDay({ meetingId, date });
+    const zoomDay = await loadZoomDay({
+      meetingId,
+      date,
+      sessionType: String(req.body?.sessionType || "").trim(),
+    });
     const directory = await enrichWithDirectory({ req, zoomDay });
     const coverage = await getCalendarCoverage({
       sessionType: zoomDay.sessionType,
@@ -733,7 +821,11 @@ const finalize = async (req, res) => {
 
     const meetingId = normalizeMeetingId(req.body?.meetingId);
     const date = String(req.body?.date || "").trim();
-    const zoomDay = await loadZoomDay({ meetingId, date });
+    const zoomDay = await loadZoomDay({
+      meetingId,
+      date,
+      sessionType: String(req.body?.sessionType || "").trim(),
+    });
     const directory = await enrichWithDirectory({ req, zoomDay });
     const coverage = await getCalendarCoverage({
       sessionType: zoomDay.sessionType,
@@ -812,11 +904,17 @@ const SYSTEM_REQ = {
   },
 };
 
-const runAutomaticSync = async ({ meetingId, date, trigger = "AUTO" }) => {
+const runAutomaticSync = async ({
+  meetingId,
+  date,
+  sessionType = "",
+  trigger = "AUTO",
+}) => {
   const req = SYSTEM_REQ;
   const zoomDay = await loadZoomDay({
     meetingId: normalizeMeetingId(meetingId),
     date: String(date || "").trim(),
+    sessionType: String(sessionType || "").trim(),
   });
 
   const directory = await enrichWithDirectory({ req, zoomDay });

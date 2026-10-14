@@ -5,6 +5,7 @@ const CalendarDay = ({
   dayNumber,
   isCurrentMonth = true,
   isToday = false,
+  focusToday = false,
   meetings = [],
   onMeetingClick,
   onCreateMeeting,
@@ -18,6 +19,9 @@ const CalendarDay = ({
           : "",
         isToday
           ? "calendar-day-today"
+          : "",
+        focusToday
+          ? "calendar-day-today-focus"
           : "",
       ]
         .filter(Boolean)

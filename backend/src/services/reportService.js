@@ -255,6 +255,175 @@ const getAttendanceKey = (
     userId
   )}_${String(meetingId)}`;
 
+const TIMEZONE =
+  process.env.ZOOM_TIMEZONE ||
+  "America/Lima";
+
+const parseTimeToMinutes = (
+  value
+) => {
+  const raw = String(
+    value || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  if (!raw) {
+    return null;
+  }
+
+  const meridiemMatch =
+    raw.match(
+      /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/
+    );
+
+  if (meridiemMatch) {
+    let hour = Number(
+      meridiemMatch[1]
+    );
+
+    const minute = Number(
+      meridiemMatch[2]
+    );
+
+    const meridiem =
+      meridiemMatch[3];
+
+    if (
+      !Number.isInteger(hour) ||
+      !Number.isInteger(minute) ||
+      hour < 1 ||
+      hour > 12 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      return null;
+    }
+
+    if (hour === 12) {
+      hour = 0;
+    }
+
+    if (meridiem === "PM") {
+      hour += 12;
+    }
+
+    return hour * 60 + minute;
+  }
+
+  const timeMatch =
+    raw.match(
+      /^(\d{1,2}):(\d{2})(?::\d{2})?$/
+    );
+
+  if (!timeMatch) {
+    return null;
+  }
+
+  const hour = Number(
+    timeMatch[1]
+  );
+
+  const minute = Number(
+    timeMatch[2]
+  );
+
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return null;
+  }
+
+  return hour * 60 + minute;
+};
+
+const getCurrentDateTimeInTimezone =
+  () => {
+    const formatter =
+      new Intl.DateTimeFormat(
+        "en-CA",
+        {
+          timeZone: TIMEZONE,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23",
+        }
+      );
+
+    const parts =
+      formatter.formatToParts(
+        new Date()
+      );
+
+    const values = {};
+
+    for (const part of parts) {
+      if (part.type !== "literal") {
+        values[part.type] =
+          part.value;
+      }
+    }
+
+    return {
+      date: `${values.year}-${values.month}-${values.day}`,
+      minutes:
+        Number(values.hour) *
+          60 +
+        Number(values.minute),
+    };
+  };
+
+const hasMeetingEnded = (
+  meeting,
+  currentDateTime
+) => {
+  const meetingDate =
+    String(
+      meeting?.date || ""
+    ).slice(0, 10);
+
+  if (!meetingDate) {
+    return false;
+  }
+
+  if (
+    meetingDate <
+    currentDateTime.date
+  ) {
+    return true;
+  }
+
+  if (
+    meetingDate >
+    currentDateTime.date
+  ) {
+    return false;
+  }
+
+  const endMinutes =
+    parseTimeToMinutes(
+      meeting?.endTime ||
+        meeting?.time
+    );
+
+  if (endMinutes === null) {
+    return false;
+  }
+
+  return (
+    currentDateTime.minutes >=
+    endMinutes
+  );
+};
+
 /**
  * ============================================================
  * REPORTE MENSUAL
@@ -436,13 +605,8 @@ const getMonthlyCircleReport =
       );
     }
 
-    /*
-     * Este "now" se utiliza únicamente
-     * para comprobar si un QR activado
-     * ya terminó.
-     */
-    const now =
-      new Date();
+    const currentDateTime =
+      getCurrentDateTimeInTimezone();
 
     let totalScheduled = 0;
     let totalAttended = 0;
@@ -707,18 +871,28 @@ const getMonthlyCircleReport =
             null;
 
           if (!record) {
-            /*
-             * REGLA OFICIAL:
-             * Sin un Attendance real no existe una falta oficial.
-             * La sesión permanece Pendiente hasta que se registre un estado.
-             */
-            reportStatus =
-              "Pendiente";
+            if (
+              hasMeetingEnded(
+                meeting,
+                currentDateTime
+              )
+            ) {
+              reportStatus =
+                "No asistió";
 
-            categoryData.pending +=
-              1;
+              categoryData.absent +=
+                1;
 
-            memberPending += 1;
+              memberAbsent += 1;
+            } else {
+              reportStatus =
+                "Pendiente";
+
+              categoryData.pending +=
+                1;
+
+              memberPending += 1;
+            }
           } else {
             const status =
               normalizeStatus(

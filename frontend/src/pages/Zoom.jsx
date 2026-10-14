@@ -72,12 +72,12 @@ import {
       const [
         apiLinkStartTime,
         setApiLinkStartTime,
-      ] = useState("20:00");
+      ] = useState("");
 
       const [
         apiLinkEndTime,
         setApiLinkEndTime,
-      ] = useState("21:00");
+      ] = useState("");
 
 
       useEffect(() => {
@@ -120,7 +120,13 @@ import {
 
               if (meetings.length > 0) {
                 setApiMeetingId((current) => current || meetings[0].meetingId || "");
-                setApiLinkType((current) => current || meetings[0].type || "");
+                setApiLinkType(
+                  (current) =>
+                    current ||
+                    meetings[0]?.types?.[0] ||
+                    meetings[0]?.type ||
+                    ""
+                );
               }
             } catch (error) {
               console.error(
@@ -139,6 +145,14 @@ import {
           (item) => String(item.meetingId) === String(apiMeetingId)
         ) || null;
 
+      const selectedApiTypes =
+        Array.isArray(selectedApiMeeting?.types) &&
+        selectedApiMeeting.types.length > 0
+          ? selectedApiMeeting.types
+          : selectedApiMeeting?.type
+            ? [selectedApiMeeting.type]
+            : [];
+
       const handleApiMeetingChange = (event) => {
         const meetingId = event.target.value;
         const selected = apiMeetings.find(
@@ -146,7 +160,11 @@ import {
         );
 
         setApiMeetingId(meetingId);
-        setApiLinkType(selected?.type || "");
+        setApiLinkType(
+          selected?.types?.[0] ||
+            selected?.type ||
+            ""
+        );
         setApiResult(null);
       };
 
@@ -276,6 +294,7 @@ import {
               await zoomService.previewApi({
                 meetingId: apiMeetingId,
                 date: apiDate,
+                sessionType: apiLinkType,
               });
 
             setApiResult(response);
@@ -304,6 +323,7 @@ import {
               await zoomService.syncApi({
                 meetingId: apiMeetingId,
                 date: apiDate,
+                sessionType: apiLinkType,
               });
 
             setApiResult(response);
@@ -338,6 +358,7 @@ import {
             const refreshed = await zoomService.previewApi({
               meetingId: apiMeetingId,
               date: apiDate,
+              sessionType: apiLinkType,
             });
 
             setApiResult(refreshed);
@@ -374,6 +395,7 @@ import {
               await zoomService.finalizeApi({
                 meetingId: apiMeetingId,
                 date: apiDate,
+                sessionType: apiLinkType,
               });
 
             setApiResult(response);
@@ -434,14 +456,14 @@ import {
                 <div>
                   <h3>🔌 Zoom API</h3>
                   <p>
-                    La API puede trabajar manualmente desde aquí y también de forma automática: 10 minutos después de la hora final del Calendario y una segunda revisión a las 23:30. Suma todas las instancias del mismo Meeting ID y solo aplica asistencia cuando el correo coincide y llega a 10 minutos.
+                    La API puede trabajar manualmente desde aquí y también de forma automática: 5 minutos después de la hora final del Calendario y una segunda revisión a las 23:30. Suma todas las instancias del mismo Meeting ID y solo aplica asistencia cuando el correo coincide y llega a 10 minutos.
                   </p>
                 </div>
                 <span>Sin faltas automáticas</span>
               </div>
 
-              <div className="zoom-api-controls">
-                <label>
+              <div className="zoom-api-controls zoom-api-controls-primary">
+                <label className="zoom-api-field zoom-api-field-meeting">
                   Meeting ID
                   <select
                     value={apiMeetingId}
@@ -452,80 +474,113 @@ import {
                       <option value="">No hay Meeting IDs configurados</option>
                     )}
                     {apiMeetings.map((item) => (
-                      <option key={`${item.type}-${item.meetingId}`} value={item.meetingId}>
+                      <option
+                        key={item.key || `${item.type}-${item.meetingId}`}
+                        value={item.meetingId}
+                      >
                         {item.meetingId}
                       </option>
                     ))}
                   </select>
                 </label>
 
-                <label>
+                <label className="zoom-api-field">
                   Pertenece a
+                  {selectedApiTypes.length > 1 ? (
+                    <select
+                      value={apiLinkType}
+                      onChange={(event) => {
+                        setApiLinkType(event.target.value);
+                        setApiResult(null);
+                      }}
+                      disabled={apiProcessing}
+                    >
+                      {selectedApiTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={apiLinkType || selectedApiMeeting?.type || ""}
+                      readOnly
+                      placeholder="Selecciona un Meeting ID"
+                      className="zoom-api-readonly"
+                    />
+                  )}
+                </label>
+
+                <label className="zoom-api-field">
+                  Alcance
                   <input
-                    value={selectedApiMeeting?.type || apiLinkType || ""}
+                    value={
+                      selectedApiMeeting?.circles?.length
+                        ? selectedApiMeeting.circles.join(", ")
+                        : "General"
+                    }
                     readOnly
-                    placeholder="Selecciona un Meeting ID"
                     className="zoom-api-readonly"
                   />
                 </label>
 
-                <label>
+                <label className="zoom-api-field zoom-api-field-date">
                   Fecha de la sesión
                   <input
                     type="date"
                     value={apiDate}
-                    onChange={(event) =>
-                      setApiDate(event.target.value)
-                    }
+                    onChange={(event) => setApiDate(event.target.value)}
                     disabled={apiProcessing}
                   />
                 </label>
+              </div>
 
-                <label>
-                  Hora de inicio
-                  <input
-                    type="time"
-                    value={apiLinkStartTime}
-                    onChange={(event) => setApiLinkStartTime(event.target.value)}
-                    disabled={apiProcessing}
-                  />
-                </label>
+              <div className="zoom-api-context-note">
+                <span className="zoom-api-context-icon" aria-hidden="true">✓</span>
+                <p>
+                  El sistema reconoce automáticamente la categoría y el alcance asociados al Meeting ID. Solo selecciona la fecha; si un ID sirve para más de una categoría, podrás elegirla en <strong>Pertenece a</strong>.
+                </p>
+              </div>
 
-                <label>
-                  Hora de fin
-                  <input
-                    type="time"
-                    value={apiLinkEndTime}
-                    onChange={(event) => setApiLinkEndTime(event.target.value)}
-                    disabled={apiProcessing}
-                  />
-                </label>
+              <div className="zoom-api-action-bar">
+                <div className="zoom-api-action-copy">
+                  <strong>Acciones de la sesión</strong>
+                  <span>
+                    Primero valida la información. Luego puedes sincronizar la asistencia o finalizar la sesión.
+                  </span>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={handleApiPreview}
-                  disabled={!apiMeetingId || !apiDate || apiProcessing}
-                >
-                  {apiProcessing ? "Consultando..." : "Probar sin aplicar"}
-                </button>
+                <div className="zoom-api-actions">
+                  <button
+                    type="button"
+                    className="zoom-api-preview-button"
+                    onClick={handleApiPreview}
+                    disabled={!apiMeetingId || !apiDate || apiProcessing}
+                  >
+                    <span className="zoom-action-icon" aria-hidden="true">◉</span>
+                    {apiProcessing ? "Consultando..." : "Probar sin aplicar"}
+                  </button>
 
-                <button
-                  type="button"
-                  className="zoom-api-sync-button"
-                  onClick={handleApiSync}
-                  disabled={!apiMeetingId || !apiDate || apiProcessing || apiResult?.linkRequired}
-                >
-                  Sincronizar asistencias
-                </button>
+                  <button
+                    type="button"
+                    className="zoom-api-sync-button"
+                    onClick={handleApiSync}
+                    disabled={!apiMeetingId || !apiDate || apiProcessing || apiResult?.linkRequired}
+                  >
+                    <span className="zoom-action-icon" aria-hidden="true">↻</span>
+                    Sincronizar asistencia
+                  </button>
 
-                <button
-                  type="button"
-                  className="zoom-api-finalize-button"
-                  onClick={handleApiFinalize}
-                  disabled={!apiMeetingId || !apiDate || apiProcessing || apiResult?.linkRequired}
-                >
-                  Finalizar sesión
-                </button>
+                  <button
+                    type="button"
+                    className="zoom-api-finalize-button"
+                    onClick={handleApiFinalize}
+                    disabled={!apiMeetingId || !apiDate || apiProcessing || apiResult?.linkRequired}
+                  >
+                    <span className="zoom-action-icon" aria-hidden="true">□</span>
+                    Finalizar sesión
+                  </button>
+                </div>
               </div>
 
               {apiResult?.error && (
@@ -533,41 +588,65 @@ import {
               )}
 
               {apiResult && !apiResult.error && apiResult.linkRequired && (
-                <div className="zoom-link-warning">
-                  <div>
-                    <strong>⚠ Falta vinculación con el Calendario</strong>
-                    <p>
-                      Zoom detectó {apiResult.sessionType || "esta sesión"} del {apiResult.date || apiDate},
-                      pero faltan reuniones de Calendario para {apiResult.missingCircles?.length || 0} círculo(s).
-                      No se aplicará ninguna asistencia ni falta hasta vincularla.
-                    </p>
+                <div className="zoom-link-warning zoom-link-warning-detected">
+                  <div className="zoom-link-warning-copy">
+                    <div className="zoom-link-warning-title">
+                      <span className="zoom-link-warning-icon" aria-hidden="true">!</span>
+                      <div>
+                        <strong>Nueva reunión detectada</strong>
+                        <p>
+                          Zoom encontró {apiResult.sessionType || "esta sesión"} del {apiResult.date || apiDate},
+                          pero todavía no existe completamente en el Calendario.
+                        </p>
+                      </div>
+                    </div>
+
                     {Array.isArray(apiResult.missingCircles) && apiResult.missingCircles.length > 0 && (
-                      <small>Faltan: {apiResult.missingCircles.join(", ")}</small>
+                      <small>Falta crear para: {apiResult.missingCircles.join(", ")}</small>
                     )}
                   </div>
 
-                  <div className="zoom-link-actions">
-                    <label>
-                      Tipo de reunión
-                      <input
-                        value={apiLinkType || selectedApiMeeting?.type || ""}
-                        readOnly
-                        className="zoom-api-readonly"
-                      />
-                    </label>
+                  <div className="zoom-link-create-panel">
+                    <div className="zoom-link-create-heading">
+                      <strong>Crear reunión en Calendario</strong>
+                      <span>Indica las horas reales de esta sesión. Estos campos solo aparecen cuando la reunión no existe en el Calendario.</span>
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={handleApiLink}
-                      disabled={
-                        !apiLinkType ||
-                        !apiLinkStartTime ||
-                        !apiLinkEndTime ||
-                        apiProcessing
-                      }
-                    >
-                      Crear y vincular
-                    </button>
+                    <div className="zoom-link-actions zoom-link-actions-conditional">
+                      <label>
+                        Hora de inicio
+                        <input
+                          type="time"
+                          value={apiLinkStartTime}
+                          onChange={(event) => setApiLinkStartTime(event.target.value)}
+                          disabled={apiProcessing}
+                        />
+                      </label>
+
+                      <label>
+                        Hora de fin
+                        <input
+                          type="time"
+                          value={apiLinkEndTime}
+                          onChange={(event) => setApiLinkEndTime(event.target.value)}
+                          disabled={apiProcessing}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        className="zoom-link-create-button"
+                        onClick={handleApiLink}
+                        disabled={
+                          !apiLinkType ||
+                          !apiLinkStartTime ||
+                          !apiLinkEndTime ||
+                          apiProcessing
+                        }
+                      >
+                        {apiProcessing ? "Creando..." : "Crear reunión"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

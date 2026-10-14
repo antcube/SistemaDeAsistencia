@@ -1,4 +1,4 @@
-    const User = require("../models/User");
+const User = require("../models/User");
     const Circle = require("../models/Circle");
 
     const {
@@ -904,10 +904,69 @@
       }
     };
 
+
+    const registerNewAmbassador = async (req, res) => {
+      try {
+        if (!hasGlobalPermission(req)) {
+          return res.status(403).json({
+            message: "Solo un Administrador General puede registrar embajadores nuevos.",
+          });
+        }
+
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+          return res.status(404).json({
+            message: "Miembro no encontrado.",
+          });
+        }
+
+        const admissionDate = parseDateOnly(req.body?.admissionDate);
+
+        if (!admissionDate) {
+          return res.status(400).json({
+            message: "Debes indicar una fecha de ingreso válida.",
+          });
+        }
+
+        user.ambassadorAdmissionDate = admissionDate;
+        await user.save();
+
+        await createAuditLog({
+          admin: req.user || req.admin,
+          action: "REGISTER_NEW_AMBASSADOR",
+          module: "members",
+          description: `Se registró a ${user.name || user.username || user.doc} como embajador nuevo desde ${String(req.body.admissionDate).trim()}.`,
+          targetId: user._id,
+          targetName: user.name || user.username || user.doc,
+          circle: user.circle,
+          metadata: {
+            userId: String(user._id),
+            doc: user.doc || "",
+            name: user.name || "",
+            username: user.username || "",
+            admissionDate: user.ambassadorAdmissionDate,
+          },
+        });
+
+        return res.json({
+          message: "Embajador nuevo registrado correctamente.",
+          user,
+        });
+      } catch (error) {
+        console.error("Error registrando embajador nuevo:", error);
+
+        return res.status(500).json({
+          message: error?.message || "No se pudo registrar al embajador nuevo.",
+        });
+      }
+    };
+
     module.exports = {
       getUsers,
       getUserById,
       getRangeHistory,
+      registerNewAmbassador,
       createUser,
       updateUser,
       deleteUser,

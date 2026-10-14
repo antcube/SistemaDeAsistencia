@@ -4,6 +4,7 @@ const {
   getUsers,
   getUserById,
   getRangeHistory,
+  registerNewAmbassador,
   createUser,
   updateUser,
   deleteUser,
@@ -33,6 +34,14 @@ router.get(
   "/:id/range-history",
   authMiddleware,
   getRangeHistory
+);
+
+// Registrar fecha de ingreso de un embajador nuevo
+router.post(
+  "/:id/ambassador-trial",
+  authMiddleware,
+  requireGlobalAdministrator,
+  registerNewAmbassador
 );
 
 // Obtener uno

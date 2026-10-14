@@ -18,7 +18,6 @@ const MonthSelector = ({
   month,
   onPrevious,
   onNext,
-  onToday,
 }) => {
   const monthIndex =
     Math.min(
@@ -31,37 +30,49 @@ const MonthSelector = ({
 
   return (
     <div className="month-selector">
+      <div className="calendar-month-navigation">
+        <button
+          type="button"
+          className="calendar-nav-button"
+          onClick={onPrevious}
+          aria-label="Mes anterior"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3.1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
 
-      <button
-        type="button"
-        className="calendar-nav-button"
-        onClick={onPrevious}
-        aria-label="Mes anterior"
-      >
-        ‹
-      </button>
+        <strong className="calendar-month-title">
+          {formatted}
+        </strong>
 
-      <strong className="calendar-month-title">
-        {formatted}
-      </strong>
-
-      <button
-        type="button"
-        className="calendar-nav-button"
-        onClick={onNext}
-        aria-label="Mes siguiente"
-      >
-        ›
-      </button>
-
-      <button
-        type="button"
-        className="calendar-today-button"
-        onClick={onToday}
-      >
-        Hoy
-      </button>
-
+        <button
+          type="button"
+          className="calendar-nav-button"
+          onClick={onNext}
+          aria-label="Mes siguiente"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3.1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 };

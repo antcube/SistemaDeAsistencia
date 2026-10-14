@@ -63,6 +63,68 @@ const formatDate = (value) => {
 
 const isVirtualCircle = (circle) => normalize(circle).includes("VIRTUAL");
 
+const TIMEZONE = process.env.ZOOM_TIMEZONE || "America/Lima";
+
+const parseTimeToMinutes = (value) => {
+  const match = String(value || "").trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return null;
+  }
+
+  return hour * 60 + minute;
+};
+
+const getCurrentDateTimeInTimezone = () => {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+
+  const parts = formatter.formatToParts(new Date());
+  const values = {};
+
+  for (const part of parts) {
+    if (part.type !== "literal") {
+      values[part.type] = part.value;
+    }
+  }
+
+  return {
+    date: `${values.year}-${values.month}-${values.day}`,
+    minutes: Number(values.hour) * 60 + Number(values.minute),
+  };
+};
+
+const hasMeetingEnded = (meeting, currentDateTime) => {
+  const meetingDate = String(meeting?.date || "").slice(0, 10);
+
+  if (!meetingDate) return false;
+  if (meetingDate < currentDateTime.date) return true;
+  if (meetingDate > currentDateTime.date) return false;
+
+  const endMinutes = parseTimeToMinutes(meeting?.endTime || meeting?.time);
+  if (endMinutes === null) return false;
+
+  return currentDateTime.minutes >= endMinutes;
+};
+
 
 const buildValidJustificationKeys = (users, sessions, recordMap) => {
   const validKeys = new Set();
@@ -121,8 +183,7 @@ const buildMemberStats = (user, sessions, recordMap) => {
   leadershipJs.slice(0, 1).forEach((s) => validJ.add(String(s.meeting._id)));
   bonusJs.slice(0, 3).forEach((s) => validJ.add(String(s.meeting._id)));
 
-  const now = new Date();
-  now.setHours(23, 59, 59, 999);
+  const currentDateTime = getCurrentDateTimeInTimezone();
 
   let scheduled = 0;
   let attended = 0;
@@ -133,11 +194,10 @@ const buildMemberStats = (user, sessions, recordMap) => {
 
   sessions.forEach((session) => {
     const record = recordMap.get(`${String(session.meeting._id)}|${String(user._id)}`);
-    const sessionDate = new Date(`${session.meeting.date}T23:59:59`);
-    const occurred = sessionDate <= now;
+    const ended = hasMeetingEnded(session.meeting, currentDateTime);
     const hasProcessedRecord = Boolean(record);
 
-    if (!occurred && !hasProcessedRecord) {
+    if (!ended && !hasProcessedRecord) {
       pending += 1;
       return;
     }
@@ -145,7 +205,7 @@ const buildMemberStats = (user, sessions, recordMap) => {
     scheduled += 1;
 
     if (!record) {
-      pending += 1;
+      absent += 1;
       return;
     }
 
@@ -192,6 +252,8 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
     category: normalizeCategory(meeting),
   }));
 
+  const currentDateTime = getCurrentDateTimeInTimezone();
+
   const filteredSessions = selectedWeek === null
     ? sessions
     : sessions.filter((session) => getWeekOfMonth(session.meeting.date) === selectedWeek);
@@ -213,7 +275,9 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
     users.forEach((user) => {
       const record = recordMap.get(`${String(session.meeting._id)}|${String(user._id)}`);
       if (!record) {
-        // Sin Attendance real no existe falta oficial.
+        if (hasMeetingEnded(session.meeting, currentDateTime)) {
+          absent += 1;
+        }
         return;
       }
 
@@ -261,13 +325,10 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
 
   const weekly = Array.from({ length: 5 }, (_, index) => {
     const week = index + 1;
-    const now = new Date();
-    now.setHours(23, 59, 59, 999);
 
     const weekSessions = sessions.filter((session) => {
       if (getWeekOfMonth(session.meeting.date) !== week) return false;
-      const sessionDate = new Date(`${session.meeting.date}T23:59:59`);
-      return sessionDate <= now;
+      return hasMeetingEnded(session.meeting, currentDateTime);
     });
 
     let attended = 0;
@@ -280,6 +341,7 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
         const record = recordMap.get(`${String(session.meeting._id)}|${String(user._id)}`);
 
         if (!record) {
+          absent += 1;
           return;
         }
 
@@ -322,7 +384,12 @@ const buildDataset = ({ label, users, meetings, records, selectedWeek = null }) 
 
     users.forEach((user) => {
       const record = recordMap.get(`${String(session.meeting._id)}|${String(user._id)}`);
-      if (!record) return;
+      if (!record) {
+        if (hasMeetingEnded(session.meeting, currentDateTime)) {
+          bucket.absent += 1;
+        }
+        return;
+      }
       const current = normalizeStatus(record.status);
       const recordKey = `${String(session.meeting._id)}|${String(user._id)}`;
       if (current === "ATTENDED") {

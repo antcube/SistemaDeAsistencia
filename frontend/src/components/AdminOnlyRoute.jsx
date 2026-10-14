@@ -12,12 +12,15 @@ const AdminOnlyRoute = () => {
   const location =
     useLocation();
 
-  const isMainAdmin =
+  const isGeneralAdmin =
+    String(
+      admin?.role || ""
+    ).trim() === "Administrador General" ||
     String(
       admin?.adminId || ""
     ).trim() === "ADM-001";
 
-  if (!isMainAdmin) {
+  if (!isGeneralAdmin) {
     return (
       <Navigate
         to="/reports"

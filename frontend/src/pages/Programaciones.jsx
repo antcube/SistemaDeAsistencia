@@ -5,6 +5,20 @@ import circleService from "../services/circleService";
 import { useAuth } from "../context/AuthContext";
 import CircleManager from "../components/CircleManager";
 import MemberMigrationPanel from "../components/MemberMigrationPanel";
+import {
+  ArrowRightLeft,
+  CalendarClock,
+  CalendarDays,
+  ChevronDown,
+  Clock3,
+  MapPin,
+  Pencil,
+  RefreshCw,
+  Search,
+  Settings2,
+  Square,
+  Trash2,
+} from "lucide-react";
 
 const API_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/+$/, "");
 
@@ -69,6 +83,55 @@ const formatDate = (dateString) => {
   }
 
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
+};
+
+const formatTime12 = (timeValue) => {
+  const raw = String(timeValue || "").trim();
+
+  if (!raw) {
+    return "—";
+  }
+
+  const existingMeridiem = raw.match(/\b([AaPp][Mm])\b/);
+
+  if (existingMeridiem) {
+    const match = raw.match(/(\d{1,2})(?::(\d{2}))?/);
+
+    if (!match) {
+      return raw.toUpperCase();
+    }
+
+    const hour = Number(match[1]);
+    const minute = String(match[2] || "00").padStart(2, "0");
+
+    return `${hour}:${minute} ${existingMeridiem[1].toUpperCase()}`;
+  }
+
+  const match = raw.match(/(\d{1,2})(?::(\d{2}))?/);
+
+  if (!match) {
+    return raw;
+  }
+
+  let hour = Number(match[1]);
+  const minute = String(match[2] || "00").padStart(2, "0");
+
+  if (!Number.isFinite(hour) || hour < 0 || hour > 23) {
+    return raw;
+  }
+
+  const meridiem = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
+
+  return `${hour}:${minute} ${meridiem}`;
+};
+
+const normalizeComparable = (value) => {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim()
+    .toUpperCase();
 };
 
 const formatWeekdays = (weekdays = []) => {
@@ -172,6 +235,7 @@ const Programaciones = () => {
     useState("");
 
   const isMainAdmin =
+    String(admin?.role || "").trim() === "Administrador General" ||
     String(admin?.adminId || "").trim() === "ADM-001";
 
   const assignedCircleNames = useMemo(() => {
@@ -858,42 +922,56 @@ const Programaciones = () => {
     <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
 
-        {/* =====================================================
-            ENCABEZADO
-        ===================================================== */}
+        <section className="mb-5 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
+          <div className="relative flex flex-col gap-5 overflow-hidden px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full bg-blue-100/60 blur-3xl" />
 
-        <div className="mb-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">
-                Programaciones
-              </h1>
+            <div className="relative flex min-w-0 items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-100 text-[#2457c5] shadow-[0_7px_18px_rgba(36,87,197,0.12)]">
+                <CalendarClock size={22} strokeWidth={2.1} />
+              </div>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Administra las programaciones oficiales de los círculos.
-              </p>
+              <div className="min-w-0">
+                <div className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#2457c5]">
+                  Gestión operativa
+                </div>
+
+                <h1 className="mt-1 text-[22px] font-extrabold tracking-[-0.025em] text-slate-900">
+                  Programaciones
+                </h1>
+
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Administra las programaciones oficiales, horarios y continuidad de los círculos.
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="relative flex flex-wrap items-center gap-2">
               {isMainAdmin && (
                 <>
                   <button
                     type="button"
                     onClick={() => setCircleManagerOpen(true)}
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-violet-300 bg-white px-4 text-xs font-bold text-violet-700 shadow-sm transition hover:bg-violet-50"
+                    className="group inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3.5 text-[11px] font-extrabold text-violet-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-100 hover:shadow-md"
                   >
-                    ⚙️ Gestionar Círculos
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-white text-violet-600 shadow-sm">
+                      <Settings2 size={14} strokeWidth={2} />
+                    </span>
+                    Gestionar Círculos
                   </button>
 
                   <button
                     type="button"
                     onClick={handleDeleteAllCorporateAnnouncements}
                     disabled={deletingCorporateAnnouncements}
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-xs font-bold text-rose-600 shadow-sm transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="group inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3.5 text-[11px] font-extrabold text-rose-600 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-rose-300 hover:bg-rose-100 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                   >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-white text-rose-500 shadow-sm">
+                      <Trash2 size={14} strokeWidth={2} />
+                    </span>
                     {deletingCorporateAnnouncements
                       ? "Eliminando..."
-                      : "🗑️ Eliminar Anuncios Corporativos"}
+                      : "Eliminar Anuncios Corporativos"}
                   </button>
                 </>
               )}
@@ -902,13 +980,18 @@ const Programaciones = () => {
                 type="button"
                 onClick={loadData}
                 disabled={loading}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="group inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-[11px] font-extrabold text-slate-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
               >
-                ↻ Actualizar
+                <RefreshCw
+                  size={15}
+                  strokeWidth={2}
+                  className={loading ? "animate-spin" : ""}
+                />
+                Actualizar
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* =====================================================
             MENSAJES
@@ -926,17 +1009,14 @@ const Programaciones = () => {
           </div>
         )}
 
-        {/* =====================================================
-            FILTROS
-        ===================================================== */}
-
-        <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="mb-5 rounded-[20px] border border-slate-200 bg-white p-3.5 shadow-[0_7px_22px_rgba(15,23,42,0.06)]">
           <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_280px]">
-
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                ⌕
-              </span>
+            <div className="group relative">
+              <Search
+                size={16}
+                strokeWidth={2}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition group-focus-within:text-[#2457c5]"
+              />
 
               <input
                 type="text"
@@ -947,46 +1027,64 @@ const Programaciones = () => {
                   )
                 }
                 placeholder="Buscar programación, reunión, círculo..."
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#5b83d6] focus:bg-white focus:ring-4 focus:ring-blue-100/70"
               />
             </div>
 
-            <select
-              value={effectiveCircleFilter}
-              onChange={(event) =>
-                setCircleFilter(
-                  event.target.value
-                )
-              }
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              {availableCircleNames.map((name) => (
-                <option
-                  key={name}
-                  value={name}
-                >
-                  {name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={effectiveCircleFilter}
+                onChange={(event) =>
+                  setCircleFilter(
+                    event.target.value
+                  )
+                }
+                className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 pr-10 text-sm font-bold text-slate-700 outline-none transition hover:border-slate-300 focus:border-[#5b83d6] focus:bg-white focus:ring-4 focus:ring-blue-100/70"
+              >
+                {availableCircleNames.map((name) => (
+                  <option
+                    key={name}
+                    value={name}
+                  >
+                    {name}
+                  </option>
+                ))}
+              </select>
 
+              <ChevronDown
+                size={16}
+                strokeWidth={2}
+                className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+            </div>
           </div>
-        </div>
+        </section>
 
         {/* =====================================================
             TABLA
         ===================================================== */}
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.07)]">
+
+          <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-gradient-to-r from-white to-slate-50 px-4 py-3.5">
+            <div>
+              <div className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-400">
+                Programaciones registradas
+              </div>
+              <div className="mt-1 text-sm font-extrabold text-slate-800">
+                Configuración oficial de sesiones
+              </div>
+            </div>
+
+            <span className="inline-flex min-h-7 items-center rounded-full border border-blue-200 bg-blue-50 px-3 text-[10px] font-extrabold text-blue-700">
+              {filteredSchedules.length} {filteredSchedules.length === 1 ? "programación" : "programaciones"}
+            </span>
+          </div>
 
           <div className="overflow-x-auto">
-            <table className="min-w-[1050px] w-full border-collapse">
+            <table className="min-w-[980px] w-full border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                    Programación
-                  </th>
-
+                <tr className="border-b border-slate-200 bg-[#f6f9fd]">
                   <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">
                     Reunión
                   </th>
@@ -1021,7 +1119,7 @@ const Programaciones = () => {
                 {loading ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={7}
                       className="px-4 py-14 text-center text-sm text-slate-500"
                     >
                       Cargando programaciones...
@@ -1030,7 +1128,7 @@ const Programaciones = () => {
                 ) : filteredSchedules.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={7}
                       className="px-4 py-14 text-center"
                     >
                       <div className="text-sm font-semibold text-slate-700">
@@ -1050,24 +1148,23 @@ const Programaciones = () => {
                         className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70"
                       >
                         <td className="px-4 py-4 align-top">
-                          <div className="max-w-[210px]">
-                            <div className="truncate text-sm font-bold text-slate-800">
-                              {schedule.name}
+                          <div className="max-w-[230px]">
+                            <div className="truncate text-[13px] font-bold text-slate-800">
+                              {schedule.name || schedule.type}
                             </div>
 
-                            <div className="mt-1 text-xs text-slate-400">
-                              Versión {schedule.version || 1}
+                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                              <span className="text-[11px] text-slate-400">
+                                Versión {schedule.version || 1}
+                              </span>
+
+                              {normalizeComparable(schedule.type) &&
+                                normalizeComparable(schedule.type) !== normalizeComparable(schedule.name) && (
+                                  <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500">
+                                    {schedule.type}
+                                  </span>
+                                )}
                             </div>
-                          </div>
-                        </td>
-
-                        <td className="px-4 py-4 align-top">
-                          <div className="text-sm font-semibold text-slate-700">
-                            {schedule.type}
-                          </div>
-
-                          <div className="mt-1 text-xs text-slate-400">
-                            {schedule.title}
                           </div>
                         </td>
 
@@ -1077,7 +1174,7 @@ const Programaciones = () => {
                               (circle) => (
                                 <span
                                   key={circle}
-                                  className="rounded-lg border border-blue-100 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700"
+                                  className="inline-flex items-center whitespace-nowrap rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-blue-700"
                                 >
                                   {circle}
                                 </span>
@@ -1087,22 +1184,30 @@ const Programaciones = () => {
                         </td>
 
                         <td className="px-4 py-4 align-top">
-                          <div className="max-w-[150px] text-sm font-medium text-slate-700">
-                            {formatWeekdays(
-                              schedule.weekdays || []
-                            )}
+                          <div className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg bg-slate-50 px-2.5 py-1.5 text-[11px] font-bold text-slate-600">
+                            <CalendarDays size={14} strokeWidth={2} className="shrink-0 text-slate-400" />
+                            <span>
+                              {formatWeekdays(
+                                schedule.weekdays || []
+                              )}
+                            </span>
                           </div>
                         </td>
 
                         <td className="px-4 py-4 align-top">
-                          <div className="text-sm font-semibold text-slate-700">
-                            {schedule.time} -{" "}
-                            {schedule.endTime}
+                          <div className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-1.5 text-[11px] font-extrabold text-amber-700">
+                            <Clock3 size={14} strokeWidth={2} className="shrink-0" />
+                            <span>
+                              {formatTime12(schedule.time)} - {formatTime12(schedule.endTime)}
+                            </span>
                           </div>
 
                           {schedule.location && (
-                            <div className="mt-1 max-w-[150px] truncate text-xs text-slate-400">
-                              {schedule.location}
+                            <div className="mt-2 flex max-w-[190px] items-center gap-1.5 truncate text-[11px] text-slate-400">
+                              <MapPin size={12} strokeWidth={2} className="shrink-0" />
+                              <span className="truncate">
+                                {schedule.location}
+                              </span>
                             </div>
                           )}
                         </td>
@@ -1148,11 +1253,13 @@ const Programaciones = () => {
                           <div className="flex justify-end">
                             <div className="relative">
                               <details className="group">
-                                <summary className="flex h-9 cursor-pointer list-none items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700">
+                                <summary className="flex h-9 cursor-pointer list-none items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-extrabold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md">
                                   Gestionar
-                                  <span className="ml-2 text-slate-400 group-open:rotate-180">
-                                    ▾
-                                  </span>
+                                  <ChevronDown
+                                    size={14}
+                                    strokeWidth={2}
+                                    className="ml-2 text-slate-400 transition-transform group-open:rotate-180"
+                                  />
                                 </summary>
 
                                 <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
@@ -1166,7 +1273,7 @@ const Programaciones = () => {
                                     }
                                     className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50"
                                   >
-                                    ✎
+                                    <Pencil size={14} strokeWidth={2} />
                                     <span className="ml-2">
                                       Editar
                                     </span>
@@ -1183,7 +1290,7 @@ const Programaciones = () => {
                                         }
                                         className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-xs font-semibold text-blue-700 hover:bg-blue-50"
                                       >
-                                        ↻
+                                        <ArrowRightLeft size={14} strokeWidth={2} />
                                         <span className="ml-2">
                                           Migrar programación
                                         </span>
@@ -1198,7 +1305,7 @@ const Programaciones = () => {
                                         }
                                         className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50"
                                       >
-                                        ⏹
+                                        <Square size={14} strokeWidth={2} />
                                         <span className="ml-2">
                                           Terminar programación
                                         </span>
@@ -1219,19 +1326,18 @@ const Programaciones = () => {
             </table>
           </div>
 
-          {!loading && (
-            <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3 text-xs font-medium text-slate-400">
-              {filteredSchedules.length} programación
-              {filteredSchedules.length === 1
-                ? ""
-                : "es"}
+          {!loading && filteredSchedules.length > 0 && (
+            <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 text-[10px] font-semibold text-slate-400">
+              Mostrando {filteredSchedules.length} {filteredSchedules.length === 1 ? "programación" : "programaciones"} para {effectiveCircleFilter || "el círculo seleccionado"}.
             </div>
           )}
 
         </div>
 
         {isMainAdmin && (
-          <MemberMigrationPanel circles={circles} />
+          <div className="mt-6 [&_input]:!rounded-xl [&_input]:!border-slate-200 [&_input]:!bg-slate-50 [&_input]:!transition [&_input:focus]:!border-[#5b83d6] [&_input:focus]:!bg-white [&_button]:!rounded-xl">
+            <MemberMigrationPanel circles={circles} />
+          </div>
         )}
       </div>
 
@@ -1597,10 +1703,10 @@ const Programaciones = () => {
                       </div>
 
                       <div className="mt-1 text-sm font-semibold text-slate-700">
-                        {migrationSchedule.time} -{" "}
-                        {
+                        {formatTime12(migrationSchedule.time)} -{" "}
+                        {formatTime12(
                           migrationSchedule.endTime
-                        }
+                        )}
                       </div>
                     </div>
 
@@ -2065,13 +2171,13 @@ const Programaciones = () => {
                         []
                     )}
                     {" · "}
-                    {
+                    {formatTime12(
                       terminationSchedule.time
-                    }{" "}
+                    )}{" "}
                     -{" "}
-                    {
+                    {formatTime12(
                       terminationSchedule.endTime
-                    }
+                    )}
                   </div>
                 </div>
 
