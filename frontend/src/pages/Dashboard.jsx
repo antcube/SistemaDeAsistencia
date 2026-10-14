@@ -65,36 +65,129 @@ const WeeklyChart = ({ data, selectedWeek, onWeek }) => {
   const weekly = data?.weekly || [];
   const width = 620;
   const height = 170;
-  const left = 38;
-  const right = 18;
-  const top = 18;
+  const left = 58;
+  const right = 24;
+  const top = 22;
   const bottom = 34;
   const innerW = width - left - right;
   const innerH = height - top - bottom;
+
   const points = weekly.map((item, index) => ({
     ...item,
     x: left + (weekly.length <= 1 ? innerW / 2 : index * innerW / (weekly.length - 1)),
     y: top + innerH - clamp(item.rate) / 100 * innerH,
+    index,
   }));
-  const path = points.map((p, i) => `${i ? "L" : "M"} ${p.x} ${p.y}`).join(" ");
+
+  const path = points
+    .map((point, index) => `${index ? "L" : "M"} ${point.x} ${point.y}`)
+    .join(" ");
+
+  const getValueLabelPosition = (item) => {
+    const isFirst = item.index === 0;
+    const isLast = item.index === points.length - 1;
+    const rate = clamp(item.rate);
+
+    return {
+      x: item.x + (isFirst ? 11 : isLast ? -11 : 0),
+      y: rate >= 92 ? item.y + 20 : item.y - 14,
+      anchor: isFirst ? "start" : isLast ? "end" : "middle",
+    };
+  };
+
   return (
-    <div className="relative h-full min-h-0 w-full overflow-hidden rounded-xl border border-[rgba(82,146,230,0.28)] bg-[#020A1B] p-2 transition-all duration-300 group-hover:bg-[#06122b]">
+    <div className="relative h-full min-h-0 w-full overflow-hidden rounded-2xl border border-[rgba(82,146,230,0.28)] bg-[#020A1B] p-3 transition-all duration-300 group-hover:border-[#38BDF8]/45 group-hover:bg-[#06122b] group-hover:shadow-[0_12px_30px_rgba(0,0,0,.22)]">
       <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" preserveAspectRatio="xMidYMid meet">
-        {[0,25,50,75,100].map((value) => {
+        {[0, 25, 50, 75, 100].map((value) => {
           const y = top + innerH - value / 100 * innerH;
-          return <g key={value}><line x1={left} x2={width-right} y1={y} y2={y} stroke="rgba(82,146,230,0.2)" strokeDasharray="4 5"/><text x={left-8} y={y+3} textAnchor="end" className="fill-[#AAB9DA] text-[9px]">{value}%</text></g>;
+
+          return (
+            <g key={value}>
+              <line
+                x1={left}
+                x2={width - right}
+                y1={y}
+                y2={y}
+                stroke="rgba(82,146,230,0.2)"
+                strokeDasharray="4 5"
+              />
+              <text
+                x={left - 12}
+                y={y + 3}
+                textAnchor="end"
+                className="fill-[#AAB9DA] text-[10px] font-semibold"
+              >
+                {value}%
+              </text>
+            </g>
+          );
         })}
-        {path && <path d={path} fill="none" stroke="#4CC8FF" strokeWidth="4" filter="drop-shadow(0 0 5px rgba(76,200,255,.8))" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1000" strokeDashoffset="1000" className="animate-[drawLine_1.2s_ease-out_forwards]"/>}
+
+        {path && (
+          <path
+            d={path}
+            fill="none"
+            stroke="#4CC8FF"
+            strokeWidth="4"
+            filter="drop-shadow(0 0 5px rgba(76,200,255,.8))"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="1000"
+            strokeDashoffset="1000"
+            className="animate-[drawLine_1.2s_ease-out_forwards]"
+          />
+        )}
+
         {points.map((item) => {
           const active = selectedWeek === item.week;
-          return <g key={item.week} onClick={() => onWeek(item.week)} className="cursor-pointer">
-            <circle cx={item.x} cy={item.y} r={active ? 9 : 6} fill={active ? "#4CC8FF" : "#080F24"} stroke="#4CC8FF" strokeWidth="3" filter="drop-shadow(0 0 4px rgba(76,200,255,.75))" className="transition-all duration-300 hover:scale-125"/>
-            <text x={item.x} y={item.y-14} textAnchor="middle" className={`text-[10px] font-black ${active ? "fill-[#4CC8FF]" : "fill-[#AAB9DA]"}`}>{pct(item.rate)}</text>
-          </g>;
+          const label = getValueLabelPosition(item);
+
+          return (
+            <g
+              key={item.week}
+              onClick={() => onWeek(item.week)}
+              className="cursor-pointer"
+            >
+              <circle
+                cx={item.x}
+                cy={item.y}
+                r={active ? 9 : 6}
+                fill={active ? "#4CC8FF" : "#080F24"}
+                stroke="#4CC8FF"
+                strokeWidth="3"
+                filter="drop-shadow(0 0 4px rgba(76,200,255,.75))"
+                className="transition-all duration-300 hover:scale-125"
+              />
+              <text
+                x={label.x}
+                y={label.y}
+                textAnchor={label.anchor}
+                className={`text-[11px] font-black ${
+                  active ? "fill-[#4CC8FF]" : "fill-[#D7E3F8]"
+                }`}
+              >
+                {pct(item.rate)}
+              </text>
+            </g>
+          );
         })}
       </svg>
+
       <div className="absolute inset-x-7 bottom-1 flex justify-between gap-1">
-        {weekly.map((item) => <button key={item.week} type="button" onClick={() => onWeek(item.week)} className={`rounded-lg px-2 py-1 text-[8px] font-black transition-all duration-200 hover:-translate-y-0.5 ${selectedWeek === item.week ? "bg-[#2457c5] text-white shadow-md" : "text-[#AAB9DA] hover:bg-white/5 hover:text-[#4CC8FF]"}`}>{item.label}</button>)}
+        {weekly.map((item) => (
+          <button
+            key={item.week}
+            type="button"
+            onClick={() => onWeek(item.week)}
+            className={`rounded-lg px-2.5 py-1 text-[9px] font-black transition-all duration-200 hover:-translate-y-0.5 ${
+              selectedWeek === item.week
+                ? "bg-[#2457c5] text-white shadow-md"
+                : "text-[#AAB9DA] hover:bg-white/5 hover:text-[#4CC8FF]"
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -187,23 +280,93 @@ const CompactStatusDonut = ({ title, data, tone = "cyan" }) => {
   );
 };
 
+const getCategoryBarStyle = (type, tone = "cyan") => {
+  const normalized = String(type || "").trim().toUpperCase();
+
+  const styles = {
+    HEALTH: {
+      gradient: "linear-gradient(90deg, #67E8F9 0%, #BAE6FD 100%)",
+      shadow: "0 0 12px rgba(103,232,249,.24)",
+    },
+    MENTORIA: {
+      gradient: "linear-gradient(90deg, #2563EB 0%, #60A5FA 100%)",
+      shadow: "0 0 12px rgba(59,130,246,.22)",
+    },
+    "CIRCULO DE LIDERAZGO": {
+      gradient:
+        "linear-gradient(90deg, #1E40AF 0%, #2563EB 55%, #38BDF8 100%)",
+      shadow: "0 0 12px rgba(37,99,235,.22)",
+    },
+    "ANUNCIOS CORPORATIVOS": {
+      gradient: "linear-gradient(90deg, #334155 0%, #64748B 100%)",
+      shadow: "0 0 10px rgba(100,116,139,.18)",
+    },
+    MASTERCLASS: {
+      gradient: "linear-gradient(90deg, #64748B 0%, #CBD5E1 100%)",
+      shadow: "0 0 10px rgba(148,163,184,.18)",
+    },
+  };
+
+  if (styles[normalized]) {
+    return styles[normalized];
+  }
+
+  return tone === "violet"
+    ? {
+        gradient: "linear-gradient(90deg, #8B5CF6 0%, #6366F1 100%)",
+        shadow: "0 0 10px rgba(139,92,246,.18)",
+      }
+    : {
+        gradient: "linear-gradient(90deg, #00F0FF 0%, #38BDF8 100%)",
+        shadow: "0 0 10px rgba(56,189,248,.18)",
+      };
+};
+
 const DenseCategoryBars = ({ data, tone = "cyan" }) => {
   const items = data?.categories || [];
-  const accent = tone === "violet" ? "from-[#8B5CF6] to-[#6366F1]" : "from-[#00F0FF] to-[#38BDF8]";
+
   return (
     <div className="grid min-h-0 gap-2">
-      {items.length === 0 ? <p className="grid h-16 place-items-center text-[9px] text-[#64748B]">Sin sesiones en el período.</p> : items.map((item) => (
-        <div key={item.type} className="rounded-lg border border-[#1E293B] bg-[#090D16]/70 px-3 py-2.5">
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <span className="truncate text-[10px] font-bold text-[#E2E8F0]">{formatCategory(item.type)}</span>
-            <span className="text-[10px] font-black text-white">{pct(item.rate)}</span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-[#111827]">
-            <div className={`h-full rounded-full bg-gradient-to-r ${accent} transition-all duration-700`} style={{width:`${clamp(item.rate)}%`}} />
-          </div>
-          <p className="mt-1.5 truncate text-[8px] text-[#64748B]">{item.sessions} sesiones · {item.attended + item.justified} válidas</p>
-        </div>
-      ))}
+      {items.length === 0 ? (
+        <p className="grid h-16 place-items-center text-[10px] text-[#7B8DAE]">
+          Sin sesiones en el período.
+        </p>
+      ) : (
+        items.map((item) => {
+          const barStyle = getCategoryBarStyle(item.type, tone);
+
+          return (
+            <div
+              key={item.type}
+              className="rounded-xl border border-[#1E293B] bg-[#090D16]/70 px-3.5 py-3 transition-all duration-300 hover:border-[#38BDF8]/30 hover:bg-[#0B1220]"
+            >
+              <div className="mb-1 flex items-center justify-between gap-3">
+                <span className="min-w-0 truncate text-[11px] font-bold text-[#E7EEF9]">
+                  {formatCategory(item.type)}
+                </span>
+                <span className="shrink-0 pl-2 text-[11px] font-black text-white">
+                  {pct(item.rate)}
+                </span>
+              </div>
+
+              <div className="h-1.5 overflow-hidden rounded-full bg-[#111827]">
+                <div
+                  className="h-full rounded-full transition-[width,filter] duration-700 ease-out"
+                  style={{
+                    width: `${clamp(item.rate)}%`,
+                    background: barStyle.gradient,
+                    boxShadow: barStyle.shadow,
+                  }}
+                />
+              </div>
+
+              <p className="mt-1.5 truncate text-[9px] text-[#7B8DAE]">
+                {item.sessions} sesiones · {item.attended + item.justified} válidas
+              </p>
+            </div>
+          );
+        })
+      )}
     </div>
   );
 };
